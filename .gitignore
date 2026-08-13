@@ -1,0 +1,29 @@
+# 本机工具链（体积大，不入库）
+.toolchain/
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android / IDE
+local.properties
+*.iml
+.idea/
+.cxx/
+captures/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+
+# Claude 本机设置（每机不同）
+.claude/settings.local.json
+
+# 备份/密钥（运行期生成）
+*.bin
+schemas/
+
+# OS
+.DS_Store
+Thumbs.db

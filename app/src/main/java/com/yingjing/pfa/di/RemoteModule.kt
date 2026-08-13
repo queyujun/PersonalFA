@@ -1,0 +1,29 @@
+package com.yingjing.pfa.di
+
+import com.yingjing.pfa.data.remote.CoinGeckoRemote
+import com.yingjing.pfa.data.remote.CryptoQuoteRemote
+import com.yingjing.pfa.data.remote.FxRemote
+import com.yingjing.pfa.data.remote.SinaFxRemote
+import com.yingjing.pfa.data.remote.SinaStockRemote
+import com.yingjing.pfa.data.remote.StockQuoteRemote
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RemoteModule {
+    @Binds
+    @Singleton
+    abstract fun bindStockQuoteRemote(impl: SinaStockRemote): StockQuoteRemote
+
+    @Binds
+    @Singleton
+    abstract fun bindCryptoQuoteRemote(impl: CoinGeckoRemote): CryptoQuoteRemote
+
+    @Binds
+    @Singleton
+    abstract fun bindFxRemote(impl: SinaFxRemote): FxRemote
+}

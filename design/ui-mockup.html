@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盈景私助 · 个人资产管家 — UI 设计稿 v7</title>
+<style>
+  :root{
+    --page:#eef0f3;
+    --surface:#ffffff;
+    --surface-2:#f7f8fa;
+    --ink:#0b0b0b;
+    --ink-2:#52514e;
+    --muted:#898781;
+    --hair:#e6e6e2;
+    --grid:#e1e0d9;
+
+    --primary:#2a78d6;
+    --primary-weak:#e7f0fc;
+
+    /* 中国市场：红涨 绿跌 */
+    --up:#d03b3b;
+    --up-weak:#fbeaea;
+    --down:#0ca30c;
+    --down-weak:#e7f6e7;
+
+    /* 分类色（饼图/图例，固定顺序）*/
+    --c1:#2a78d6;  /* 房产 */
+    --c2:#eb6834;  /* 存款 */
+    --c3:#1baf7a;  /* 股票 */
+    --c4:#eda100;  /* 黄金 */
+    --c5:#e87ba4;  /* 国债 */
+    --c6:#008300;  /* 区块链 */
+    --c7:#4a3aa7;  /* 公司股权 */
+
+    --warning:#fab219;
+    --serious:#ec835a;
+    --radius:20px;
+    --font:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--page);color:var(--ink);-webkit-font-smoothing:antialiased;padding:28px 20px 60px}
+
+  .head{max-width:1200px;margin:0 auto 28px}
+  .head h1{font-size:26px;font-weight:800;letter-spacing:.5px}
+  .head .sub{color:var(--ink-2);margin-top:6px;font-size:14px;line-height:1.7}
+  .legend-conv{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .tag{background:var(--surface);border:1px solid var(--hair);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+  .tag.new{border-color:var(--primary);color:var(--primary);background:var(--primary-weak)}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  .board{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px 34px;justify-content:center}
+  .frame{width:340px}
+  .frame .cap{font-size:13px;font-weight:700;color:var(--ink);margin:0 0 4px 6px}
+  .frame .cap span{font-weight:400;color:var(--muted)}
+  .frame .cap em{font-style:normal;color:var(--primary);font-weight:700}
+  .phone{width:340px;height:720px;background:var(--surface-2);border:10px solid #0f1115;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 40px rgba(15,17,21,.18)}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column}
+
+  .statusbar{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:12px;color:var(--ink);font-weight:600;flex:none}
+  .statusbar .r{display:flex;gap:5px;align-items:center}
+
+  .appbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex:none}
+  .appbar .title{font-size:18px;font-weight:700}
+  .appbar .ic{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--ink-2)}
+
+  .body{flex:1;overflow:hidden;padding:0 14px 14px;position:relative}
+  .scrollhint{position:absolute;right:6px;top:4px;bottom:64px;width:3px;border-radius:3px;background:linear-gradient(var(--hair),transparent);z-index:6}
+
+  .card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+  .card .ct{font-size:13px;color:var(--ink-2);font-weight:600;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .xs{font-size:11px}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:14px;background:var(--primary);color:#fff;font-size:15px;font-weight:700;border:none;width:100%}
+  .btn.ghost{background:var(--primary-weak);color:var(--primary)}
+  .btn.line{background:var(--surface);border:1px solid var(--hair);color:var(--ink)}
+  .field{margin-bottom:11px}
+  .field label{font-size:12.5px;color:var(--ink-2);font-weight:600;display:block;margin-bottom:6px}
+  .input{height:44px;border:1px solid var(--hair);border-radius:12px;background:var(--surface-2);display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--ink);gap:8px}
+  .input .ph{color:var(--muted)}
+
+  .segmented{display:flex;background:var(--surface-2);border:1px solid var(--hair);border-radius:12px;padding:3px;gap:3px}
+  .segmented div{flex:1;text-align:center;font-size:12.5px;padding:7px 0;border-radius:9px;color:var(--ink-2);font-weight:600}
+  .segmented div.on{background:var(--surface);color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .segmented.sm div{font-size:11.5px;padding:6px 0}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font-size:12px;padding:6px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--hair);color:var(--ink-2);white-space:nowrap}
+  .chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+  .up{color:var(--up)}
+  .down{color:var(--down)}
+  .pill{font-size:11px;font-weight:700;padding:2px 7px;border-radius:7px}
+  .pill.up{background:var(--up-weak)}
+  .pill.down{background:var(--down-weak)}
+  .pill.liab{background:var(--surface-2);color:var(--ink-2)}
+  .pill.cat{background:var(--primary-weak);color:var(--primary)}
+
+  .row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--hair)}
+  .row:last-child{border-bottom:none}
+  .row .ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;background:var(--surface-2)}
+  .row .mid{flex:1;min-width:0}
+  .row .nm{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .row .val{text-align:right}
+  .row .v1{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .row .v2{font-size:11.5px;margin-top:2px;font-variant-numeric:tabular-nums}
+  .swipe{margin-left:6px;background:var(--up-weak);color:var(--up);border-radius:10px;font-size:11px;font-weight:700;padding:6px 8px;flex:none}
+
+  .nav{height:62px;background:var(--surface);border-top:1px solid var(--hair);display:flex;align-items:center;justify-content:space-around;flex:none}
+  .nav div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted)}
+  .nav div.on{color:var(--primary)}
+  .nav .ni{font-size:20px}
+  .fab{position:absolute;right:16px;bottom:78px;width:54px;height:54px;border-radius:18px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 20px rgba(42,120,214,.4);z-index:5}
+
+  .hero{background:linear-gradient(135deg,#2a78d6,#1c5cab);border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:12px}
+  .hero .lb{font-size:12.5px;opacity:.9}
+  .hero .big{font-size:30px;font-weight:800;margin:4px 0;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+  .hero .sub{display:flex;gap:14px;font-size:12px;opacity:.92;margin-top:8px}
+  .hero .sub b{border-bottom:1px dashed rgba(255,255,255,.6);font-weight:400}
+  .hero .chgline{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:2px}
+  .hero .chgpill{background:rgba(255,255,255,.18);padding:2px 8px;border-radius:8px;font-weight:700}
+
+  .curswitch{display:flex;background:rgba(255,255,255,.16);border-radius:10px;padding:2px}
+  .curswitch span{font-size:12px;padding:4px 9px;border-radius:8px;font-weight:600;color:rgba(255,255,255,.8)}
+  .curswitch span.on{background:#fff;color:var(--primary)}
+
+  .catgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .catcell{background:var(--surface);border:1px solid var(--hair);border-radius:14px;padding:10px 8px;text-align:center}
+  .catcell .ci{font-size:20px}
+  .catcell .cn{font-size:11.5px;color:var(--ink-2);margin-top:4px}
+  .catcell .cv{font-size:12.5px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+
+  .donutwrap{display:flex;align-items:center;gap:14px}
+  .donut{width:120px;height:120px;border-radius:50%;flex:none;position:relative;
+    background:conic-gradient(
+      var(--c1) 0 41%,
+      var(--c2) 41% 55%,
+      var(--c3) 55% 73%,
+      var(--c4) 73% 80%,
+      var(--c5) 80% 86%,
+      var(--c6) 86% 91%,
+      var(--c7) 91% 100%);}
+  .donut::after{content:"";position:absolute;inset:27px;background:var(--surface);border-radius:50%}
+  .donut .center{position:absolute;inset:27px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2}
+  .donut .center b{font-size:15px}
+  .donut .center span{font-size:9.5px;color:var(--muted)}
+  .lg{flex:1}
+  .lg .lgrow{display:flex;align-items:center;gap:7px;font-size:11.5px;padding:2px 0}
+  .lg .lgrow .nm{flex:1;color:var(--ink-2)}
+  .lg .lgrow .pc{font-weight:700;font-variant-numeric:tabular-nums}
+
+  .alert{display:flex;gap:11px;padding:12px 4px;border-bottom:1px solid var(--hair)}
+  .alert:last-child{border-bottom:none}
+  .alert .sev{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}
+  .alert .ac{flex:1}
+  .alert .at{font-size:13.5px;font-weight:700;display:flex;justify-content:space-between}
+  .alert .at .tm{font-size:11px;color:var(--muted);font-weight:400}
+  .alert .ad{font-size:12px;color:var(--ink-2);margin-top:3px;line-height:1.55}
+  .catlabel{font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);margin-right:6px}
+
+  .typegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .typecell{background:var(--surface);border:1px solid var(--hair);border-radius:16px;padding:13px 6px;text-align:center;position:relative}
+  .typecell.on{border-color:var(--primary);background:var(--primary-weak)}
+  .typecell .ti{font-size:22px}
+  .typecell .tn{font-size:12px;color:var(--ink-2);margin-top:5px}
+  .typecell .badge{position:absolute;top:-6px;right:-6px;background:var(--up);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px}
+
+  .note{font-size:11.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--hair);border-left:3px solid var(--primary);border-radius:8px;padding:9px 10px;line-height:1.6;margin-top:2px}
+  .note.warn{border-left-color:var(--warning)}
+
+  .setrow{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--hair)}
+  .setrow:last-child{border-bottom:none}
+  .setrow .si{width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+  .setrow .sm{flex:1}
+  .setrow .sn{font-size:14px;font-weight:600}
+  .setrow .ss{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .setrow .chev{color:var(--muted);font-size:18px}
+  .statusdot{width:8px;height:8px;border-radius:50%;background:var(--down);display:inline-block;margin-right:5px}
+  .toggle{width:40px;height:23px;border-radius:999px;background:#d6d6d1;position:relative;flex:none}
+  .toggle.on{background:var(--primary)}
+  .toggle::after{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:2px;left:2px}
+  .toggle.on::after{left:auto;right:2px}
+
+  /* 左滑「编辑/删除」演示 */
+  .swiperow{display:flex;align-items:stretch;overflow:hidden;border-radius:12px;background:var(--surface);border:1px solid var(--hair)}
+  .swipe-content{flex:1;padding:11px 10px;display:flex;align-items:center;gap:12px}
+  .swipe-content .ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;background:var(--surface-2)}
+  .swipe-content .nm{font-size:14.5px;font-weight:600}
+  .swipe-content .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .swipe-actions{display:flex;flex:none}
+  .swipe-actions div{display:flex;flex-direction:column;align-items:center;justify-content:center;width:60px;color:#fff;font-size:11px;font-weight:700;gap:2px}
+  .a-edit{background:var(--primary)}
+  .a-del{background:var(--up)}
+  /* 二次确认弹窗 */
+  .overlay{position:absolute;inset:0;background:rgba(11,11,11,.35);display:flex;align-items:center;justify-content:center;z-index:10}
+  .dialog{width:84%;background:var(--surface);border-radius:18px;padding:18px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+  .dialog .dt{font-size:16px;font-weight:800}
+  .dialog .dd{font-size:12.5px;color:var(--ink-2);margin-top:8px;line-height:1.6}
+  .dialog .dbtns{display:flex;gap:10px;margin-top:16px}
+  .dialog .dbtns button{flex:1;height:44px}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>盈景私助 · 个人资产管家 &nbsp;<span style="font-size:14px;color:var(--muted);font-weight:500">UI 设计稿 v7 — 供 Review</span></h1>
+  <div class="sub">Android · 中文界面 · 多用户 · 本地数据库(可备份) · 每日自动更新。本次更新：房产改为「<b>手动估值 + 官方 70 城指数</b>」（完全本地、无服务器）；各条目均可编辑/删除（共 16 屏）。</div>
+  <div class="legend-conv">
+    <div class="tag new">🆕 每项可 编辑 / 删除</div>
+    <div class="tag new">🆕 持仓提醒（到期 / 重大信息）</div>
+    <div class="tag"><span class="dot" style="background:var(--up)"></span> 红 = 涨/盈利</div>
+    <div class="tag"><span class="dot" style="background:var(--down)"></span> 绿 = 跌/亏损</div>
+    <div class="tag">💱 ¥CNY / HK$ / US$ 切换</div>
+  </div>
+</div>
+
+<div class="board">
+
+  <!-- 1 · 登录 -->
+  <div class="frame">
+    <div class="cap">① 登录 / 注册 <span>· 多用户 · 本地加密</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="body" style="display:flex;flex-direction:column;justify-content:center;padding:0 22px">
+        <div style="text-align:center;margin-bottom:26px">
+          <div style="width:66px;height:66px;border-radius:20px;background:linear-gradient(135deg,#2a78d6,#1c5cab);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff">盈</div>
+          <div style="font-size:21px;font-weight:800">盈景私助</div>
+          <div class="small muted" style="margin-top:4px">您的个人资产全景管家</div>
+        </div>
+        <div class="segmented" style="margin-bottom:18px"><div class="on">登录</div><div>注册</div></div>
+        <div class="field"><label>用户名 / 手机号</label><div class="input"><span>👤</span><span>alex</span></div></div>
+        <div class="field"><label>密码</label><div class="input"><span>🔒</span><span class="ph">••••••••</span></div></div>
+        <button class="btn" style="margin-top:6px">登 录</button>
+        <div class="note" style="margin-top:16px">🔐 所有账户与数据仅保存在本机（加密存储），支持多用户切换；不上传云端。</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 2 · 总览 -->
+  <div class="frame">
+    <div class="cap">② 总览首页 <span>· 净值 · 走势 · 分布</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="title">早上好，Alex</div><div class="ic">🔔</div></div>
+      <div class="body">
+        <div class="scrollhint"></div>
+        <div class="hero">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="lb">总资产净值</div>
+            <div class="curswitch"><span class="on">¥</span><span>HK$</span><span>US$</span></div>
+          </div>
+          <div class="big">¥ 4,120,000</div>
+          <div class="chgline"><span class="chgpill">▲ 今日 +¥12,300</span><span>+0.30%</span></div>
+          <div class="sub"><span>总资产 ¥4,300,000</span><span><b>总负债 ¥180,000</b> ›</span></div>
+        </div>
+
+        <div class="card">
+          <div class="ct">净值走势 <div class="chips"><span class="chip">1月</span><span class="chip on">3月</span><span class="chip">1年</span></div></div>
+          <svg viewBox="0 0 300 130" width="100%" height="120">
+            <line x1="20" y1="20" x2="300" y2="20" stroke="var(--grid)" stroke-width="1"/>
+            <line x1="20" y1="57" x2="300" y2="57" stroke="var(--grid)" stroke-width="1"/>
+            <line x1="20" y1="94" x2="300" y2="94" stroke="var(--grid)" stroke-width="1"/>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2a78d6" stop-opacity=".22"/><stop offset="1" stop-color="#2a78d6" stop-opacity="0"/>
+            </linearGradient></defs>
+            <polygon points="20,115 20,102 74,81 128,90 182,61 236,41 290,20 290,115" fill="url(#g1)"/>
+            <polyline points="20,102 74,81 128,90 182,61 236,41 290,20" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="290" cy="20" r="3.5" fill="var(--primary)"/>
+            <text x="18" y="128" font-size="8" fill="var(--muted)">3月</text>
+            <text x="140" y="128" font-size="8" fill="var(--muted)">6月</text>
+            <text x="278" y="128" font-size="8" fill="var(--muted)">8月</text>
+          </svg>
+        </div>
+
+        <div class="card">
+          <div class="ct">资产分布</div>
+          <div class="donutwrap">
+            <div class="donut"><div class="center"><b>¥430万</b><span>总资产</span></div></div>
+            <div class="lg">
+              <div class="lgrow"><span class="dot" style="background:var(--c1)"></span><span class="nm">房产</span><span class="pc">41%</span></div>
+              <div class="lgrow"><span class="dot" style="background:var(--c3)"></span><span class="nm">股票</span><span class="pc">18%</span></div>
+              <div class="lgrow"><span class="dot" style="background:var(--c2)"></span><span class="nm">存款</span><span class="pc">14%</span></div>
+              <div class="lgrow"><span class="dot" style="background:var(--c7)"></span><span class="nm">公司股权</span><span class="pc">9%</span></div>
+              <div class="lgrow"><span class="dot" style="background:var(--c4)"></span><span class="nm">黄金</span><span class="pc">7%</span></div>
+              <div class="lgrow"><span class="dot" style="background:var(--c5)"></span><span class="nm">国债</span><span class="pc">6%</span></div>
+              <div class="lgrow"><span class="dot" style="background:var(--c6)"></span><span class="nm">区块链</span><span class="pc">5%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="catgrid">
+          <div class="catcell"><div class="ci">🏠</div><div class="cn">房产</div><div class="cv">¥175万</div></div>
+          <div class="catcell"><div class="ci">📈</div><div class="cn">股票</div><div class="cv up">¥78万</div></div>
+          <div class="catcell"><div class="ci">💰</div><div class="cn">存款</div><div class="cv">¥60万</div></div>
+          <div class="catcell"><div class="ci">🏢</div><div class="cn">公司股权</div><div class="cv">¥40万</div></div>
+          <div class="catcell"><div class="ci">🪙</div><div class="cn">黄金</div><div class="cv up">¥31万</div></div>
+          <div class="catcell"><div class="ci">📜</div><div class="cn">国债</div><div class="cv down">¥27万</div></div>
+        </div>
+      </div>
+      <div class="fab">＋</div>
+      <div class="nav">
+        <div class="on"><span class="ni">📊</span>总览</div>
+        <div><span class="ni">💼</span>资产</div>
+        <div><span class="ni">🔔</span>提醒</div>
+        <div><span class="ni">👤</span>我的</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 3 · 资产列表 -->
+  <div class="frame">
+    <div class="cap">③ 资产列表 <span>· 含 </span><em>黄金/国债(场内) · 现金 · 负债</em></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="title">我的资产</div><div class="ic">🔍</div></div>
+      <div class="body">
+        <div class="scrollhint"></div>
+        <div class="chips" style="margin-bottom:12px;flex-wrap:nowrap;overflow:hidden">
+          <span class="chip on">全部</span><span class="chip">房产</span><span class="chip">股票</span><span class="chip">黄金</span><span class="chip">国债</span><span class="chip">负债</span>
+        </div>
+        <div class="card" style="padding:6px 12px">
+          <div class="row"><div class="ico">🏠</div><div class="mid"><div class="nm">滨江一号 · 3室</div><div class="sub">南山区 · 建面 120㎡</div></div><div class="val"><div class="v1">¥1,750,000</div><div class="v2 up">指数 +0.4%</div></div></div>
+          <div class="row"><div class="ico">📈</div><div class="mid"><div class="nm">贵州茅台</div><div class="sub">A股 600519 · 100股</div></div><div class="val"><div class="v1">¥168,000</div><div class="v2 up">+2.13%</div></div></div>
+          <div class="row"><div class="ico">📈</div><div class="mid"><div class="nm">Apple</div><div class="sub">美股 AAPL · 50股</div></div><div class="val"><div class="v1">US$ 11,250</div><div class="v2 up">+0.68%</div></div></div>
+          <div class="row"><div class="ico">💵</div><div class="mid"><div class="nm">账户现金 · A股</div><div class="sub">券商账户 · 未投资现金</div></div><div class="val"><div class="v1">¥50,000</div><div class="v2 muted">现金</div></div></div>
+          <div class="row"><div class="ico">🪙</div><div class="mid"><div class="nm">华安黄金ETF <span class="pill cat">黄金</span></div><div class="sub">场内 518880 · 5000份 · 不计入股票</div></div><div class="val"><div class="v1">¥31,000</div><div class="v2 up">+0.9%</div></div></div>
+          <div class="row"><div class="ico">📜</div><div class="mid"><div class="nm">国债ETF <span class="pill cat">国债</span></div><div class="sub">场内 511010 · 3000份 · 不计入股票</div></div><div class="val"><div class="v1">¥27,000</div><div class="v2 down">-0.1%</div></div></div>
+          <div class="row"><div class="ico">🏢</div><div class="mid"><div class="nm">星辰科技（未上市）</div><div class="sub">公司股权 · 持股 5% · 手动估值</div></div><div class="val"><div class="v1">¥400,000</div><div class="v2 muted">6月更新</div></div></div>
+          <div class="row"><div class="ico">💰</div><div class="mid"><div class="nm">工行三年定期</div><div class="sub">年化 2.1% · 每日计息</div></div><div class="val"><div class="v1">¥600,000</div><div class="v2 up">+¥34.5/日</div></div></div>
+          <div class="row"><div class="ico">₿</div><div class="mid"><div class="nm">Bitcoin</div><div class="sub">BTC · 0.5</div></div><div class="val"><div class="v1">¥190,000</div><div class="v2 down">-2.4%</div></div></div>
+          <div class="row"><div class="ico">💳</div><div class="mid"><div class="nm">招行房贷 <span class="pill liab">负债</span></div><div class="sub">房贷 · 年化 4.2% · 月供 ¥6,800</div></div><div class="val"><div class="v1">−¥180,000</div><div class="v2 muted">剩余本金</div></div><div class="swipe">删除</div></div>
+        </div>
+        <div class="note">👉 点按条目查看详情；<b>长按或左滑</b>可「编辑 / 删除」（所有类别通用，见 ⑮⑯）。</div>
+      </div>
+      <div class="fab">＋</div>
+      <div class="nav">
+        <div><span class="ni">📊</span>总览</div>
+        <div class="on"><span class="ni">💼</span>资产</div>
+        <div><span class="ni">🔔</span>提醒</div>
+        <div><span class="ni">👤</span>我的</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 4 · 类型选择 -->
+  <div class="frame">
+    <div class="cap">④ 添加 · 选择类型 <span>· 场内 ETF 单独成类</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">✕</div><div class="title">添加</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="small muted" style="margin:2px 4px 12px">选择要添加的类型</div>
+        <div class="typegrid">
+          <div class="typecell"><div class="ti">🏠</div><div class="tn">房产</div></div>
+          <div class="typecell"><div class="ti">💰</div><div class="tn">存款</div></div>
+          <div class="typecell"><div class="ti">📈</div><div class="tn">A股</div></div>
+          <div class="typecell"><div class="ti">🇭🇰</div><div class="tn">港股</div></div>
+          <div class="typecell"><div class="ti">🇺🇸</div><div class="tn">美股</div></div>
+          <div class="typecell"><div class="ti">🪙</div><div class="tn">黄金ETF</div></div>
+          <div class="typecell"><div class="ti">📜</div><div class="tn">国债ETF</div></div>
+          <div class="typecell"><div class="ti">🏢</div><div class="tn">公司股权</div></div>
+          <div class="typecell"><div class="ti">₿</div><div class="tn">区块链</div></div>
+          <div class="typecell"><div class="ti">💳</div><div class="tn">负债</div></div>
+        </div>
+        <div class="note" style="margin-top:16px">💡 取价：股票/区块链每日取价；存款每日计息；房产低频抓小区均价。<b>黄金/国债 ETF 为场内交易，取价走股票接口，但单独归入「黄金/国债」类，不计入股票。</b></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 5 · 股票 -->
+  <div class="frame">
+    <div class="cap">⑤ 录入 · 股票 <span>· 个股 / 账户现金</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">添加股票</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="field"><label>持仓类型</label><div class="segmented"><div class="on">个股</div><div>💵 账户现金</div></div></div>
+        <div class="field"><label>市场</label><div class="segmented"><div class="on">A股</div><div>港股</div><div>美股</div></div></div>
+        <div class="field"><label>股票代码 / 名称</label><div class="input"><span>🔍</span><span>600519 &nbsp;贵州茅台</span></div></div>
+        <div class="field"><label>持有数量（股）</label><div class="input"><span>100</span></div></div>
+        <div class="field"><label>成本价（可选，用于算收益）</label><div class="input"><span class="ph">1,650.00</span></div></div>
+        <div class="field"><label>计价货币</label><div class="segmented"><div class="on">¥ CNY</div><div>HK$</div><div>US$</div></div></div>
+        <div class="note">📡 现价来源：新浪财经（免费），每日收盘后自动更新。</div>
+        <div class="note">💵 切换「账户现金」可记录券商账户中未投资的现金（A股¥ / 港股HK$ / 美股US$ 分市场），计入「股票」合计。</div>
+        <button class="btn" style="margin-top:12px">保 存</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 6 · 存款（新） -->
+  <div class="frame">
+    <div class="cap"><em>⑥ 录入 · 存款（新）</em> <span>· 每日自动计息</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">添加存款</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="field"><label>名称 / 银行</label><div class="input"><span>🏦</span><span>工商银行 · 三年定期</span></div></div>
+        <div class="field"><label>存款类型</label><div class="segmented sm"><div>活期</div><div class="on">定期</div><div>大额存单</div></div></div>
+        <div class="field"><label>本金金额（¥）</label><div class="input"><span>600,000</span></div></div>
+        <div class="field"><label>年化利率（%）</label><div class="input"><span>2.10</span></div></div>
+        <div class="field"><label>起息日期</label><div class="input"><span>2025-06-01</span><span style="margin-left:auto">📅</span></div></div>
+        <div class="field"><label>到期日 / 存期（可选）</label><div class="input"><span class="ph">2028-06-01（3年）</span></div></div>
+        <div class="field"><label>计价货币</label><div class="segmented"><div class="on">¥ CNY</div><div>HK$</div><div>US$</div></div></div>
+        <div class="note">💰 系统按年化利率<b>每日自动计息</b>更新本息，无需联网抓价（零流量）。</div>
+        <button class="btn" style="margin-top:12px">保 存</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 7 · 黄金/国债 ETF（新） -->
+  <div class="frame">
+    <div class="cap"><em>⑦ 录入 · 黄金 / 国债 ETF（新）</em> <span>· 场内 · 单独归类</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">添加 ETF</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="field"><label>类别（决定归入哪一栏）</label><div class="segmented"><div class="on">🪙 黄金ETF</div><div>📜 国债ETF</div></div></div>
+        <div class="field"><label>ETF 代码 / 名称（场内）</label><div class="input"><span>🔍</span><span>518880 华安黄金ETF</span></div></div>
+        <div class="field"><label>持有份额</label><div class="input"><span>5,000</span></div></div>
+        <div class="field"><label>成本价（可选）</label><div class="input"><span class="ph">6.05</span></div></div>
+        <div class="field"><label>计价货币</label><div class="input"><span>¥ CNY（场内按人民币计价）</span></div></div>
+        <div class="note warn">⚠️ 场内 ETF 通过<b>股票账户</b>买卖，取价走股票行情接口；但本类<b>单独归入「黄金 / 国债」</b>，<b>不计入股票合计</b>。</div>
+        <button class="btn" style="margin-top:12px">保 存</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 8 · 房产 -->
+  <div class="frame">
+    <div class="cap">⑧ 录入 · 房产 <span>· 手动估值 + 70城指数</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">添加房产</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="field"><label>名称 / 地址</label><div class="input"><span>滨江一号 3 栋</span></div></div>
+        <div class="field"><label>所在城市（用于匹配房价指数）</label><div class="input"><span>🔍</span><span>深圳</span></div></div>
+        <div class="field"><label>建筑面积（㎡）</label><div class="input"><span>120</span></div></div>
+        <div class="field"><label>当前估值（¥，手动填写）</label><div class="input"><span>1,750,000</span></div></div>
+        <div class="setrow" style="border:none;padding:6px 2px">
+          <div class="sm"><div class="sn">按 70 城房价指数自动估算涨跌</div><div class="ss">国家统计局 · 月度 · 完全本地</div></div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="note">🏠 房产采用「手动估值 + 官方 70 城指数」估算，完全本地、零成本；不抓取中介数据（自动抓价为后续可选）。</div>
+        <button class="btn" style="margin-top:12px">保 存</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 9 · 区块链 -->
+  <div class="frame">
+    <div class="cap">⑨ 录入 · 区块链 <span>· 内置主流币 · CoinGecko</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">添加区块链资产</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="field"><label>代币（内置主流币可选）</label><div class="input"><span>₿</span><span>Bitcoin (BTC)</span><span style="margin-left:auto">▾</span></div></div>
+        <div class="chips" style="margin-bottom:14px"><span class="chip on">BTC</span><span class="chip">ETH</span><span class="chip">USDT</span><span class="chip">BNB</span><span class="chip">SOL</span><span class="chip">+更多</span></div>
+        <div class="field"><label>持有数量</label><div class="input"><span>0.5</span></div></div>
+        <div class="field"><label>成本价（可选）</label><div class="input"><span class="ph">按币种自动填当前价</span></div></div>
+        <div class="field"><label>计价货币</label><div class="segmented"><div class="on">¥ CNY</div><div>HK$</div><div>US$</div></div></div>
+        <div class="note">📡 价格来源：CoinGecko（免费，人民币/港币/美元直出）。每日自动更新。</div>
+        <button class="btn" style="margin-top:14px">保 存</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 10 · 公司股权 -->
+  <div class="frame">
+    <div class="cap">⑩ 录入 · 公司股权 <span>· 手动估值</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">添加公司股权</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="field"><label>公司名称</label><div class="input"><span>🏢</span><span>星辰科技有限公司</span></div></div>
+        <div class="field"><label>当前估值（该笔股权价值）</label><div class="input"><span>400,000</span></div></div>
+        <div class="field"><label>持股比例（可选）</label><div class="input"><span>5</span><span class="ph">%</span></div></div>
+        <div class="field"><label>入股成本（可选，用于算收益）</label><div class="input"><span class="ph">300,000</span></div></div>
+        <div class="field"><label>计价货币</label><div class="segmented"><div class="on">¥ CNY</div><div>HK$</div><div>US$</div></div></div>
+        <div class="note">🏢 非上市公司股权无公开市场价，<b>不自动抓取</b>；估值由你手动填写，可随时更新（记录估值变更历史）。</div>
+        <button class="btn" style="margin-top:12px">保 存</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 11 · 负债 -->
+  <div class="frame">
+    <div class="cap">⑪ 录入 · 负债 <span>· 添加 / 删除</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">添加负债</div><div class="ic">🗑️</div></div>
+      <div class="body">
+        <div class="field"><label>负债名称</label><div class="input"><span>💳</span><span>招商银行房贷</span></div></div>
+        <div class="field"><label>类型</label>
+          <div class="segmented sm"><div class="on">房贷</div><div>车贷</div><div>消费贷</div><div>信用卡</div><div>其他</div></div>
+        </div>
+        <div class="field"><label>当前欠款 / 剩余本金（¥）</label><div class="input"><span>180,000</span></div></div>
+        <div class="field"><label>年利率（可选）</label><div class="input"><span>4.2</span><span class="ph">%</span></div></div>
+        <div class="field"><label>月供（可选）</label><div class="input"><span class="ph">6,800</span></div></div>
+        <div class="note">💳 负债计入总览时会<b>从总资产中扣除</b>得到净值。删除：此页右上角 🗑️，或在「资产列表」左滑该条目。</div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn line" style="color:var(--up)">删除</button>
+          <button class="btn">保 存</button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 12 · 详情 -->
+  <div class="frame">
+    <div class="cap">⑫ 资产详情 <span>· 走势 · 持仓收益</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">贵州茅台</div><div class="ic">✏️</div></div>
+      <div class="body">
+        <div class="card">
+          <div class="small muted">当前市值（¥ CNY）</div>
+          <div style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums">¥ 168,000</div>
+          <div class="chgline" style="margin-top:4px"><span class="pill up">▲ +2.13%</span> <span class="up small">今日 +¥3,500</span></div>
+          <svg viewBox="0 0 300 100" width="100%" height="96" style="margin-top:8px">
+            <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#d03b3b" stop-opacity=".18"/><stop offset="1" stop-color="#d03b3b" stop-opacity="0"/>
+            </linearGradient></defs>
+            <polygon points="10,88 10,70 60,74 110,55 160,60 210,38 260,44 290,22 290,88" fill="url(#g2)"/>
+            <polyline points="10,70 60,74 110,55 160,60 210,38 260,44 290,22" fill="none" stroke="var(--up)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="card" style="padding:4px 14px">
+          <div class="row"><div class="mid"><div class="nm small">持有数量</div></div><div class="v1">100 股</div></div>
+          <div class="row"><div class="mid"><div class="nm small">成本价 / 现价</div></div><div class="v1">1,650 / 1,680</div></div>
+          <div class="row"><div class="mid"><div class="nm small">持仓收益</div></div><div class="v1 up">+¥3,000 (+1.8%)</div></div>
+          <div class="row"><div class="mid"><div class="nm small">数据来源 / 更新</div></div><div class="v2 muted">新浪 · 今日 15:05</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn ghost">✏️ 编辑</button>
+          <button class="btn line" style="color:var(--up)">🗑️ 删除</button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 13 · 提醒 -->
+  <div class="frame">
+    <div class="cap">⑬ 提醒中心 <span>· </span><em>持仓</em><span> · 新股 · 市场 · 国际</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="title">提醒</div><div class="ic">⚙️</div></div>
+      <div class="body">
+        <div class="scrollhint"></div>
+        <div class="chips" style="margin-bottom:10px;flex-wrap:nowrap;overflow:hidden"><span class="chip on">全部</span><span class="chip">持仓</span><span class="chip">新股</span><span class="chip">市场</span><span class="chip">国际</span></div>
+        <div class="card" style="padding:4px 12px">
+          <div class="alert"><div class="sev" style="background:var(--warning)"></div><div class="ac"><div class="at"><span><span class="catlabel">持仓</span>存款即将到期</span><span class="tm">提前30天</span></div><div class="ad">工行三年定期将于 2028-06-01 到期，到期本息约 ¥638,000，记得续存 / 转投。</div></div></div>
+          <div class="alert"><div class="sev" style="background:var(--primary)"></div><div class="ac"><div class="at"><span><span class="catlabel">持仓</span>贵州茅台 重大信息</span><span class="tm">今天</span></div><div class="ad">你持有的茅台披露业绩预增 +18%，并发布分红预案（每股派现 XX 元）。</div></div></div>
+          <div class="alert"><div class="sev" style="background:var(--serious)"></div><div class="ac"><div class="at"><span><span class="catlabel">持仓</span>Bitcoin 大幅波动</span><span class="tm">01:20</span></div><div class="ad">你持有的 BTC 单日 −8%，触发「持币波动 ±5%」阈值；ETH 将于近期网络升级。</div></div></div>
+          <div class="alert"><div class="sev" style="background:var(--primary)"></div><div class="ac"><div class="at"><span><span class="catlabel">新股</span>今日可申购 2 只</span><span class="tm">09:00</span></div><div class="ad">恒达科技 787xxx、瑞康股份 301xxx。别忘打新。</div></div></div>
+          <div class="alert"><div class="sev" style="background:var(--up)"></div><div class="ac"><div class="at"><span><span class="catlabel">市场</span>沪深300 单日 -3.2%</span><span class="tm">15:00</span></div><div class="ad">触发「指数单日 ±3%」阈值。你的 A股持仓今日 -1.8%。</div></div></div>
+          <div class="alert"><div class="sev" style="background:var(--serious)"></div><div class="ac"><div class="at"><span><span class="catlabel">国际</span>美联储加息 25bp</span><span class="tm">02:00</span></div><div class="ad">利率决议落地，关注美股与汇率（USD/CNY +0.6%）。</div></div></div>
+        </div>
+        <div class="note">🧠 来源：持仓提醒＝存款到期倒计时 + 持股公司公告(交易所披露:分红/停牌/业绩/重组) + 持币波动阈值与交易所/链上公告；市场＝指数/汇率阈值；宏观＝财经日历 + 快讯关键词打分（阈值可调）。</div>
+      </div>
+      <div class="nav">
+        <div><span class="ni">📊</span>总览</div>
+        <div><span class="ni">💼</span>资产</div>
+        <div class="on"><span class="ni">🔔</span>提醒</div>
+        <div><span class="ni">👤</span>我的</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 14 · 设置 -->
+  <div class="frame">
+    <div class="cap">⑭ 我的 / 设置 <span>· 用户 · 备份 · 数据源</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="title">我的</div><div class="ic"></div></div>
+      <div class="body">
+        <div class="card" style="display:flex;align-items:center;gap:12px">
+          <div style="width:46px;height:46px;border-radius:50%;background:var(--primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--primary)">A</div>
+          <div style="flex:1"><div style="font-weight:700">Alex</div><div class="ss muted small">本地账户 · 已加密</div></div>
+          <div class="chip">切换/管理用户</div>
+        </div>
+        <div class="card" style="padding:2px 14px">
+          <div class="setrow"><div class="si">💱</div><div class="sm"><div class="sn">默认计价货币</div></div><div class="small muted">¥ CNY</div><div class="chev">›</div></div>
+          <div class="setrow"><div class="si">🕘</div><div class="sm"><div class="sn">每日自动更新时间</div><div class="ss">收盘后抓取，省流量</div></div><div class="small muted">09:00</div><div class="chev">›</div></div>
+          <div class="setrow"><div class="si">🔔</div><div class="sm"><div class="sn">提醒设置</div><div class="ss">新股 / 市场 / 国际 · 阈值</div></div><div class="chev">›</div></div>
+        </div>
+        <div class="card" style="padding:2px 14px">
+          <div class="setrow"><div class="si">💾</div><div class="sm"><div class="sn">立即备份</div><div class="ss">导出为加密文件</div></div><div class="chev">›</div></div>
+          <div class="setrow"><div class="si">🔄</div><div class="sm"><div class="sn">自动备份</div><div class="ss">每周一次</div></div><div class="toggle on"></div></div>
+          <div class="setrow"><div class="si">📥</div><div class="sm"><div class="sn">恢复数据</div><div class="ss">从备份文件导入</div></div><div class="chev">›</div></div>
+        </div>
+        <div class="card" style="padding:2px 14px">
+          <div class="setrow"><div class="si">📡</div><div class="sm"><div class="sn">数据源状态</div><div class="ss"><span class="statusdot"></span>股票/加密/汇率/房价 正常</div></div><div class="small muted">15:05</div></div>
+        </div>
+      </div>
+      <div class="nav">
+        <div><span class="ni">📊</span>总览</div>
+        <div><span class="ni">💼</span>资产</div>
+        <div><span class="ni">🔔</span>提醒</div>
+        <div class="on"><span class="ni">👤</span>我的</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 15 · 编辑/删除交互 -->
+  <div class="frame">
+    <div class="cap"><em>⑮ 编辑 / 删除（通用交互）</em> <span>· 每个条目均可</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="title">我的资产</div><div class="ic">🔍</div></div>
+      <div class="body">
+        <div class="small muted" style="margin:2px 4px 10px">点按查看详情；<b>长按或左滑</b>弹出「编辑 / 删除」</div>
+        <div class="card" style="padding:8px 10px">
+          <div class="row"><div class="ico">🏠</div><div class="mid"><div class="nm">滨江一号 · 3室</div><div class="sub">南山区 · 建面 120㎡</div></div><div class="val"><div class="v1">¥1,750,000</div></div></div>
+          <div class="swiperow" style="margin:6px 0">
+            <div class="swipe-content"><div class="ico">📈</div><div class="mid"><div class="nm">贵州茅台</div><div class="sub">A股 600519 · 100股 · ← 已左滑</div></div></div>
+            <div class="swipe-actions"><div class="a-edit">✏️<span>编辑</span></div><div class="a-del">🗑️<span>删除</span></div></div>
+          </div>
+          <div class="row"><div class="ico">💰</div><div class="mid"><div class="nm">工行三年定期</div><div class="sub">年化 2.1% · 每日计息</div></div><div class="val"><div class="v1">¥600,000</div></div></div>
+        </div>
+        <div class="note">🔁 通用于房产/存款/股票/现金/ETF/公司股权/区块链/负债 —— 任意条目都可编辑与删除。</div>
+      </div>
+      <div class="overlay">
+        <div class="dialog">
+          <div class="dt">删除「贵州茅台」？</div>
+          <div class="dd">将从投资组合移除该持仓及其历史记录。删除前自动写入本地备份，可在「设置 → 恢复数据」找回。</div>
+          <div class="dbtns"><button class="btn line">取消</button><button class="btn" style="background:var(--up)">删除</button></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 16 · 编辑表单 -->
+  <div class="frame">
+    <div class="cap"><em>⑯ 编辑条目（表单预填）</em> <span>· 添加/编辑共用</span></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">📶 🔋 100%</span></div>
+      <div class="appbar"><div class="ic">←</div><div class="title">编辑持仓</div><div class="ic">🗑️</div></div>
+      <div class="body">
+        <div class="field"><label>市场</label><div class="segmented"><div class="on">A股</div><div>港股</div><div>美股</div></div></div>
+        <div class="field"><label>股票代码 / 名称</label><div class="input"><span>🔍</span><span>600519 &nbsp;贵州茅台</span></div></div>
+        <div class="field"><label>持有数量（股）</label><div class="input"><span>120</span><span class="ph" style="margin-left:auto;font-size:11px">原 100 → 改为 120</span></div></div>
+        <div class="field"><label>成本价</label><div class="input"><span>1,650.00</span></div></div>
+        <div class="field"><label>计价货币</label><div class="segmented"><div class="on">¥ CNY</div><div>HK$</div><div>US$</div></div></div>
+        <div class="note">✏️ 添加与编辑<b>共用同一表单</b>：进入时字段自动预填当前值；改完点「保存修改」。删除见右上角 🗑️（含二次确认）。</div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn line" style="color:var(--up)">🗑️ 删除</button>
+          <button class="btn">保存修改</button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

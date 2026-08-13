@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 白色上升折线（象征资产增长），置于自适应图标安全区内 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34,70 L48,56 L60,64 L76,44" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M76,44 l-12,-1 l6,-8 z" />
+</vector>
