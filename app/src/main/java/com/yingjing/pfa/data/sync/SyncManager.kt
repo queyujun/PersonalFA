@@ -1,5 +1,11 @@
 package com.yingjing.pfa.data.sync
 
+import com.yingjing.pfa.data.remote.MarketIndexes
+import com.yingjing.pfa.domain.alert.AlertNotifier
+import com.yingjing.pfa.domain.alert.AlertRules
+import com.yingjing.pfa.domain.alert.PriceChange
+import com.yingjing.pfa.data.remote.MarketIndexRemote
+import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HoldingRepository
 import com.yingjing.pfa.domain.repository.QuoteRepository
@@ -10,7 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 每日同步：刷新汇率 + 为所有用户的持仓抓取现价并写回 + 记录当日净值快照。
+ * 每日同步：刷新汇率 + 抓取现价写回 + 记录净值快照 + 生成持仓提醒（到期 / 大幅波动）并通知。
  *
  * 省流量：只抓实际持仓的标的，批量合并；失败静默降级（保留旧值）。
  */
@@ -20,24 +26,34 @@ class SyncManager @Inject constructor(
     private val holdingRepository: HoldingRepository,
     private val quoteRepository: QuoteRepository,
     private val fxRepository: FxRepository,
+    private val marketIndexRemote: MarketIndexRemote,
     private val snapshotRepository: SnapshotRepository,
+    private val alertRepository: AlertRepository,
+    private val alertNotifier: AlertNotifier,
     private val syncStateStore: SyncStateStore,
 ) {
-    /** 执行一次同步；返回是否成功。 */
     suspend fun sync(): Boolean = runCatching {
         fxRepository.refresh()
         val rates = fxRepository.current()
+        val indexChanges = runCatching { marketIndexRemote.fetch() }.getOrDefault(emptyMap())
 
         userRepository.listUsers().forEach { user ->
             val holdings = holdingRepository.observeHoldingsSnapshot(user.id)
             val prices = quoteRepository.fetchPrices(holdings)
+
+            val priceChanges = mutableListOf<PriceChange>()
             val updated = holdings.map { holding ->
-                prices[holding.id]?.let { price ->
-                    val next = holding.copy(currentPrice = price)
+                val newPrice = prices[holding.id]
+                if (newPrice != null) {
+                    holding.currentPrice?.let { old -> priceChanges += PriceChange(holding, old, newPrice) }
+                    val next = holding.copy(currentPrice = newPrice)
                     holdingRepository.updateHolding(next)
                     next
-                } ?: holding
+                } else {
+                    holding
+                }
             }
+
             val now = nowProvider()
             val summary = SummarizePortfolio(updated, rates, user.defaultCurrency, now)
             snapshotRepository.record(
@@ -48,6 +64,13 @@ class SyncManager @Inject constructor(
                 netWorth = summary.netWorth,
                 nowMs = now,
             )
+
+            val alerts = AlertRules.depositMaturity(updated, now) +
+                AlertRules.priceMoves(priceChanges, now) +
+                AlertRules.marketMoves(user.id, indexChanges, MarketIndexes.NAMES, now)
+            alerts.forEach { alert ->
+                if (alertRepository.insertIfNew(alert)) alertNotifier.notify(alert)
+            }
         }
         syncStateStore.setLastSync(nowProvider())
         true

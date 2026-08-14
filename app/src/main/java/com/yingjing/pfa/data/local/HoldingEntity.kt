@@ -24,6 +24,7 @@ data class HoldingEntity(
     val areaSqm: Double?,
     val annualRatePercent: Double?,
     val startDateEpochMs: Long?,
+    val maturityDateEpochMs: Long?,
     val depositType: String?,
     val sharePercent: Double?,
     val liabilityType: String?,

@@ -94,6 +94,7 @@ fun HoldingFormScreen(
                 AssetType.DEPOSIT -> {
                     Field("本金金额", s.manualValue, KeyboardType.Number) { v -> viewModel.onField { copy(manualValue = v) } }
                     Field("年化利率 %", s.annualRate, KeyboardType.Number) { v -> viewModel.onField { copy(annualRate = v) } }
+                    Field("到期日 yyyy-MM-dd（可选，用于到期提醒）", s.maturityDate) { v -> viewModel.onField { copy(maturityDate = v) } }
                     Field("存款类型（可选，如定期）", s.depositType) { v -> viewModel.onField { copy(depositType = v) } }
                 }
                 AssetType.EQUITY -> {

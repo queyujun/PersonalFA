@@ -3,6 +3,7 @@ package com.yingjing.pfa.di
 import android.content.Context
 import androidx.room.Room
 import com.yingjing.pfa.core.security.DatabaseKeyProvider
+import com.yingjing.pfa.data.local.AlertDao
 import com.yingjing.pfa.data.local.AppDatabase
 import com.yingjing.pfa.data.local.AppMetaDao
 import com.yingjing.pfa.data.local.HoldingDao
@@ -47,4 +48,7 @@ object DatabaseModule {
     @Provides
     fun provideNetWorthSnapshotDao(database: AppDatabase): NetWorthSnapshotDao =
         database.netWorthSnapshotDao()
+
+    @Provides
+    fun provideAlertDao(database: AppDatabase): AlertDao = database.alertDao()
 }

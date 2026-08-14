@@ -24,6 +24,7 @@ data class Holding(
     // 存款
     val annualRatePercent: Double? = null,
     val startDateEpochMs: Long? = null,
+    val maturityDateEpochMs: Long? = null,
     val depositType: String? = null,
     // 公司股权
     val sharePercent: Double? = null,

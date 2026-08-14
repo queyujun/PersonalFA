@@ -9,6 +9,9 @@ import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.FxRates
 import com.yingjing.pfa.domain.model.Holding
 import com.yingjing.pfa.domain.model.User
+import com.yingjing.pfa.domain.alert.AlertNotifier
+import com.yingjing.pfa.domain.model.Alert
+import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.QuoteRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
@@ -64,6 +67,22 @@ class SyncManagerTest {
         }
     }
 
+    private val insertedAlerts = mutableListOf<Alert>()
+    private val alertRepo = object : AlertRepository {
+        override fun observe(userId: Long) = flowOf(emptyList<Alert>())
+        override fun observeUnreadCount(userId: Long) = flowOf(0)
+        override suspend fun insertIfNew(alert: Alert): Boolean {
+            insertedAlerts += alert
+            return true
+        }
+        override suspend fun markRead(id: Long) {}
+        override suspend fun markAllRead(userId: Long) {}
+    }
+    private val notified = mutableListOf<Alert>()
+    private val notifier = AlertNotifier { notified += it }
+
+    private val marketIndexRemote = com.yingjing.pfa.data.remote.MarketIndexRemote { emptyMap() }
+
     @Before
     fun setup() {
         syncStateStore = SyncStateStore(ApplicationProvider.getApplicationContext<Context>())
@@ -72,12 +91,12 @@ class SyncManagerTest {
     @Test
     fun sync_refreshesFx_andWritesPrices() = runTest {
         val id = holdingRepo.addHolding(
-            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 100.0),
+            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 100.0, currentPrice = 1000.0),
         )
         val quoteRepo = object : QuoteRepository {
             override suspend fun fetchPrices(holdings: List<Holding>) = mapOf(id to 1354.5)
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, snapshotRepo, syncStateStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, snapshotRepo, alertRepo, notifier, syncStateStore)
 
         val ok = manager.sync()
 
@@ -85,6 +104,9 @@ class SyncManagerTest {
         assertTrue(fxRefreshed)
         assertEquals(1354.5, holdingRepo.getHolding(id)!!.currentPrice!!, 0.001)
         assertEquals(1, recorded.size) // 记录了一条净值快照
+        // 1000 -> 1354.5 约 +35%，超过 ±7% → 生成并通知一条提醒
+        assertEquals(1, insertedAlerts.size)
+        assertEquals(1, notified.size)
     }
 
     @Test
@@ -93,7 +115,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>): Map<Long, Double> =
                 throw RuntimeException("network")
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, snapshotRepo, syncStateStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, snapshotRepo, alertRepo, notifier, syncStateStore)
         // 加一个持仓触发抓取路径
         holdingRepo.addHolding(
             Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),

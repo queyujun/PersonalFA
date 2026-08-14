@@ -3,7 +3,9 @@ package com.yingjing.pfa.di
 import com.yingjing.pfa.data.remote.CoinGeckoRemote
 import com.yingjing.pfa.data.remote.CryptoQuoteRemote
 import com.yingjing.pfa.data.remote.FxRemote
+import com.yingjing.pfa.data.remote.MarketIndexRemote
 import com.yingjing.pfa.data.remote.SinaFxRemote
+import com.yingjing.pfa.data.remote.SinaMarketIndexRemote
 import com.yingjing.pfa.data.remote.SinaStockRemote
 import com.yingjing.pfa.data.remote.StockQuoteRemote
 import dagger.Binds
@@ -26,4 +28,8 @@ abstract class RemoteModule {
     @Binds
     @Singleton
     abstract fun bindFxRemote(impl: SinaFxRemote): FxRemote
+
+    @Binds
+    @Singleton
+    abstract fun bindMarketIndexRemote(impl: SinaMarketIndexRemote): MarketIndexRemote
 }
