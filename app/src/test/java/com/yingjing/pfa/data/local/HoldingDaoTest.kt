@@ -36,7 +36,7 @@ class HoldingDaoTest {
         userId = userId, type = "A_SHARE", name = name, currency = "CNY",
         quantity = 100.0, costPrice = 1650.0, currentPrice = null, symbol = "600519",
         manualValue = null, city = null, areaSqm = null, annualRatePercent = null,
-        startDateEpochMs = null, depositType = null, sharePercent = null,
+        startDateEpochMs = null, maturityDateEpochMs = null, depositType = null, sharePercent = null,
         liabilityType = null, monthlyPayment = null, createdAt = 1L, updatedAt = 1L,
     )
 

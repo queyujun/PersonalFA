@@ -1,5 +1,7 @@
 package com.yingjing.pfa.di
 
+import com.yingjing.pfa.data.notification.AndroidAlertNotifier
+import com.yingjing.pfa.data.repository.AlertRepositoryImpl
 import com.yingjing.pfa.data.repository.FxRepositoryImpl
 import com.yingjing.pfa.data.repository.HoldingRepositoryImpl
 import com.yingjing.pfa.data.repository.QuoteRepositoryImpl
@@ -7,6 +9,8 @@ import com.yingjing.pfa.data.repository.SnapshotRepositoryImpl
 import com.yingjing.pfa.data.repository.UserRepositoryImpl
 import com.yingjing.pfa.data.session.DataStoreSessionManager
 import com.yingjing.pfa.data.session.SessionManager
+import com.yingjing.pfa.domain.alert.AlertNotifier
+import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HoldingRepository
 import com.yingjing.pfa.domain.repository.QuoteRepository
@@ -44,4 +48,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSnapshotRepository(impl: SnapshotRepositoryImpl): SnapshotRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAlertRepository(impl: AlertRepositoryImpl): AlertRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAlertNotifier(impl: AndroidAlertNotifier): AlertNotifier
 }

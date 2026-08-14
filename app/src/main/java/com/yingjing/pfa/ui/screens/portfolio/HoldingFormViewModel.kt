@@ -34,6 +34,7 @@ data class HoldingFormState(
     val areaSqm: String = "",
     val annualRate: String = "",
     val depositType: String = "",
+    val maturityDate: String = "",
     val sharePercent: String = "",
     val liabilityType: String = "",
     val monthlyPayment: String = "",
@@ -113,6 +114,7 @@ class HoldingFormViewModel @Inject constructor(
             areaSqm = s.areaSqm.toDoubleOrNull(),
             annualRatePercent = s.annualRate.toDoubleOrNull(),
             startDateEpochMs = startDate,
+            maturityDateEpochMs = parseDate(s.maturityDate),
             depositType = s.depositType.ifBlank { null },
             sharePercent = s.sharePercent.toDoubleOrNull(),
             liabilityType = s.liabilityType.ifBlank { null },
@@ -135,6 +137,7 @@ class HoldingFormViewModel @Inject constructor(
         areaSqm = areaSqm.toEditText(),
         annualRate = annualRatePercent.toEditText(),
         depositType = depositType ?: "",
+        maturityDate = maturityDateEpochMs?.let { formatDate(it) } ?: "",
         sharePercent = sharePercent.toEditText(),
         liabilityType = liabilityType ?: "",
         monthlyPayment = monthlyPayment.toEditText(),
@@ -144,4 +147,15 @@ class HoldingFormViewModel @Inject constructor(
         this ?: return ""
         return if (this % 1.0 == 0.0) toLong().toString() else toString()
     }
+
+    private fun parseDate(text: String): Long? {
+        if (text.isBlank()) return null
+        return runCatching {
+            java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+                .parse(text.trim())?.time
+        }.getOrNull()
+    }
+
+    private fun formatDate(epochMs: Long): String =
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA).format(java.util.Date(epochMs))
 }
