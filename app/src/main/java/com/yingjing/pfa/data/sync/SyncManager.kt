@@ -4,6 +4,7 @@ import com.yingjing.pfa.data.remote.MarketIndexes
 import com.yingjing.pfa.domain.alert.AlertNotifier
 import com.yingjing.pfa.domain.alert.AlertRules
 import com.yingjing.pfa.domain.alert.PriceChange
+import com.yingjing.pfa.data.remote.IpoRemote
 import com.yingjing.pfa.data.remote.MarketIndexRemote
 import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
@@ -27,6 +28,7 @@ class SyncManager @Inject constructor(
     private val quoteRepository: QuoteRepository,
     private val fxRepository: FxRepository,
     private val marketIndexRemote: MarketIndexRemote,
+    private val ipoRemote: IpoRemote,
     private val snapshotRepository: SnapshotRepository,
     private val alertRepository: AlertRepository,
     private val alertNotifier: AlertNotifier,
@@ -36,6 +38,9 @@ class SyncManager @Inject constructor(
         fxRepository.refresh()
         val rates = fxRepository.current()
         val indexChanges = runCatching { marketIndexRemote.fetch() }.getOrDefault(emptyMap())
+        val ipos = runCatching { ipoRemote.fetch() }.getOrDefault(emptyList())
+        val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+            .format(java.util.Date(nowProvider()))
 
         userRepository.listUsers().forEach { user ->
             val holdings = holdingRepository.observeHoldingsSnapshot(user.id)
@@ -67,7 +72,8 @@ class SyncManager @Inject constructor(
 
             val alerts = AlertRules.depositMaturity(updated, now) +
                 AlertRules.priceMoves(priceChanges, now) +
-                AlertRules.marketMoves(user.id, indexChanges, MarketIndexes.NAMES, now)
+                AlertRules.marketMoves(user.id, indexChanges, MarketIndexes.NAMES, now) +
+                AlertRules.ipoAlerts(user.id, ipos, todayDate, now)
             alerts.forEach { alert ->
                 if (alertRepository.insertIfNew(alert)) alertNotifier.notify(alert)
             }
