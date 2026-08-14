@@ -82,6 +82,7 @@ class SyncManagerTest {
     private val notifier = AlertNotifier { notified += it }
 
     private val marketIndexRemote = com.yingjing.pfa.data.remote.MarketIndexRemote { emptyMap() }
+    private val ipoRemote = com.yingjing.pfa.data.remote.IpoRemote { emptyList() }
 
     @Before
     fun setup() {
@@ -96,7 +97,7 @@ class SyncManagerTest {
         val quoteRepo = object : QuoteRepository {
             override suspend fun fetchPrices(holdings: List<Holding>) = mapOf(id to 1354.5)
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, snapshotRepo, alertRepo, notifier, syncStateStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore)
 
         val ok = manager.sync()
 
@@ -115,7 +116,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>): Map<Long, Double> =
                 throw RuntimeException("network")
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, snapshotRepo, alertRepo, notifier, syncStateStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore)
         // 加一个持仓触发抓取路径
         holdingRepo.addHolding(
             Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),

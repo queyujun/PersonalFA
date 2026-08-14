@@ -104,4 +104,27 @@ object AlertRules {
             )
         }
     }
+
+    /** 今日可申购新股。todayDate 为 yyyy-MM-dd。 */
+    fun ipoAlerts(
+        userId: Long,
+        ipos: List<IpoItem>,
+        todayDate: String,
+        nowMs: Long,
+    ): List<Alert> {
+        val todays = ipos.filter { it.applyDate == todayDate }
+        if (todays.isEmpty()) return emptyList()
+        val list = todays.joinToString("、") { "${it.name}（申购代码 ${it.applyCode}）" }
+        return listOf(
+            Alert(
+                userId = userId,
+                category = AlertCategory.IPO,
+                severity = AlertSeverity.INFO,
+                title = "今日可申购新股 ${todays.size} 只",
+                body = "今日可打新：$list。别忘申购。",
+                dedupKey = "ipo_$todayDate",
+                createdAtEpochMs = nowMs,
+            ),
+        )
+    }
 }

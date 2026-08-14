@@ -54,4 +54,18 @@ class RemoteDataSourceTest {
         val result = runBlocking { remote.fetch(emptyList()) }
         assertEquals(0, result.size)
     }
+
+    @Test
+    fun eastmoneyIpoRemote_parsesApplyCalendar() {
+        server.enqueue(
+            MockResponse().setBody(
+                """{"result":{"data":[{"SECURITY_NAME":"马矿股份","APPLY_CODE":"780123","APPLY_DATE":"2026-08-21 00:00:00"}]},"success":true}""",
+            ),
+        )
+        val remote = EastmoneyIpoRemote(client).apply { endpoint = server.url("/get").toString() }
+        val result = runBlocking { remote.fetch() }
+        assertEquals(1, result.size)
+        assertEquals("马矿股份", result[0].name)
+        assertEquals("2026-08-21", result[0].applyDate)
+    }
 }
