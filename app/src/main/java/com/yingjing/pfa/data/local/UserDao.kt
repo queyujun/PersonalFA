@@ -9,6 +9,12 @@ interface UserDao {
     @Insert
     suspend fun insert(user: UserEntity): Long
 
+    @Insert
+    suspend fun insertAll(users: List<UserEntity>)
+
+    @Query("DELETE FROM users")
+    suspend fun deleteAll()
+
     @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
     suspend fun findByUsername(username: String): UserEntity?
 
