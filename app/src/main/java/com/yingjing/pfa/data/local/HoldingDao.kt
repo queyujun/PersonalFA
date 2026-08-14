@@ -25,4 +25,13 @@ interface HoldingDao {
 
     @Query("SELECT * FROM holdings WHERE userId = :userId ORDER BY createdAt DESC")
     suspend fun getByUser(userId: Long): List<HoldingEntity>
+
+    @Query("SELECT * FROM holdings")
+    suspend fun getAllForBackup(): List<HoldingEntity>
+
+    @Insert
+    suspend fun insertAll(holdings: List<HoldingEntity>)
+
+    @Query("DELETE FROM holdings")
+    suspend fun deleteAll()
 }

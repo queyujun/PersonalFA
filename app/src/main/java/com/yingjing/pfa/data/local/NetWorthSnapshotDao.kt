@@ -17,4 +17,13 @@ interface NetWorthSnapshotDao {
 
     @Query("SELECT * FROM net_worth_snapshots WHERE userId = :userId ORDER BY dayEpochDay ASC")
     suspend fun getByUser(userId: Long): List<NetWorthSnapshotEntity>
+
+    @Query("SELECT * FROM net_worth_snapshots")
+    suspend fun getAllForBackup(): List<NetWorthSnapshotEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(snapshots: List<NetWorthSnapshotEntity>)
+
+    @Query("DELETE FROM net_worth_snapshots")
+    suspend fun deleteAll()
 }

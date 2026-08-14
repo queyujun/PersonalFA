@@ -23,4 +23,13 @@ interface AlertDao {
 
     @Query("UPDATE alerts SET read = 1 WHERE userId = :userId")
     suspend fun markAllRead(userId: Long)
+
+    @Query("SELECT * FROM alerts")
+    suspend fun getAllForBackup(): List<AlertEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(alerts: List<AlertEntity>)
+
+    @Query("DELETE FROM alerts")
+    suspend fun deleteAll()
 }
