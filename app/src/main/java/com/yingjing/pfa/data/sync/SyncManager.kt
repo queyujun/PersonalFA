@@ -67,6 +67,7 @@ class SyncManager @Inject constructor(
                 totalAssets = summary.totalAssets,
                 totalLiabilities = summary.totalLiabilities,
                 netWorth = summary.netWorth,
+                categoryAmounts = summary.byCategory.associate { it.category.name to it.amount },
                 nowMs = now,
             )
 

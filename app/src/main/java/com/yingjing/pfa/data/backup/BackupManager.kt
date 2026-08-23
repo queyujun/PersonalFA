@@ -3,6 +3,8 @@ package com.yingjing.pfa.data.backup
 import com.yingjing.pfa.core.backup.BackupCrypto
 import com.yingjing.pfa.data.local.AlertDao
 import com.yingjing.pfa.data.local.AlertEntity
+import com.yingjing.pfa.data.local.CategorySnapshotDao
+import com.yingjing.pfa.data.local.CategorySnapshotEntity
 import com.yingjing.pfa.data.local.HoldingDao
 import com.yingjing.pfa.data.local.HoldingEntity
 import com.yingjing.pfa.data.local.NetWorthSnapshotDao
@@ -20,6 +22,7 @@ class BackupManager @Inject constructor(
     private val userDao: UserDao,
     private val holdingDao: HoldingDao,
     private val snapshotDao: NetWorthSnapshotDao,
+    private val categorySnapshotDao: CategorySnapshotDao,
     private val alertDao: AlertDao,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
@@ -30,6 +33,7 @@ class BackupManager @Inject constructor(
             users = userDao.getAll().map { it.toBackup() },
             holdings = holdingDao.getAllForBackup().map { it.toBackup() },
             snapshots = snapshotDao.getAllForBackup().map { it.toBackup() },
+            categorySnapshots = categorySnapshotDao.getAllForBackup().map { it.toBackup() },
             alerts = alertDao.getAllForBackup().map { it.toBackup() },
         )
         return BackupCrypto.encrypt(json.encodeToString(data).toByteArray(Charsets.UTF_8), passphrase)
@@ -42,6 +46,7 @@ class BackupManager @Inject constructor(
             .getOrNull() ?: return false
 
         alertDao.deleteAll()
+        categorySnapshotDao.deleteAll()
         snapshotDao.deleteAll()
         holdingDao.deleteAll()
         userDao.deleteAll()
@@ -49,6 +54,7 @@ class BackupManager @Inject constructor(
         userDao.insertAll(data.users.map { it.toEntity() })
         holdingDao.insertAll(data.holdings.map { it.toEntity() })
         snapshotDao.insertAll(data.snapshots.map { it.toEntity() })
+        categorySnapshotDao.insertAll(data.categorySnapshots.map { it.toEntity() })
         alertDao.insertAll(data.alerts.map { it.toEntity() })
         return true
     }
@@ -77,6 +83,12 @@ private fun NetWorthSnapshotEntity.toBackup() =
 
 private fun BackupSnapshot.toEntity() =
     NetWorthSnapshotEntity(id, userId, dayEpochDay, currency, totalAssets, totalLiabilities, netWorth, createdAt)
+
+private fun CategorySnapshotEntity.toBackup() =
+    BackupCategorySnapshot(id, userId, dayEpochDay, category, amount)
+
+private fun BackupCategorySnapshot.toEntity() =
+    CategorySnapshotEntity(id, userId, dayEpochDay, category, amount)
 
 private fun AlertEntity.toBackup() =
     BackupAlert(id, userId, category, severity, title, body, refHoldingId, dedupKey, createdAt, read)

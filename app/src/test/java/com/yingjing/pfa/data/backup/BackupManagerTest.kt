@@ -27,7 +27,7 @@ class BackupManagerTest {
             ApplicationProvider.getApplicationContext(),
             AppDatabase::class.java,
         ).allowMainThreadQueries().build()
-        manager = BackupManager(db.userDao(), db.holdingDao(), db.netWorthSnapshotDao(), db.alertDao())
+        manager = BackupManager(db.userDao(), db.holdingDao(), db.netWorthSnapshotDao(), db.categorySnapshotDao(), db.alertDao())
     }
 
     @After

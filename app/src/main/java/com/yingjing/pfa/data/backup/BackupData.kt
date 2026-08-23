@@ -9,7 +9,17 @@ data class BackupData(
     val users: List<BackupUser> = emptyList(),
     val holdings: List<BackupHolding> = emptyList(),
     val snapshots: List<BackupSnapshot> = emptyList(),
+    val categorySnapshots: List<BackupCategorySnapshot> = emptyList(),
     val alerts: List<BackupAlert> = emptyList(),
+)
+
+@Serializable
+data class BackupCategorySnapshot(
+    val id: Long,
+    val userId: Long,
+    val dayEpochDay: Long,
+    val category: String,
+    val amount: Double,
 )
 
 @Serializable

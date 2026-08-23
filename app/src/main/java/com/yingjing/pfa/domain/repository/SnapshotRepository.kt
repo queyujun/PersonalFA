@@ -1,20 +1,24 @@
 package com.yingjing.pfa.domain.repository
 
 import com.yingjing.pfa.domain.model.Currency
+import com.yingjing.pfa.domain.model.CategoryPoint
 import com.yingjing.pfa.domain.model.NetWorthPoint
 import kotlinx.coroutines.flow.Flow
 
-/** 每日净值快照仓库。 */
+/** 每日净值 + 分类金额快照仓库。 */
 interface SnapshotRepository {
     fun observe(userId: Long): Flow<List<NetWorthPoint>>
 
-    /** 记录（同一天覆盖）当日净值快照。 */
+    fun observeCategories(userId: Long): Flow<List<CategoryPoint>>
+
+    /** 记录（同一天覆盖）当日净值与各类别金额（categoryAmounts: 类别名 → 金额）。 */
     suspend fun record(
         userId: Long,
         currency: Currency,
         totalAssets: Double,
         totalLiabilities: Double,
         netWorth: Double,
+        categoryAmounts: Map<String, Double>,
         nowMs: Long,
     )
 
