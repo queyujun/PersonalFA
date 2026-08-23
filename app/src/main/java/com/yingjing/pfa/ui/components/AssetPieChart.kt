@@ -17,14 +17,15 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.yingjing.pfa.ui.format.MoneyFormat
 import kotlin.math.roundToInt
 
 /** 饼图切片。 */
 data class PieSlice(val label: String, val amount: Double, val color: Color)
 
-/** 资产分布环形图（Canvas 自绘）+ 右侧图例（名称 + 百分比，识别不依赖颜色）。 */
+/** 资产分布环形图（Canvas 自绘）+ 右侧图例（名称 + 金额万元 + 百分比，识别不依赖颜色）。 */
 @Composable
-fun AssetPieChart(slices: List<PieSlice>, modifier: Modifier = Modifier) {
+fun AssetPieChart(slices: List<PieSlice>, currencySymbol: String, modifier: Modifier = Modifier) {
     val total = slices.sumOf { it.amount }
     if (total <= 0.0 || slices.isEmpty()) return
 
@@ -65,7 +66,10 @@ fun AssetPieChart(slices: List<PieSlice>, modifier: Modifier = Modifier) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
-                    Text("$percent%", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        "$currencySymbol${MoneyFormat.wan(slice.amount)}万 · $percent%",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
             }
         }

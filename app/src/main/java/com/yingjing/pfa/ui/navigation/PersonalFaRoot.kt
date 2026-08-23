@@ -22,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.yingjing.pfa.ui.screens.alerts.AlertsScreen
 import com.yingjing.pfa.ui.screens.overview.OverviewScreen
+import com.yingjing.pfa.ui.screens.overview.TrendDetailScreen
 import com.yingjing.pfa.ui.screens.portfolio.AddTypePickerScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingDetailScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingFormScreen
@@ -31,6 +32,7 @@ import com.yingjing.pfa.ui.screens.settings.SettingsScreen
 private const val ROUTE_ADD_TYPE = "add_type"
 private const val ROUTE_FORM = "holding_form/{type}?holdingId={holdingId}"
 private const val ROUTE_DETAIL = "holding_detail/{id}"
+private const val ROUTE_TREND = "trend_detail"
 
 /** 应用根：底部导航 + 各主区域的 NavHost；资产的添加/编辑/详情作为独立路由。 */
 @Composable
@@ -76,12 +78,18 @@ fun PersonalFaRoot() {
             startDestination = TopDestination.Overview.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(TopDestination.Overview.route) { OverviewScreen() }
+            composable(TopDestination.Overview.route) {
+                OverviewScreen(onOpenTrend = { navController.navigate(ROUTE_TREND) })
+            }
             composable(TopDestination.Portfolio.route) {
                 PortfolioScreen(onOpenHolding = { id -> navController.navigate("holding_detail/$id") })
             }
             composable(TopDestination.Alerts.route) { AlertsScreen() }
             composable(TopDestination.Settings.route) { SettingsScreen() }
+
+            composable(ROUTE_TREND) {
+                TrendDetailScreen(onBack = { navController.popBackStack() })
+            }
 
             composable(ROUTE_ADD_TYPE) {
                 AddTypePickerScreen(

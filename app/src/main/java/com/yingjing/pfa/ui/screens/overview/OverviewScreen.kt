@@ -1,6 +1,7 @@
 package com.yingjing.pfa.ui.screens.overview
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +41,10 @@ import com.yingjing.pfa.ui.theme.Cat6
 import com.yingjing.pfa.ui.theme.Cat7
 
 @Composable
-fun OverviewScreen(viewModel: OverviewViewModel = hiltViewModel()) {
+fun OverviewScreen(
+    onOpenTrend: () -> Unit = {},
+    viewModel: OverviewViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsState()
     val summary = state.summary
 
@@ -55,7 +60,7 @@ fun OverviewScreen(viewModel: OverviewViewModel = hiltViewModel()) {
         NetWorthCard(summary)
 
         Spacer(Modifier.height(12.dp))
-        TrendCard(state.trend)
+        TrendCard(state.trend, onOpenTrend)
 
         if (summary != null) {
             val slices = summary.byCategory
@@ -67,7 +72,11 @@ fun OverviewScreen(viewModel: OverviewViewModel = hiltViewModel()) {
                     Column(Modifier.padding(16.dp)) {
                         Text("资产分布", style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(10.dp))
-                        AssetPieChart(slices, modifier = Modifier.fillMaxWidth())
+                        AssetPieChart(
+                            slices = slices,
+                            currencySymbol = summary.displayCurrency.symbol,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
             }
@@ -117,10 +126,17 @@ private fun NetWorthCard(summary: PortfolioSummary?) {
 }
 
 @Composable
-private fun TrendCard(trend: List<Double>) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun TrendCard(trend: List<Double>, onOpenTrend: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onOpenTrend() }) {
         Column(Modifier.padding(16.dp)) {
-            Text("净值走势", style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("净值走势", style = MaterialTheme.typography.titleMedium)
+                Text("详情 ›", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+            }
             Spacer(Modifier.height(10.dp))
             if (trend.size >= 2) {
                 NetWorthTrendChart(

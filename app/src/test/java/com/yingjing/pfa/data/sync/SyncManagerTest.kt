@@ -55,12 +55,15 @@ class SyncManagerTest {
     private val snapshotRepo = object : SnapshotRepository {
         override fun observe(userId: Long) =
             flowOf(emptyList<com.yingjing.pfa.domain.model.NetWorthPoint>())
+        override fun observeCategories(userId: Long) =
+            flowOf(emptyList<com.yingjing.pfa.domain.model.CategoryPoint>())
         override suspend fun record(
             userId: Long,
             currency: Currency,
             totalAssets: Double,
             totalLiabilities: Double,
             netWorth: Double,
+            categoryAmounts: Map<String, Double>,
             nowMs: Long,
         ) {
             recorded += netWorth

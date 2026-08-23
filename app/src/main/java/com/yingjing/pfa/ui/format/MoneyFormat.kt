@@ -19,4 +19,7 @@ object MoneyFormat {
         val sign = if (amount > 0) "+" else if (amount < 0) "-" else ""
         return "$sign${currency.symbol}${formatter.format(abs(amount))}"
     }
+
+    /** 以「万」为单位（如 1,750,000 → 175）。返回不含币种符号的数字文本。 */
+    fun wan(amount: Double): String = DecimalFormat("#,##0.#").format(amount / 10_000.0)
 }
