@@ -31,7 +31,7 @@ import com.yingjing.pfa.ui.format.MoneyFormat
  * 绘制要点：
  * - 边距用 dp/sp（密度、字体缩放无关）；底部留白按实测标签高度动态计算，避免横轴日期被裁。
  * - 横/纵网格均为虚线；X 轴日期标签水平居中并 clamp，防止首尾标签越界。
- * - 折线裁剪到绘图区，缩放/平移时不溢出到坐标轴与标签上。
+ * - 折线裁剪到绘图区；仅单日数据的「孤立点」补画圆点，避免整条序列不可见。
  */
 @Composable
 fun MultiSeriesTrendChart(
@@ -40,7 +40,7 @@ fun MultiSeriesTrendChart(
     modifier: Modifier = Modifier,
 ) {
     val measurer = rememberTextMeasurer(cacheSize = 24)
-    val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+    val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val axisLabelStyle = remember(labelColor) { TextStyle(fontSize = 9.sp, color = labelColor) }
 
@@ -88,14 +88,16 @@ fun MultiSeriesTrendChart(
         fun yOf(v: Double) = topPad + (1f - ((v - minV) / range).toFloat()) * plotH
         fun xOf(i: Int) = leftPad + clampedOffset + i * spacing
 
-        val dash = PathEffect.dashPathEffect(floatArrayOf(gap, gap), 0f)
+        val gridStroke = 1.dp.toPx()
+        val dashOn = 4.dp.toPx()
+        val dash = PathEffect.dashPathEffect(floatArrayOf(dashOn, dashOn), 0f)
 
         // 横向网格（虚线）+ Y 轴（万）标签，标签垂直居中于网格线
         val gridLines = 4
         for (g in 0..gridLines) {
             val v = minV + range * g / gridLines
             val y = yOf(v)
-            drawLine(gridColor, Offset(leftPad, y), Offset(size.width - rightPad, y), 1f, pathEffect = dash)
+            drawLine(gridColor, Offset(leftPad, y), Offset(size.width - rightPad, y), gridStroke, pathEffect = dash)
             val ly = (y - labelH / 2f).coerceIn(0f, size.height - labelH)
             drawText(measurer, MoneyFormat.wan(v), topLeft = Offset(2f, ly), style = axisLabelStyle)
         }
@@ -107,21 +109,26 @@ fun MultiSeriesTrendChart(
         xIndices.forEach { i ->
             val x = xOf(i)
             if (x < leftPad - 1f || x > size.width - rightPad + 1f) return@forEach
-            drawLine(gridColor, Offset(x, topPad), Offset(x, plotBottom), 1f, pathEffect = dash)
+            drawLine(gridColor, Offset(x, topPad), Offset(x, plotBottom), gridStroke, pathEffect = dash)
             val layout = measurer.measure(data.bucketLabels[i], axisLabelStyle)
             val tx = (x - layout.size.width / 2f).coerceIn(0f, size.width - layout.size.width)
             drawText(layout, topLeft = Offset(tx, plotBottom + gap))
         }
 
         // 各序列折线（裁剪到绘图区，避免缩放/平移时溢出到坐标轴与标签）
+        val dotRadius = 3.dp.toPx()
         clipRect(left = leftPad, top = topPad, right = size.width - rightPad, bottom = plotBottom) {
             data.series.forEachIndexed { seriesIndex, series ->
                 val color = colors.getOrElse(seriesIndex) { Color.Gray }
+                val vals = series.values
                 var prev: Offset? = null
-                series.values.forEachIndexed { i, value ->
+                vals.forEachIndexed { i, value ->
                     if (value == null) { prev = null; return@forEachIndexed }
                     val point = Offset(xOf(i), yOf(value))
                     prev?.let { drawLine(color, it, point, 3f, cap = StrokeCap.Round) }
+                    // 孤立点（前后皆无值，如某分类仅单日数据）补画圆点，避免整条序列不可见
+                    val isolated = (i == 0 || vals[i - 1] == null) && (i == vals.lastIndex || vals[i + 1] == null)
+                    if (isolated) drawCircle(color, radius = dotRadius, center = point)
                     prev = point
                 }
             }
