@@ -3,12 +3,16 @@ package com.yingjing.pfa.ui.screens.portfolio
 import app.cash.turbine.test
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
+import com.yingjing.pfa.domain.model.FxRates
 import com.yingjing.pfa.domain.model.Holding
+import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.usecase.ObserveHoldingsUseCase
 import com.yingjing.pfa.fakes.FakeHoldingRepository
 import com.yingjing.pfa.fakes.FakeSessionManager
+import com.yingjing.pfa.fakes.FakeUserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -24,6 +28,12 @@ class PortfolioViewModelTest {
 
     private val repository = FakeHoldingRepository()
     private val session = FakeSessionManager()
+    private val users = FakeUserRepository()
+    private val fx = object : FxRepository {
+        override fun observeRates() = flowOf(FxRates())
+        override suspend fun current() = FxRates()
+        override suspend fun refresh() = FxRates()
+    }
 
     @Before
     fun setup() {
@@ -35,6 +45,9 @@ class PortfolioViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun viewModel() =
+        PortfolioViewModel(session, ObserveHoldingsUseCase(repository), fx, users)
+
     private fun stock(name: String) = Holding(
         userId = 1, type = AssetType.A_SHARE, name = name, currency = Currency.CNY,
         symbol = "600519", quantity = 100.0, costPrice = 1650.0, currentPrice = 1680.0,
@@ -43,8 +56,7 @@ class PortfolioViewModelTest {
     @Test
     fun emptyState_whenNoHoldings() = runTest {
         session.setCurrentUser(1)
-        val viewModel = PortfolioViewModel(session, ObserveHoldingsUseCase(repository))
-        viewModel.uiState.test {
+        viewModel().uiState.test {
             assertTrue(awaitItem().isEmpty)
             cancelAndConsumeRemainingEvents()
         }
@@ -57,12 +69,11 @@ class PortfolioViewModelTest {
         repository.addHolding(
             Holding(userId = 1, type = AssetType.REAL_ESTATE, name = "房子", currency = Currency.CNY, manualValue = 1_000_000.0),
         )
-        val viewModel = PortfolioViewModel(session, ObserveHoldingsUseCase(repository))
-        viewModel.uiState.test {
+        viewModel().uiState.test {
             var state = awaitItem()
             while (state.isEmpty) state = awaitItem()
             assertEquals(2, state.sections.size) // 房产 + 股票
-            assertEquals(2, state.sections.sumOf { it.rows.size })
+            assertEquals(2, state.sections.sumOf { s -> s.subGroups.sumOf { it.rows.size } })
             cancelAndConsumeRemainingEvents()
         }
     }
