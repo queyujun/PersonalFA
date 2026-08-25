@@ -45,6 +45,27 @@ class FakeUserRepository(
         if (index >= 0) users[index] = users[index].copy(defaultCurrency = currency)
     }
 
+    override suspend fun changePassword(userId: Long, oldPassword: String, newPassword: String): Boolean {
+        val stored = hashes[userId] ?: return false
+        if (!hasher.verify(oldPassword, stored)) return false
+        hashes[userId] = hasher.hash(newPassword, iterations = 1000)
+        return true
+    }
+
+    override suspend fun changeUsername(userId: Long, newUsername: String): Boolean {
+        val name = newUsername.trim()
+        if (name.isBlank()) return false
+        if (users.any { it.username == name && it.id != userId }) return false
+        val index = users.indexOfFirst { it.id == userId }
+        if (index >= 0) users[index] = users[index].copy(username = name)
+        return true
+    }
+
+    override suspend fun updateProfile(userId: Long, nickname: String?, gender: String?, age: Int?) {
+        val index = users.indexOfFirst { it.id == userId }
+        if (index >= 0) users[index] = users[index].copy(nickname = nickname, gender = gender, age = age)
+    }
+
     override suspend fun deleteUser(userId: Long) {
         users.removeAll { it.id == userId }
         hashes.remove(userId)

@@ -30,6 +30,15 @@ interface UserDao {
     @Query("UPDATE users SET defaultCurrency = :currency WHERE id = :id")
     suspend fun updateDefaultCurrency(id: Long, currency: String)
 
+    @Query("UPDATE users SET passwordHash = :hash WHERE id = :id")
+    suspend fun updatePassword(id: Long, hash: String)
+
+    @Query("UPDATE users SET username = :username WHERE id = :id")
+    suspend fun updateUsername(id: Long, username: String)
+
+    @Query("UPDATE users SET nickname = :nickname, gender = :gender, age = :age WHERE id = :id")
+    suspend fun updateProfile(id: Long, nickname: String?, gender: String?, age: Int?)
+
     @Query("DELETE FROM users WHERE id = :id")
     suspend fun deleteById(id: Long)
 }

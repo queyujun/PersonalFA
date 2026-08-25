@@ -12,5 +12,15 @@ interface UserRepository {
     suspend fun listUsers(): List<User>
     suspend fun getUser(id: Long): User?
     suspend fun updateDefaultCurrency(userId: Long, currency: Currency)
+
+    /** 修改密码：旧密码校验通过才改，返回是否成功。 */
+    suspend fun changePassword(userId: Long, oldPassword: String, newPassword: String): Boolean
+
+    /** 修改用户名：与他人重名返回 false。 */
+    suspend fun changeUsername(userId: Long, newUsername: String): Boolean
+
+    /** 更新资料（昵称 / 性别 / 年龄）。 */
+    suspend fun updateProfile(userId: Long, nickname: String?, gender: String?, age: Int?)
+
     suspend fun deleteUser(userId: Long)
 }

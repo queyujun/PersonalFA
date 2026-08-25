@@ -1,5 +1,6 @@
 package com.yingjing.pfa.ui.screens.settings
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -36,7 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import android.net.Uri
+import com.yingjing.pfa.domain.model.Currency
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
@@ -46,6 +48,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     var showExportDialog by remember { mutableStateOf(false) }
     var importUri by remember { mutableStateOf<Uri?>(null) }
     var showImportDialog by remember { mutableStateOf(false) }
+    var showUsernameDialog by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream"),
@@ -66,14 +70,40 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             Column(Modifier.padding(16.dp)) {
                 val user = state.currentUser
                 Text("当前用户：${user?.username ?: "-"}", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "默认货币：${user?.defaultCurrency?.let { "${it.symbol} ${it.label}" } ?: "-"}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                user?.nickname?.takeIf { it.isNotBlank() }?.let {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "昵称：$it",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = viewModel::logout) { Text("退出登录") }
+            }
+        }
+
+        // 个人资料（昵称 / 性别 / 年龄 / 默认货币）
+        Spacer(Modifier.height(16.dp))
+        ProfileCard(
+            nickname0 = state.currentUser?.nickname ?: "",
+            gender0 = state.currentUser?.gender ?: "",
+            age0 = state.currentUser?.age,
+            currency = state.currentUser?.defaultCurrency ?: Currency.CNY,
+            onCurrency = viewModel::updateCurrency,
+            onSave = { n, g, a -> viewModel.updateProfile(n, g, a) },
+        )
+
+        // 账号安全
+        Spacer(Modifier.height(16.dp))
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text("账号安全", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(onClick = { showUsernameDialog = true }) { Text("修改用户名") }
+                    OutlinedButton(onClick = { showPasswordDialog = true }) { Text("修改密码") }
+                }
             }
         }
 
@@ -189,6 +219,85 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             onDismiss = { showImportDialog = false },
         )
     }
+
+    if (showUsernameDialog) {
+        SingleFieldDialog(
+            title = "修改用户名",
+            label = "新用户名",
+            confirmText = "保存",
+            onConfirm = { name -> showUsernameDialog = false; viewModel.changeUsername(name) },
+            onDismiss = { showUsernameDialog = false },
+        )
+    }
+
+    if (showPasswordDialog) {
+        ChangePasswordDialog(
+            onConfirm = { old, new -> showPasswordDialog = false; viewModel.changePassword(old, new) },
+            onDismiss = { showPasswordDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun ProfileCard(
+    nickname0: String,
+    gender0: String,
+    age0: Int?,
+    currency: Currency,
+    onCurrency: (Currency) -> Unit,
+    onSave: (String, String, Int?) -> Unit,
+) {
+    // 以当前用户值为初值；用户切换/刷新后 key 变化会重置输入。
+    var nickname by remember(nickname0) { mutableStateOf(nickname0) }
+    var gender by remember(gender0) { mutableStateOf(gender0) }
+    var age by remember(age0) { mutableStateOf(age0?.toString() ?: "") }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text("个人资料", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = nickname,
+                onValueChange = { nickname = it },
+                label = { Text("昵称") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text("性别", style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("男", "女", "其他").forEach { g ->
+                    FilterChip(
+                        selected = gender == g,
+                        onClick = { gender = if (gender == g) "" else g },
+                        label = { Text(g) },
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = age,
+                onValueChange = { input -> age = input.filter { it.isDigit() }.take(3) },
+                label = { Text("年龄") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            Text("默认货币", style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Currency.entries.forEach { c ->
+                    FilterChip(
+                        selected = currency == c,
+                        onClick = { onCurrency(c) },
+                        label = { Text("${c.symbol} ${c.label}") },
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = { onSave(nickname, gender, age.toIntOrNull()) }) { Text("保存资料") }
+        }
+    }
 }
 
 @Composable
@@ -214,6 +323,74 @@ private fun PassphraseDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(pass) }, enabled = pass.length >= 4) { Text(confirmText) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
+}
+
+@Composable
+private fun SingleFieldDialog(
+    title: String,
+    label: String,
+    confirmText: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(label) },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) { Text(confirmText) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
+}
+
+@Composable
+private fun ChangePasswordDialog(
+    onConfirm: (String, String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var old by remember { mutableStateOf("") }
+    var new by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("修改密码") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = old,
+                    onValueChange = { old = it },
+                    label = { Text("旧密码") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = new,
+                    onValueChange = { new = it },
+                    label = { Text("新密码（≥4 位）") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(old, new) },
+                enabled = old.isNotBlank() && new.length >= 4,
+            ) { Text("保存") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )

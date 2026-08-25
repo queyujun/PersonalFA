@@ -14,4 +14,7 @@ data class UserEntity(
     val passwordHash: String,
     val defaultCurrency: String,
     val createdAt: Long,
+    val nickname: String? = null,
+    val gender: String? = null,
+    val age: Int? = null,
 )

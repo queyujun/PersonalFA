@@ -41,6 +41,9 @@ class SyncManagerTest {
         override suspend fun listUsers() = listOf(User(1, "alex", Currency.CNY, 0))
         override suspend fun getUser(id: Long) = null
         override suspend fun updateDefaultCurrency(userId: Long, currency: Currency) {}
+        override suspend fun changePassword(userId: Long, oldPassword: String, newPassword: String) = false
+        override suspend fun changeUsername(userId: Long, newUsername: String) = false
+        override suspend fun updateProfile(userId: Long, nickname: String?, gender: String?, age: Int?) {}
         override suspend fun deleteUser(userId: Long) {}
     }
 

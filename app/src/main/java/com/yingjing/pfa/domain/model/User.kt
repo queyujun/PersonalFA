@@ -6,4 +6,7 @@ data class User(
     val username: String,
     val defaultCurrency: Currency,
     val createdAtEpochMs: Long,
+    val nickname: String? = null,
+    val gender: String? = null,
+    val age: Int? = null,
 )

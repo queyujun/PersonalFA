@@ -9,6 +9,7 @@ import com.yingjing.pfa.data.backup.BackupScheduler
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.data.sync.SyncScheduler
 import com.yingjing.pfa.data.sync.SyncStateStore
+import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
 import com.yingjing.pfa.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -108,6 +109,33 @@ class SettingsViewModel @Inject constructor(
     fun setAutoBackup(enabled: Boolean) = viewModelScope.launch {
         syncStateStore.setAutoBackup(enabled)
         backupScheduler.setEnabled(enabled)
+    }
+
+    fun updateCurrency(currency: Currency) = viewModelScope.launch {
+        val id = sessionManager.currentUserId.first() ?: return@launch
+        userRepository.updateDefaultCurrency(id, currency)
+        refresh()
+        _uiState.update { it.copy(statusMessage = "✓ 默认货币已更新") }
+    }
+
+    fun changePassword(old: String, new: String) = viewModelScope.launch {
+        val id = sessionManager.currentUserId.first() ?: return@launch
+        val ok = userRepository.changePassword(id, old, new)
+        _uiState.update { it.copy(statusMessage = if (ok) "✓ 密码已修改" else "旧密码不正确") }
+    }
+
+    fun changeUsername(newName: String) = viewModelScope.launch {
+        val id = sessionManager.currentUserId.first() ?: return@launch
+        val ok = userRepository.changeUsername(id, newName)
+        _uiState.update { it.copy(statusMessage = if (ok) "✓ 用户名已修改" else "用户名已被占用或无效") }
+        if (ok) refresh()
+    }
+
+    fun updateProfile(nickname: String, gender: String, age: Int?) = viewModelScope.launch {
+        val id = sessionManager.currentUserId.first() ?: return@launch
+        userRepository.updateProfile(id, nickname, gender, age)
+        refresh()
+        _uiState.update { it.copy(statusMessage = "✓ 资料已保存") }
     }
 
     fun clearStatus() = _uiState.update { it.copy(statusMessage = null) }

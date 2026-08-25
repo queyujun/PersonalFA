@@ -61,10 +61,10 @@ class BackupManager @Inject constructor(
 }
 
 private fun UserEntity.toBackup() =
-    BackupUser(id, username, passwordHash, defaultCurrency, createdAt)
+    BackupUser(id, username, passwordHash, defaultCurrency, createdAt, nickname, gender, age)
 
 private fun BackupUser.toEntity() =
-    UserEntity(id, username, passwordHash, defaultCurrency, createdAt)
+    UserEntity(id, username, passwordHash, defaultCurrency, createdAt, nickname, gender, age)
 
 private fun HoldingEntity.toBackup() = BackupHolding(
     id, userId, type, name, currency, quantity, costPrice, currentPrice, symbol, manualValue,

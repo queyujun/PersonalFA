@@ -47,6 +47,25 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateDefaultCurrency(userId: Long, currency: Currency) =
         userDao.updateDefaultCurrency(userId, currency.code)
 
+    override suspend fun changePassword(userId: Long, oldPassword: String, newPassword: String): Boolean {
+        val entity = userDao.findById(userId) ?: return false
+        if (!passwordHasher.verify(oldPassword, entity.passwordHash)) return false
+        userDao.updatePassword(userId, passwordHasher.hash(newPassword))
+        return true
+    }
+
+    override suspend fun changeUsername(userId: Long, newUsername: String): Boolean {
+        val name = newUsername.trim()
+        if (name.isBlank()) return false
+        val existing = userDao.findByUsername(name)
+        if (existing != null && existing.id != userId) return false
+        userDao.updateUsername(userId, name)
+        return true
+    }
+
+    override suspend fun updateProfile(userId: Long, nickname: String?, gender: String?, age: Int?) =
+        userDao.updateProfile(userId, nickname?.trim()?.ifBlank { null }, gender?.ifBlank { null }, age)
+
     override suspend fun deleteUser(userId: Long) = userDao.deleteById(userId)
 }
 
@@ -55,4 +74,7 @@ private fun UserEntity.toDomain() = User(
     username = username,
     defaultCurrency = Currency.fromCode(defaultCurrency),
     createdAtEpochMs = createdAt,
+    nickname = nickname,
+    gender = gender,
+    age = age,
 )

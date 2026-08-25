@@ -3,12 +3,16 @@ package com.yingjing.pfa.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -34,7 +38,8 @@ private const val ROUTE_FORM = "holding_form/{type}?holdingId={holdingId}"
 private const val ROUTE_DETAIL = "holding_detail/{id}"
 private const val ROUTE_TREND = "trend_detail"
 
-/** 应用根：底部导航 + 各主区域的 NavHost；资产的添加/编辑/详情作为独立路由。 */
+/** 应用根：顶栏(品牌 + 设置入口) + 底部导航 + 各主区域 NavHost；资产的添加/编辑/详情作为独立路由。 */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonalFaRoot() {
     val navController = rememberNavController()
@@ -42,7 +47,27 @@ fun PersonalFaRoot() {
     val currentRoute = backStackEntry?.destination?.route
     val isTabRoute = currentRoute == null || TopDestination.entries.any { it.route == currentRoute }
 
+    fun goTab(route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     Scaffold(
+        topBar = {
+            if (isTabRoute) {
+                TopAppBar(
+                    title = { Text("盈景私助") },
+                    actions = {
+                        IconButton(onClick = { goTab(TopDestination.Settings.route) }) {
+                            Icon(Icons.Filled.Settings, contentDescription = "设置")
+                        }
+                    },
+                )
+            }
+        },
         bottomBar = {
             if (isTabRoute) {
                 NavigationBar {
@@ -51,13 +76,7 @@ fun PersonalFaRoot() {
                             backStackEntry?.destination?.hierarchy?.any { it.route == dest.route } == true
                         NavigationBarItem(
                             selected = selected,
-                            onClick = {
-                                navController.navigate(dest.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { goTab(dest.route) },
                             icon = { Icon(dest.icon, contentDescription = dest.label) },
                             label = { Text(dest.label) },
                         )
