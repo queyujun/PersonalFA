@@ -3,6 +3,7 @@ package com.yingjing.pfa.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yingjing.pfa.data.session.SessionManager
+import com.yingjing.pfa.data.sync.SyncStateStore
 import com.yingjing.pfa.domain.auth.LoginResult
 import com.yingjing.pfa.domain.auth.RegisterResult
 import com.yingjing.pfa.domain.model.Currency
@@ -23,6 +24,7 @@ class AuthViewModel @Inject constructor(
     private val login: LoginUseCase,
     private val sessionManager: SessionManager,
     private val userRepository: UserRepository,
+    private val syncStateStore: SyncStateStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -33,6 +35,11 @@ class AuthViewModel @Inject constructor(
             sessionManager.lastUserId.collect { id ->
                 val name = id?.let { userRepository.getUser(it)?.username }
                 _uiState.update { it.copy(lastUserId = id, lastUsername = name) }
+            }
+        }
+        viewModelScope.launch {
+            syncStateStore.biometricEnabled.collect { on ->
+                _uiState.update { it.copy(biometricEnabled = on) }
             }
         }
     }

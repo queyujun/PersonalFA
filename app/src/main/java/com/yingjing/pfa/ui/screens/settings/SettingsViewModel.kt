@@ -8,6 +8,7 @@ import com.yingjing.pfa.data.backup.BackupManager
 import com.yingjing.pfa.data.backup.BackupScheduler
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.data.sync.SyncScheduler
+import com.yingjing.pfa.core.security.BiometricAuthenticator
 import com.yingjing.pfa.data.sync.SyncStateStore
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
@@ -27,6 +28,8 @@ data class SettingsUiState(
     val users: List<User> = emptyList(),
     val lastSyncMs: Long? = null,
     val autoBackupEnabled: Boolean = false,
+    val biometricEnabled: Boolean = true,
+    val biometricAvailable: Boolean = false,
     val statusMessage: String? = null,
 )
 
@@ -46,11 +49,15 @@ class SettingsViewModel @Inject constructor(
 
     init {
         refresh()
+        _uiState.update { it.copy(biometricAvailable = BiometricAuthenticator.isAvailable(context)) }
         viewModelScope.launch {
             syncStateStore.lastSync.collect { ms -> _uiState.update { it.copy(lastSyncMs = ms) } }
         }
         viewModelScope.launch {
             syncStateStore.autoBackupEnabled.collect { on -> _uiState.update { it.copy(autoBackupEnabled = on) } }
+        }
+        viewModelScope.launch {
+            syncStateStore.biometricEnabled.collect { on -> _uiState.update { it.copy(biometricEnabled = on) } }
         }
     }
 
@@ -109,6 +116,10 @@ class SettingsViewModel @Inject constructor(
     fun setAutoBackup(enabled: Boolean) = viewModelScope.launch {
         syncStateStore.setAutoBackup(enabled)
         backupScheduler.setEnabled(enabled)
+    }
+
+    fun setBiometric(enabled: Boolean) = viewModelScope.launch {
+        syncStateStore.setBiometric(enabled)
     }
 
     fun updateCurrency(currency: Currency) = viewModelScope.launch {

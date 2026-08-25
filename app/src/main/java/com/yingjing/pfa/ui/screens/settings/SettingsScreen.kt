@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.domain.model.Currency
+import com.yingjing.pfa.ui.components.AvatarCircle
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
@@ -69,14 +71,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 val user = state.currentUser
-                Text("当前用户：${user?.username ?: "-"}", style = MaterialTheme.typography.titleMedium)
-                user?.nickname?.takeIf { it.isNotBlank() }?.let {
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        "昵称：$it",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                val display = user?.nickname?.takeIf { it.isNotBlank() } ?: user?.username ?: "-"
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AvatarCircle(name = display, size = 48.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(display, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "@${user?.username ?: "-"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = viewModel::logout) { Text("退出登录") }
@@ -103,6 +109,24 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(onClick = { showUsernameDialog = true }) { Text("修改用户名") }
                     OutlinedButton(onClick = { showPasswordDialog = true }) { Text("修改密码") }
+                }
+                if (state.biometricAvailable) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("指纹 / 面容登录", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "开启后可在登录页用指纹/面容快速登录上次账号",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(checked = state.biometricEnabled, onCheckedChange = { viewModel.setBiometric(it) })
+                    }
                 }
             }
         }

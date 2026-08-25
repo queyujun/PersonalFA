@@ -22,6 +22,9 @@ class SyncStateStore @Inject constructor(
 
     val autoBackupEnabled: Flow<Boolean> = context.syncDataStore.data.map { it[AUTO_BACKUP] ?: false }
 
+    /** 指纹/面容快速登录开关；默认启用（仅在设备支持时生效）。 */
+    val biometricEnabled: Flow<Boolean> = context.syncDataStore.data.map { it[BIOMETRIC] ?: true }
+
     suspend fun setLastSync(epochMs: Long) {
         context.syncDataStore.edit { it[LAST_SYNC] = epochMs }
     }
@@ -30,8 +33,13 @@ class SyncStateStore @Inject constructor(
         context.syncDataStore.edit { it[AUTO_BACKUP] = enabled }
     }
 
+    suspend fun setBiometric(enabled: Boolean) {
+        context.syncDataStore.edit { it[BIOMETRIC] = enabled }
+    }
+
     private companion object {
         val LAST_SYNC = longPreferencesKey("last_sync_ms")
         val AUTO_BACKUP = booleanPreferencesKey("auto_backup_enabled")
+        val BIOMETRIC = booleanPreferencesKey("biometric_enabled")
     }
 }

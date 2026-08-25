@@ -14,4 +14,5 @@ data class AuthUiState(
     val error: String? = null,
     val lastUserId: Long? = null,
     val lastUsername: String? = null,
+    val biometricEnabled: Boolean = true,
 )

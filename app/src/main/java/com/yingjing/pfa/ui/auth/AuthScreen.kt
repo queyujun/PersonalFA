@@ -48,7 +48,8 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val deviceHasBiometric = remember { BiometricAuthenticator.isAvailable(context) }
-    val showBiometric = state.mode == AuthMode.Login && deviceHasBiometric && state.lastUserId != null
+    val showBiometric = state.mode == AuthMode.Login && deviceHasBiometric &&
+        state.lastUserId != null && state.biometricEnabled
 
     Column(
         modifier = Modifier

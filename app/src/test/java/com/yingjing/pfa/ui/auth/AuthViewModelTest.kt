@@ -1,5 +1,9 @@
 package com.yingjing.pfa.ui.auth
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.yingjing.pfa.data.sync.SyncStateStore
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.usecase.LoginUseCase
 import com.yingjing.pfa.domain.usecase.RegisterUserUseCase
@@ -18,8 +22,10 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(AndroidJUnit4::class)
 class AuthViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
@@ -32,11 +38,13 @@ class AuthViewModelTest {
         Dispatchers.setMain(dispatcher)
         repository = FakeUserRepository()
         session = FakeSessionManager()
+        val syncStateStore = SyncStateStore(ApplicationProvider.getApplicationContext<Context>())
         viewModel = AuthViewModel(
             registerUser = RegisterUserUseCase(repository),
             login = LoginUseCase(repository),
             sessionManager = session,
             userRepository = repository,
+            syncStateStore = syncStateStore,
         )
     }
 
