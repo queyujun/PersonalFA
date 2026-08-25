@@ -19,8 +19,8 @@ data class HoldingRow(
     val profitPositive: Boolean,
 )
 
-/** 类目下的子分组：股票用市场子类目（有 title）；其它类目 title=null，单组。 */
-data class PortfolioSubGroup(val title: String?, val rows: List<HoldingRow>)
+/** 类目下的子分组：股票用市场子类目（有 title）；其它类目 title=null，单组。totalText 为该子组合计（展示币种）。 */
+data class PortfolioSubGroup(val title: String?, val totalText: String, val rows: List<HoldingRow>)
 
 /** 一个一级资产类目区块（含合计与子分组）。 */
 data class PortfolioSection(
@@ -110,7 +110,8 @@ object PortfolioSectionsBuilder {
                     .thenBy { it.name },
             )
             .map { toRow(it, nowMs) }
-        return PortfolioSubGroup(title, rows)
+        val total = items.sumOf { converted(it, rates, cur, nowMs) }
+        return PortfolioSubGroup(title, MoneyFormat.format(total, cur), rows)
     }
 
     private fun stockSubOf(h: Holding): StockSub = when (h.type) {

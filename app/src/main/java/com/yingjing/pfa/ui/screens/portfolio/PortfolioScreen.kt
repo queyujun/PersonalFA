@@ -162,9 +162,9 @@ private fun CategoryBlock(
                             modifier = Modifier.weight(1f).padding(start = 2.dp),
                         )
                         Text(
-                            "${sg.rows.size} 项",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            sg.totalText,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     if (!sgCollapsed) {

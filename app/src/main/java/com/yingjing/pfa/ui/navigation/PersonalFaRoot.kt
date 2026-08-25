@@ -3,7 +3,9 @@ package com.yingjing.pfa.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -11,11 +13,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -32,20 +38,24 @@ import com.yingjing.pfa.ui.screens.portfolio.HoldingDetailScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingFormScreen
 import com.yingjing.pfa.ui.screens.portfolio.PortfolioScreen
 import com.yingjing.pfa.ui.screens.settings.SettingsScreen
+import kotlinx.coroutines.launch
 
 private const val ROUTE_ADD_TYPE = "add_type"
 private const val ROUTE_FORM = "holding_form/{type}?holdingId={holdingId}"
 private const val ROUTE_DETAIL = "holding_detail/{id}"
 private const val ROUTE_TREND = "trend_detail"
 
-/** 应用根：顶栏(品牌 + 设置入口) + 底部导航 + 各主区域 NavHost；资产的添加/编辑/详情作为独立路由。 */
+/** 应用根：顶栏(左上设置 · 居中标题 · 右上立即刷新) + 底部导航 + 各主区域 NavHost。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PersonalFaRoot() {
+fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val isTabRoute = currentRoute == null || TopDestination.entries.any { it.route == currentRoute }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     fun goTab(route: String) {
         navController.navigate(route) {
@@ -58,16 +68,25 @@ fun PersonalFaRoot() {
     Scaffold(
         topBar = {
             if (isTabRoute) {
-                TopAppBar(
+                CenterAlignedTopAppBar(
                     title = { Text("盈景私助") },
-                    actions = {
+                    navigationIcon = {
                         IconButton(onClick = { goTab(TopDestination.Settings.route) }) {
                             Icon(Icons.Filled.Settings, contentDescription = "设置")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            rootViewModel.refreshQuotesNow()
+                            scope.launch { snackbarHostState.showSnackbar("已触发行情刷新") }
+                        }) {
+                            Icon(Icons.Filled.Refresh, contentDescription = "立即刷新行情")
                         }
                     },
                 )
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (isTabRoute) {
                 NavigationBar {

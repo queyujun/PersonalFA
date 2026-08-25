@@ -13,7 +13,8 @@ cd /c/AIProjects/Claude/PersonalFA
 ```
 - **联网操作（下载依赖/首次构建/curl 探接口）必须关闭沙箱**（Bash `dangerouslyDisableSandbox: true`），否则网络被拦（退出码 137）。
 - `.toolchain/`、`build/`、`local.properties`、`*.apk`、`.claude/settings.local.json` 均已在 `.gitignore`。
-- APK 产物：`app/build/outputs/apk/debug/app-debug.apk`；会复制一份到项目根目录 `PersonalFA-v0.1.0-*.apk`。
+- APK 产物：`app/build/outputs/apk/debug/app-debug.apk`；手动复制到项目根目录 `PersonalFA-<功能>-<日期时间>.apk`（根目录只保留最新一个，旧的删掉避免装错）。
+- **长构建（assembleDebug+test 正常约 2–5 分钟）建议走后台**（Bash `run_in_background: true`，输出重定向到 log 后 tail）——前台撞上 10 分钟超时被 kill 会残留 gradle test 进程、锁住 `build/test-results/.../output.bin`，导致下次构建卡十几分钟并因文件锁 `IOException` 失败。遇此：`./gradlew --stop` + `rm -rf app/build/test-results` 后重构即恢复。
 
 ## 技术栈 / 结构
 Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkManager · OkHttp+kotlinx.serialization · 图表 Canvas 自绘。
@@ -29,6 +30,7 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - 资产页展示：类目/子类目**两级折叠** · 股票分 6 市场子类目（美股/美股现金/A股/A股现金/港股/港股现金；账户现金按币种自动归类，无 DB 改动）· 组内按默认币种**换算后市值降序** · 每类**背景色**区分（与走势图同色）✅
 - 负债自动还款：可设**每月还款本金 + 每月还款日**（留空=每月最后一天）；每日同步时按上次扣款年月**补扣所有错过月份**、从欠款本金扣减、**扣到 0 结清**，自动重算净值（逻辑在纯函数 `LiabilityRepayment`）✅
 - 设置中心：①顶部 ⚙️ 入口 · 个人资料（昵称/性别/年龄）· 默认货币切换 · 改用户名（查重）/改密码（旧密码校验）✅　②首字母头像 · 指纹登录开关（DataStore，控制登录页指纹按钮）✅　③行情/备份「周期(天) + 整点时间」可配、启动 KEEP 变更 REPLACE、提醒跟随行情（`ScheduleTime` 纯函数算首次延迟；WorkManager 尽力而为，非精确闹钟）✅
+- UI 优化：顶栏 `CenterAlignedTopAppBar`「设置(左上) · 标题居中 · 立即刷新(右上，含 Snackbar)」（`RootViewModel`）；资产页股票 6 子分类标题各显示合计金额（`PortfolioSubGroup.totalText`）✅
 
 ## 数据源关键事实（详见 design/data-sources.md）
 - 新浪行情 `hq.sinajs.cn`：需 `Referer: https://finance.sina.com.cn` + **GBK 解码**；现价字段位：A股/ETF 第3、港股第6、美股第1；汇率第8。
