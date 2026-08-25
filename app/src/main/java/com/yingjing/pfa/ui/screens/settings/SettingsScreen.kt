@@ -175,6 +175,15 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+        SchedulePlanCard(
+            title = "行情刷新计划",
+            hint = "「提醒」抓取随行情刷新一起进行（同一时间 / 周期）",
+            intervalDays = state.syncIntervalDays,
+            hour = state.syncHour,
+            onSave = { d, h -> viewModel.setSyncSchedule(d, h) },
+        )
+
         // 数据备份
         Spacer(Modifier.height(16.dp))
         Card(modifier = Modifier.fillMaxWidth()) {
@@ -210,6 +219,15 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 }
             }
         }
+
+        Spacer(Modifier.height(16.dp))
+        SchedulePlanCard(
+            title = "自动备份计划",
+            hint = "启用上方「每周自动备份」后，按此周期 / 时间执行",
+            intervalDays = state.backupIntervalDays,
+            hour = state.backupHour,
+            onSave = { d, h -> viewModel.setBackupSchedule(d, h) },
+        )
 
         Spacer(Modifier.height(16.dp))
         Text(
@@ -418,6 +436,49 @@ private fun ChangePasswordDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
+}
+
+@Composable
+private fun SchedulePlanCard(
+    title: String,
+    hint: String,
+    intervalDays: Int,
+    hour: Int,
+    onSave: (Int, Int) -> Unit,
+) {
+    var interval by remember(intervalDays) { mutableStateOf(intervalDays) }
+    var hourText by remember(hour) { mutableStateOf(hour.toString()) }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text("周期", style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(1 to "每天", 3 to "每3天", 7 to "每周").forEach { (d, label) ->
+                    FilterChip(selected = interval == d, onClick = { interval = d }, label = { Text(label) })
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = hourText,
+                onValueChange = { input -> hourText = input.filter { it.isDigit() }.take(2) },
+                label = { Text("时间（整点，0-23）") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = { onSave(interval, hourText.toIntOrNull()?.coerceIn(0, 23) ?: hour) }) {
+                Text("保存计划")
+            }
+        }
+    }
 }
 
 private fun formatTime(epochMs: Long): String =

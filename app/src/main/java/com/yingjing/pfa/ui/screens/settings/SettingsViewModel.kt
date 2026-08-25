@@ -30,6 +30,10 @@ data class SettingsUiState(
     val autoBackupEnabled: Boolean = false,
     val biometricEnabled: Boolean = true,
     val biometricAvailable: Boolean = false,
+    val syncIntervalDays: Int = 1,
+    val syncHour: Int = 9,
+    val backupIntervalDays: Int = 7,
+    val backupHour: Int = 3,
     val statusMessage: String? = null,
 )
 
@@ -58,6 +62,18 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             syncStateStore.biometricEnabled.collect { on -> _uiState.update { it.copy(biometricEnabled = on) } }
+        }
+        viewModelScope.launch {
+            syncStateStore.syncIntervalDays.collect { v -> _uiState.update { it.copy(syncIntervalDays = v) } }
+        }
+        viewModelScope.launch {
+            syncStateStore.syncHour.collect { v -> _uiState.update { it.copy(syncHour = v) } }
+        }
+        viewModelScope.launch {
+            syncStateStore.backupIntervalDays.collect { v -> _uiState.update { it.copy(backupIntervalDays = v) } }
+        }
+        viewModelScope.launch {
+            syncStateStore.backupHour.collect { v -> _uiState.update { it.copy(backupHour = v) } }
         }
     }
 
@@ -115,11 +131,30 @@ class SettingsViewModel @Inject constructor(
 
     fun setAutoBackup(enabled: Boolean) = viewModelScope.launch {
         syncStateStore.setAutoBackup(enabled)
-        backupScheduler.setEnabled(enabled)
+        backupScheduler.schedule(
+            enabled = enabled,
+            intervalDays = syncStateStore.backupIntervalDays.first(),
+            hour = syncStateStore.backupHour.first(),
+            forceReplace = true,
+        )
     }
 
     fun setBiometric(enabled: Boolean) = viewModelScope.launch {
         syncStateStore.setBiometric(enabled)
+    }
+
+    fun setSyncSchedule(intervalDays: Int, hour: Int) = viewModelScope.launch {
+        syncStateStore.setSyncSchedule(intervalDays, hour)
+        syncScheduler.schedule(intervalDays, hour, forceReplace = true)
+        _uiState.update { it.copy(statusMessage = "✓ 行情计划已更新") }
+    }
+
+    fun setBackupSchedule(intervalDays: Int, hour: Int) = viewModelScope.launch {
+        syncStateStore.setBackupSchedule(intervalDays, hour)
+        if (syncStateStore.autoBackupEnabled.first()) {
+            backupScheduler.schedule(true, intervalDays, hour, forceReplace = true)
+        }
+        _uiState.update { it.copy(statusMessage = "✓ 备份计划已更新") }
     }
 
     fun updateCurrency(currency: Currency) = viewModelScope.launch {
