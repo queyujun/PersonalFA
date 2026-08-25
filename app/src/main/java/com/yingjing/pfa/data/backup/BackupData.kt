@@ -52,6 +52,8 @@ data class BackupHolding(
     val sharePercent: Double?,
     val liabilityType: String?,
     val monthlyPayment: Double?,
+    val repaymentDay: Int? = null,
+    val lastRepaidYearMonth: Int? = null,
     val createdAt: Long,
     val updatedAt: Long,
 )

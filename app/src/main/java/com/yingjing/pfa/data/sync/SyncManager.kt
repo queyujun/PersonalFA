@@ -12,6 +12,7 @@ import com.yingjing.pfa.domain.repository.HoldingRepository
 import com.yingjing.pfa.domain.repository.QuoteRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
+import com.yingjing.pfa.domain.usecase.LiabilityRepayment
 import com.yingjing.pfa.domain.usecase.SummarizePortfolio
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -60,7 +61,11 @@ class SyncManager @Inject constructor(
             }
 
             val now = nowProvider()
-            val summary = SummarizePortfolio(updated, rates, user.defaultCurrency, now)
+            // 负债自动还款：到还款日从欠款本金扣「每月还款本金」（补扣错过月份，扣到 0 为止）
+            val repaid = updated.map { holding ->
+                LiabilityRepayment.settle(holding, now)?.also { holdingRepository.updateHolding(it) } ?: holding
+            }
+            val summary = SummarizePortfolio(repaid, rates, user.defaultCurrency, now)
             snapshotRepository.record(
                 userId = user.id,
                 currency = user.defaultCurrency,

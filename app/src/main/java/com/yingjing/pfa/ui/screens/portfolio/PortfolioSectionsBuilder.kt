@@ -153,7 +153,15 @@ object PortfolioSectionsBuilder {
         AssetType.REAL_ESTATE ->
             listOfNotNull(h.city, h.areaSqm?.let { "${qty(it)}㎡" }).joinToString(" · ").ifBlank { "房产" }
         AssetType.EQUITY -> "未上市 · 手动估值"
-        AssetType.LIABILITY -> h.liabilityType ?: "负债"
+        AssetType.LIABILITY -> liabilitySubtitle(h)
+    }
+
+    private fun liabilitySubtitle(h: Holding): String {
+        val base = h.liabilityType ?: "负债"
+        val monthly = h.monthlyPayment
+        if (monthly == null || monthly <= 0.0) return base
+        val day = h.repaymentDay?.let { "每月${it}号" } ?: "每月最后一天"
+        return "$base · 还本${qty(monthly)}/月 · $day"
     }
 
     private fun qty(v: Double?): String {

@@ -56,6 +56,8 @@ private fun HoldingEntity.toDomain() = Holding(
     sharePercent = sharePercent,
     liabilityType = liabilityType,
     monthlyPayment = monthlyPayment,
+    repaymentDay = repaymentDay,
+    lastRepaidYearMonth = lastRepaidYearMonth,
     createdAtEpochMs = createdAt,
     updatedAtEpochMs = updatedAt,
 )
@@ -80,6 +82,8 @@ private fun Holding.toEntity() = HoldingEntity(
     sharePercent = sharePercent,
     liabilityType = liabilityType,
     monthlyPayment = monthlyPayment,
+    repaymentDay = repaymentDay,
+    lastRepaidYearMonth = lastRepaidYearMonth,
     createdAt = createdAtEpochMs,
     updatedAt = updatedAtEpochMs,
 )

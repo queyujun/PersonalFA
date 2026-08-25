@@ -28,9 +28,12 @@ data class Holding(
     val depositType: String? = null,
     // 公司股权
     val sharePercent: Double? = null,
-    // 负债
+    // 负债（monthlyPayment = 每月还款本金；repaymentDay 每月还款日 1-31，null=每月最后一天；
+    // lastRepaidYearMonth 已补扣到的年月 YYYYMM，防重复扣款）
     val liabilityType: String? = null,
     val monthlyPayment: Double? = null,
+    val repaymentDay: Int? = null,
+    val lastRepaidYearMonth: Int? = null,
     val createdAtEpochMs: Long = 0,
     val updatedAtEpochMs: Long = 0,
 ) {

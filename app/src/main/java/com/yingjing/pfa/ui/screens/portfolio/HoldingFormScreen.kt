@@ -106,7 +106,8 @@ fun HoldingFormScreen(
                     Field("负债类型（可选，如房贷）", s.liabilityType) { v -> viewModel.onField { copy(liabilityType = v) } }
                     Field("欠款金额", s.manualValue, KeyboardType.Number) { v -> viewModel.onField { copy(manualValue = v) } }
                     Field("年利率 %（可选）", s.annualRate, KeyboardType.Number) { v -> viewModel.onField { copy(annualRate = v) } }
-                    Field("月供（可选）", s.monthlyPayment, KeyboardType.Number) { v -> viewModel.onField { copy(monthlyPayment = v) } }
+                    Field("每月还款本金（可选）", s.monthlyPayment, KeyboardType.Number) { v -> viewModel.onField { copy(monthlyPayment = v) } }
+                    Field("每月还款日 1-31（可选，留空=每月最后一天）", s.repaymentDay, KeyboardType.Number) { v -> viewModel.onField { copy(repaymentDay = v) } }
                 }
             }
 

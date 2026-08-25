@@ -12,7 +12,7 @@ import androidx.room.RoomDatabase
         CategorySnapshotEntity::class,
         AlertEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -69,13 +69,13 @@ private fun BackupUser.toEntity() =
 private fun HoldingEntity.toBackup() = BackupHolding(
     id, userId, type, name, currency, quantity, costPrice, currentPrice, symbol, manualValue,
     city, areaSqm, annualRatePercent, startDateEpochMs, maturityDateEpochMs, depositType,
-    sharePercent, liabilityType, monthlyPayment, createdAt, updatedAt,
+    sharePercent, liabilityType, monthlyPayment, repaymentDay, lastRepaidYearMonth, createdAt, updatedAt,
 )
 
 private fun BackupHolding.toEntity() = HoldingEntity(
     id, userId, type, name, currency, quantity, costPrice, currentPrice, symbol, manualValue,
     city, areaSqm, annualRatePercent, startDateEpochMs, maturityDateEpochMs, depositType,
-    sharePercent, liabilityType, monthlyPayment, createdAt, updatedAt,
+    sharePercent, liabilityType, monthlyPayment, repaymentDay, lastRepaidYearMonth, createdAt, updatedAt,
 )
 
 private fun NetWorthSnapshotEntity.toBackup() =

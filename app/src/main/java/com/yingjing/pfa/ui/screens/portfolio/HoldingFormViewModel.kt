@@ -38,6 +38,7 @@ data class HoldingFormState(
     val sharePercent: String = "",
     val liabilityType: String = "",
     val monthlyPayment: String = "",
+    val repaymentDay: String = "",
     val error: String? = null,
     val isSubmitting: Boolean = false,
 )
@@ -119,6 +120,8 @@ class HoldingFormViewModel @Inject constructor(
             sharePercent = s.sharePercent.toDoubleOrNull(),
             liabilityType = s.liabilityType.ifBlank { null },
             monthlyPayment = s.monthlyPayment.toDoubleOrNull(),
+            repaymentDay = s.repaymentDay.toIntOrNull()?.coerceIn(1, 31),
+            lastRepaidYearMonth = loaded?.lastRepaidYearMonth,
             createdAtEpochMs = loaded?.createdAtEpochMs ?: 0,
         )
     }
@@ -141,6 +144,7 @@ class HoldingFormViewModel @Inject constructor(
         sharePercent = sharePercent.toEditText(),
         liabilityType = liabilityType ?: "",
         monthlyPayment = monthlyPayment.toEditText(),
+        repaymentDay = repaymentDay?.toString() ?: "",
     )
 
     private fun Double?.toEditText(): String {
