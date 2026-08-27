@@ -29,6 +29,7 @@ class PortfolioViewModelTest {
     private val repository = FakeHoldingRepository()
     private val session = FakeSessionManager()
     private val users = FakeUserRepository()
+    private val collapseStore = PortfolioCollapseStore()
     private val fx = object : FxRepository {
         override fun observeRates() = flowOf(FxRates())
         override suspend fun current() = FxRates()
@@ -46,7 +47,7 @@ class PortfolioViewModelTest {
     }
 
     private fun viewModel() =
-        PortfolioViewModel(session, ObserveHoldingsUseCase(repository), fx, users)
+        PortfolioViewModel(session, ObserveHoldingsUseCase(repository), fx, users, collapseStore)
 
     private fun stock(name: String) = Holding(
         userId = 1, type = AssetType.A_SHARE, name = name, currency = Currency.CNY,
@@ -76,5 +77,25 @@ class PortfolioViewModelTest {
             assertEquals(2, state.sections.sumOf { s -> s.subGroups.sumOf { it.rows.size } })
             cancelAndConsumeRemainingEvents()
         }
+    }
+
+    @Test
+    fun toggleCategory_updatesExpandedSet() = runTest {
+        session.setCurrentUser(1)
+        val vm = viewModel()
+        assertTrue(vm.expandedCategories.value.isEmpty()) // 初始全折叠
+        vm.toggleCategory("STOCK")
+        assertEquals(setOf("STOCK"), vm.expandedCategories.value)
+        vm.toggleCategory("STOCK")
+        assertTrue(vm.expandedCategories.value.isEmpty()) // 再次折叠
+    }
+
+    @Test
+    fun toggleCategory_persistsAcrossViewModelInstances() = runTest {
+        // 同一 store 注入两个 VM 实例 → 折叠状态应共享（模拟离开再进入资产页）
+        session.setCurrentUser(1)
+        viewModel().toggleCategory("DEPOSIT")
+        val secondVm = viewModel()
+        assertEquals(setOf("DEPOSIT"), secondVm.expandedCategories.value)
     }
 }

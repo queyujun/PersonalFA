@@ -25,7 +25,18 @@ class PortfolioViewModel @Inject constructor(
     private val observeHoldings: ObserveHoldingsUseCase,
     private val fxRepository: FxRepository,
     private val userRepository: UserRepository,
+    private val collapseStore: PortfolioCollapseStore,
 ) : ViewModel() {
+
+    /** 资产页一级分类展开状态：集合中存在=展开，不存在=折叠。初始空集→首次进入全折叠。 */
+    val expandedCategories: StateFlow<Set<String>> = collapseStore.expandedCategories
+
+    /** 股票市场二级子类目展开状态。 */
+    val expandedSubGroups: StateFlow<Set<String>> = collapseStore.expandedSubGroups
+
+    fun toggleCategory(categoryKey: String) = collapseStore.toggleCategory(categoryKey)
+
+    fun toggleSubGroup(subGroupKey: String) = collapseStore.toggleSubGroup(subGroupKey)
 
     val uiState: StateFlow<PortfolioUiState> = sessionManager.currentUserId
         .flatMapLatest { userId ->

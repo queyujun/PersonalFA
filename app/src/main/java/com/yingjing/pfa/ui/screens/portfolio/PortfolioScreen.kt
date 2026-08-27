@@ -23,9 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,9 +62,10 @@ fun PortfolioScreen(
         return
     }
 
-    // 折叠状态（内存，进出页面默认全展开）；一级=类目，二级=股票市场子类目
-    val collapsed = remember { mutableStateMapOf<AssetCategory, Boolean>() }
-    val subCollapsed = remember { mutableStateMapOf<String, Boolean>() }
+    // 折叠状态（进程级，跨页面切换存活）：集合中存在=展开，不存在=折叠。
+    // 初始空集 → 首次进入资产页全折叠；用户展开过的分类保留在 store，再次进入恢复上次状态。
+    val expandedCategories by viewModel.expandedCategories.collectAsState()
+    val expandedSubGroups by viewModel.expandedSubGroups.collectAsState()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -76,13 +74,13 @@ fun PortfolioScreen(
     ) {
         state.sections.forEach { section ->
             item(key = "section_${section.category.name}") {
+                val categoryKey = section.category.name
                 CategoryBlock(
                     section = section,
-                    collapsed = collapsed[section.category] ?: false,
-                    onToggle = {
-                        collapsed[section.category] = !(collapsed[section.category] ?: false)
-                    },
-                    subCollapsed = subCollapsed,
+                    expanded = categoryKey in expandedCategories,
+                    onToggle = { viewModel.toggleCategory(categoryKey) },
+                    expandedSubGroups = expandedSubGroups,
+                    onToggleSub = { key -> viewModel.toggleSubGroup(key) },
                     onOpenHolding = onOpenHolding,
                 )
             }
@@ -93,9 +91,10 @@ fun PortfolioScreen(
 @Composable
 private fun CategoryBlock(
     section: PortfolioSection,
-    collapsed: Boolean,
+    expanded: Boolean,
     onToggle: () -> Unit,
-    subCollapsed: SnapshotStateMap<String, Boolean>,
+    expandedSubGroups: Set<String>,
+    onToggleSub: (String) -> Unit,
     onOpenHolding: (Long) -> Unit,
 ) {
     val color = categoryColor(section.category)
@@ -115,8 +114,8 @@ private fun CategoryBlock(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = if (collapsed) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Filled.KeyboardArrowDown,
-                contentDescription = if (collapsed) "展开" else "折叠",
+                imageVector = if (expanded) Icons.Filled.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = if (expanded) "折叠" else "展开",
                 tint = color,
             )
             Text(
@@ -132,7 +131,7 @@ private fun CategoryBlock(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        if (!collapsed) {
+        if (expanded) {
             section.subGroups.forEach { sg ->
                 val title = sg.title
                 if (title == null) {
@@ -141,17 +140,17 @@ private fun CategoryBlock(
                 } else {
                     // 二级子类目：可各自折叠
                     val key = "${section.category.name}|$title"
-                    val sgCollapsed = subCollapsed[key] ?: false
+                    val sgExpanded = key in expandedSubGroups
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { subCollapsed[key] = !(subCollapsed[key] ?: false) }
+                            .clickable { onToggleSub(key) }
                             .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
-                            imageVector = if (sgCollapsed) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Filled.KeyboardArrowDown,
-                            contentDescription = if (sgCollapsed) "展开" else "折叠",
+                            imageVector = if (sgExpanded) Icons.Filled.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = if (sgExpanded) "折叠" else "展开",
                             tint = color,
                             modifier = Modifier.size(18.dp),
                         )
@@ -167,7 +166,7 @@ private fun CategoryBlock(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
-                    if (!sgCollapsed) {
+                    if (sgExpanded) {
                         sg.rows.forEach { row -> HoldingRowItem(row = row, onClick = { onOpenHolding(row.id) }) }
                     }
                 }
