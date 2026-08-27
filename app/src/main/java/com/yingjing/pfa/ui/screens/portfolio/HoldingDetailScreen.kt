@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Holding
 import com.yingjing.pfa.domain.model.HoldingValue
+import com.yingjing.pfa.domain.usecase.RealEstateEstimator
 import com.yingjing.pfa.ui.format.MoneyFormat
 import com.yingjing.pfa.ui.theme.GainRed
 import com.yingjing.pfa.ui.theme.LossGreen
@@ -177,6 +178,14 @@ private fun detailRows(h: Holding): List<Pair<String, String>> = buildList {
             h.city?.let { add("城市" to it) }
             h.areaSqm?.let { add("建筑面积" to "${num(it)} ㎡") }
             add("当前估值" to num(h.manualValue))
+            if (h.autoEstimate == true) {
+                val base = h.valueBaseDateEpochMs?.let { monthLabel(it) }
+                val adjust = RealEstateEstimator.cumulativeAdjustPercent(h.manualValue ?: 0.0, h.estimatedValue)
+                add("估算方式" to "70 城二手住宅指数")
+                add("估算现值" to (h.estimatedValue?.let { num(it) } ?: "同步后更新"))
+                base?.let { add("录入基准" to it) }
+                adjust?.let { add("累计调整" to "${if (it >= 0) "+" else ""}${"%.1f".format(it)}%") }
+            }
         }
         AssetType.EQUITY -> {
             add("当前估值" to num(h.manualValue))
@@ -198,3 +207,6 @@ private fun num(v: Double?): String {
     v ?: return "-"
     return if (v % 1.0 == 0.0) v.toLong().toString() else v.toString()
 }
+
+/** 时间戳 → "yyyy-MM" 月份标签（详情页录入基准展示）。 */
+private fun monthLabel(epochMs: Long): String = RealEstateEstimator.monthKey(epochMs)

@@ -34,6 +34,12 @@ data class Holding(
     val monthlyPayment: Double? = null,
     val repaymentDay: Int? = null,
     val lastRepaidYearMonth: Int? = null,
+    // 房产指数估算：autoEstimate=是否按 70 城二手住宅指数自动估算；
+    // valueBaseDateEpochMs=录入值（manualValue）作为基准的月份时间戳；
+    // estimatedValue=sync 派生的估算现值缓存（与 currentPrice 同构，基准不变）。
+    val autoEstimate: Boolean? = null,
+    val valueBaseDateEpochMs: Long? = null,
+    val estimatedValue: Double? = null,
     val createdAtEpochMs: Long = 0,
     val updatedAtEpochMs: Long = 0,
 ) {

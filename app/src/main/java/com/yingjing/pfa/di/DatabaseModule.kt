@@ -8,6 +8,7 @@ import com.yingjing.pfa.data.local.AppDatabase
 import com.yingjing.pfa.data.local.AppMetaDao
 import com.yingjing.pfa.data.local.CategorySnapshotDao
 import com.yingjing.pfa.data.local.HoldingDao
+import com.yingjing.pfa.data.local.HousePriceDao
 import com.yingjing.pfa.data.local.NetWorthSnapshotDao
 import com.yingjing.pfa.data.local.UserDao
 import dagger.Module
@@ -56,4 +57,7 @@ object DatabaseModule {
 
     @Provides
     fun provideAlertDao(database: AppDatabase): AlertDao = database.alertDao()
+
+    @Provides
+    fun provideHousePriceDao(database: AppDatabase): HousePriceDao = database.housePriceDao()
 }

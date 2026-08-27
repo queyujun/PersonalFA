@@ -68,4 +68,43 @@ class HoldingValueTest {
     fun profit_isNull_whenNoCost() {
         assertNull(HoldingValue.profit(stock(100.0, null, 1680.0), now))
     }
+
+    @Test
+    fun realEstate_withEstimate_usesEstimatedValue() {
+        val house = Holding(
+            userId = 1, type = AssetType.REAL_ESTATE, name = "滨江一号",
+            currency = Currency.CNY, manualValue = 1_000_000.0,
+            autoEstimate = true, estimatedValue = 1_050_000.0,
+        )
+        assertEquals(1_050_000.0, HoldingValue.currentValue(house, now), 0.001)
+    }
+
+    @Test
+    fun realEstate_estimateOff_fallsBackToManualValue() {
+        val house = Holding(
+            userId = 1, type = AssetType.REAL_ESTATE, name = "滨江一号",
+            currency = Currency.CNY, manualValue = 1_000_000.0,
+            autoEstimate = false, estimatedValue = 1_050_000.0,
+        )
+        assertEquals(1_000_000.0, HoldingValue.currentValue(house, now), 0.001)
+    }
+
+    @Test
+    fun realEstate_profit_isEstimatedMinusManual() {
+        val house = Holding(
+            userId = 1, type = AssetType.REAL_ESTATE, name = "滨江一号",
+            currency = Currency.CNY, manualValue = 1_000_000.0,
+            autoEstimate = true, estimatedValue = 1_050_000.0,
+        )
+        assertEquals(50_000.0, HoldingValue.profit(house, now)!!, 0.001)
+    }
+
+    @Test
+    fun realEstate_profitNull_whenEstimateOff() {
+        val house = Holding(
+            userId = 1, type = AssetType.REAL_ESTATE, name = "滨江一号",
+            currency = Currency.CNY, manualValue = 1_000_000.0,
+        )
+        assertNull(HoldingValue.profit(house, now))
+    }
 }

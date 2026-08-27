@@ -11,8 +11,9 @@ import androidx.room.RoomDatabase
         NetWorthSnapshotEntity::class,
         CategorySnapshotEntity::class,
         AlertEntity::class,
+        HousePriceIndexEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -22,6 +23,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun netWorthSnapshotDao(): NetWorthSnapshotDao
     abstract fun categorySnapshotDao(): CategorySnapshotDao
     abstract fun alertDao(): AlertDao
+    abstract fun housePriceDao(): HousePriceDao
 
     companion object {
         const val NAME = "pfa.db"

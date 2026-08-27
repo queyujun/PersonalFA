@@ -4,6 +4,7 @@ import com.yingjing.pfa.data.notification.AndroidAlertNotifier
 import com.yingjing.pfa.data.repository.AlertRepositoryImpl
 import com.yingjing.pfa.data.repository.FxRepositoryImpl
 import com.yingjing.pfa.data.repository.HoldingRepositoryImpl
+import com.yingjing.pfa.data.repository.HousePriceRepositoryImpl
 import com.yingjing.pfa.data.repository.QuoteRepositoryImpl
 import com.yingjing.pfa.data.repository.SnapshotRepositoryImpl
 import com.yingjing.pfa.data.repository.UserRepositoryImpl
@@ -13,6 +14,7 @@ import com.yingjing.pfa.domain.alert.AlertNotifier
 import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HoldingRepository
+import com.yingjing.pfa.domain.repository.HousePriceRepository
 import com.yingjing.pfa.domain.repository.QuoteRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
@@ -56,4 +58,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAlertNotifier(impl: AndroidAlertNotifier): AlertNotifier
+
+    @Binds
+    @Singleton
+    abstract fun bindHousePriceRepository(impl: HousePriceRepositoryImpl): HousePriceRepository
 }

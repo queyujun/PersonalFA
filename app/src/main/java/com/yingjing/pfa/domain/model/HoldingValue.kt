@@ -17,9 +17,13 @@ object HoldingValue {
             (holding.quantity ?: 0.0) * (holding.currentPrice ?: holding.costPrice ?: 0.0)
 
         AssetType.ACCOUNT_CASH,
-        AssetType.REAL_ESTATE,
         AssetType.EQUITY ->
             holding.manualValue ?: 0.0
+
+        AssetType.REAL_ESTATE ->
+            // 开启指数估算且已有 sync 派生值时取估算值，否则回退录入值
+            if (holding.autoEstimate == true && holding.estimatedValue != null) holding.estimatedValue ?: 0.0
+            else holding.manualValue ?: 0.0
 
         AssetType.DEPOSIT ->
             depositValue(holding, nowMs)
@@ -52,6 +56,14 @@ object HoldingValue {
         AssetType.EQUITY -> {
             val cost = holding.costPrice ?: return null
             (holding.manualValue ?: 0.0) - cost
+        }
+        AssetType.REAL_ESTATE -> {
+            // 开启指数估算时收益 = 估算现值 − 录入基准值；否则无成本口径，返回 null
+            if (holding.autoEstimate == true && holding.estimatedValue != null && holding.manualValue != null) {
+                holding.estimatedValue - holding.manualValue
+            } else {
+                null
+            }
         }
         else -> null
     }

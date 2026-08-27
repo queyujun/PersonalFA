@@ -58,6 +58,9 @@ private fun HoldingEntity.toDomain() = Holding(
     monthlyPayment = monthlyPayment,
     repaymentDay = repaymentDay,
     lastRepaidYearMonth = lastRepaidYearMonth,
+    autoEstimate = autoEstimate,
+    valueBaseDateEpochMs = valueBaseDateEpochMs,
+    estimatedValue = estimatedValue,
     createdAtEpochMs = createdAt,
     updatedAtEpochMs = updatedAt,
 )
@@ -84,6 +87,9 @@ private fun Holding.toEntity() = HoldingEntity(
     monthlyPayment = monthlyPayment,
     repaymentDay = repaymentDay,
     lastRepaidYearMonth = lastRepaidYearMonth,
+    autoEstimate = autoEstimate,
+    valueBaseDateEpochMs = valueBaseDateEpochMs,
+    estimatedValue = estimatedValue,
     createdAt = createdAtEpochMs,
     updatedAt = updatedAtEpochMs,
 )

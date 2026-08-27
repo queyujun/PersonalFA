@@ -31,6 +31,9 @@ data class HoldingEntity(
     val monthlyPayment: Double?,
     val repaymentDay: Int? = null,
     val lastRepaidYearMonth: Int? = null,
+    val autoEstimate: Boolean? = null,
+    val valueBaseDateEpochMs: Long? = null,
+    val estimatedValue: Double? = null,
     val createdAt: Long,
     val updatedAt: Long,
 )

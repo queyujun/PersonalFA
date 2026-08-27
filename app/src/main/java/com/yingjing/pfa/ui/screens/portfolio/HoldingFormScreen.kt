@@ -13,15 +13,22 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -29,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
+import com.yingjing.pfa.domain.model.HousePriceCities
 
 @Composable
 fun HoldingFormScreen(
@@ -87,9 +95,27 @@ fun HoldingFormScreen(
                 AssetType.ACCOUNT_CASH ->
                     Field("现金金额", s.manualValue, KeyboardType.Number) { v -> viewModel.onField { copy(manualValue = v) } }
                 AssetType.REAL_ESTATE -> {
-                    Field("所在城市", s.city) { v -> viewModel.onField { copy(city = v) } }
+                    CityDropdown(s.city) { v -> viewModel.onField { copy(city = v) } }
                     Field("建筑面积 ㎡（可选）", s.areaSqm, KeyboardType.Number) { v -> viewModel.onField { copy(areaSqm = v) } }
                     Field("当前估值", s.manualValue, KeyboardType.Number) { v -> viewModel.onField { copy(manualValue = v) } }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.padding(end = 12.dp)) {
+                            Text("按 70 城二手住宅指数自动估算", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "以录入值为基准，按每月二手住宅环比指数自动微调，同步后更新",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = s.autoEstimate,
+                            onCheckedChange = { v -> viewModel.onField { copy(autoEstimate = v) } },
+                        )
+                    }
                 }
                 AssetType.DEPOSIT -> {
                     Field("本金金额", s.manualValue, KeyboardType.Number) { v -> viewModel.onField { copy(manualValue = v) } }
@@ -150,4 +176,58 @@ private fun Field(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CityDropdown(
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var query by remember(selected) { mutableStateOf(selected) }
+    val filtered = remember(query) {
+        if (query.isBlank()) HousePriceCities.ALL
+        else HousePriceCities.ALL.filter { it.contains(query.trim()) }
+    }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = {
+                query = it
+                onSelect(it)
+                expanded = true
+            },
+            label = { Text("所在城市") },
+            singleLine = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            filtered.take(20).forEach { city ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(city) },
+                    onClick = {
+                        query = city
+                        onSelect(city)
+                        expanded = false
+                    },
+                )
+            }
+            if (filtered.isEmpty()) {
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text("无匹配城市") },
+                    onClick = { expanded = false },
+                )
+            }
+        }
+    }
 }

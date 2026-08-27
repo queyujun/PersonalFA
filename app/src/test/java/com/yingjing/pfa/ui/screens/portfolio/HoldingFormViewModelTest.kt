@@ -83,4 +83,70 @@ class HoldingFormViewModelTest {
         assertTrue(vm.state.value.isEdit)
         assertEquals("贵州茅台", vm.state.value.name)
     }
+
+    @Test
+    fun realEstate_newWithAutoEstimate_setsBaseDateToNow() = runTest {
+        session.setCurrentUser(1)
+        val before = System.currentTimeMillis()
+        val vm = viewModel(type = "REAL_ESTATE")
+        vm.onField {
+            copy(name = "滨江一号", manualValue = "1000000", city = "北京", autoEstimate = true)
+        }
+        var saved = false
+        vm.submit { saved = true }
+        advanceUntilIdle()
+        assertTrue(saved)
+        val savedHolding = repository.observeHoldings(1).first().single()
+        val base = savedHolding.valueBaseDateEpochMs
+        assertNotNull(base)
+        assertTrue(base!! >= before)
+        assertEquals(true, savedHolding.autoEstimate)
+    }
+
+    @Test
+    fun realEstate_editCityOnly_preservesBaseDate() = runTest {
+        session.setCurrentUser(1)
+        val originalBase = 1_700_000_000_000L
+        val id = repository.addHolding(
+            Holding(
+                userId = 1, type = AssetType.REAL_ESTATE, name = "滨江一号",
+                currency = Currency.CNY, manualValue = 1_000_000.0, city = "上海",
+                autoEstimate = true, valueBaseDateEpochMs = originalBase,
+            ),
+        )
+        val vm = viewModel(type = "REAL_ESTATE", holdingId = id.toString())
+        advanceUntilIdle()
+        // 仅改城市，manualValue 不变 → 基准月应保留
+        vm.onField { copy(city = "北京") }
+        var saved = false
+        vm.submit { saved = true }
+        advanceUntilIdle()
+        assertTrue(saved)
+        assertEquals(originalBase, repository.getHolding(id)!!.valueBaseDateEpochMs)
+    }
+
+    @Test
+    fun realEstate_editManualValue_resetsBaseDate() = runTest {
+        session.setCurrentUser(1)
+        val originalBase = 1_700_000_000_000L
+        val id = repository.addHolding(
+            Holding(
+                userId = 1, type = AssetType.REAL_ESTATE, name = "滨江一号",
+                currency = Currency.CNY, manualValue = 1_000_000.0, city = "北京",
+                autoEstimate = true, valueBaseDateEpochMs = originalBase,
+            ),
+        )
+        val vm = viewModel(type = "REAL_ESTATE", holdingId = id.toString())
+        advanceUntilIdle()
+        val before = System.currentTimeMillis()
+        // 改 manualValue → 基准月重置为 now
+        vm.onField { copy(manualValue = "1200000") }
+        var saved = false
+        vm.submit { saved = true }
+        advanceUntilIdle()
+        assertTrue(saved)
+        val base = repository.getHolding(id)!!.valueBaseDateEpochMs
+        assertNotNull(base)
+        assertTrue(base!! >= before)
+    }
 }

@@ -39,6 +39,7 @@ data class HoldingFormState(
     val liabilityType: String = "",
     val monthlyPayment: String = "",
     val repaymentDay: String = "",
+    val autoEstimate: Boolean = false,
     val error: String? = null,
     val isSubmitting: Boolean = false,
 )
@@ -100,6 +101,20 @@ class HoldingFormViewModel @Inject constructor(
             AssetType.DEPOSIT -> loaded?.startDateEpochMs ?: now
             else -> loaded?.startDateEpochMs
         }
+        // 房产估算基准月：新建开启估算 → now；编辑时仅当「开启估算且原 baseDate 为空」
+        // 或「manualValue 变化」时重置为 now，否则保留原值（避免改城市等顺手编辑丢历史调整）。
+        val valueBaseDateEpochMs = if (type == AssetType.REAL_ESTATE && s.autoEstimate) {
+            val loadedBase = loaded?.valueBaseDateEpochMs
+            val manualChanged = s.manualValue.toDoubleOrNull() != loaded?.manualValue
+            when {
+                !isEdit -> now
+                loadedBase == null -> now
+                manualChanged -> now
+                else -> loadedBase
+            }
+        } else {
+            loaded?.valueBaseDateEpochMs
+        }
         return Holding(
             id = if (isEdit) holdingId else 0,
             userId = userId,
@@ -122,6 +137,9 @@ class HoldingFormViewModel @Inject constructor(
             monthlyPayment = s.monthlyPayment.toDoubleOrNull(),
             repaymentDay = s.repaymentDay.toIntOrNull()?.coerceIn(1, 31),
             lastRepaidYearMonth = loaded?.lastRepaidYearMonth,
+            autoEstimate = if (type == AssetType.REAL_ESTATE) s.autoEstimate else null,
+            valueBaseDateEpochMs = valueBaseDateEpochMs,
+            estimatedValue = loaded?.estimatedValue,
             createdAtEpochMs = loaded?.createdAtEpochMs ?: 0,
         )
     }
@@ -145,6 +163,7 @@ class HoldingFormViewModel @Inject constructor(
         liabilityType = liabilityType ?: "",
         monthlyPayment = monthlyPayment.toEditText(),
         repaymentDay = repaymentDay?.toString() ?: "",
+        autoEstimate = autoEstimate == true,
     )
 
     private fun Double?.toEditText(): String {
