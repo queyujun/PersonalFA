@@ -19,6 +19,9 @@ val Cat5 = Color(0xFFE87BA4)
 val Cat6 = Color(0xFF008300)
 val Cat7 = Color(0xFF4A3AA7)
 
+// 自定义组合走势线（用户多选资产类别合计），紫红色，区别于上述固定分类色
+val CustomCombo = Color(0xFF8E24AA)
+
 // 中性 / 表面（浅色）
 val InkLight = Color(0xFF0B0B0B)
 val Ink2Light = Color(0xFF52514E)

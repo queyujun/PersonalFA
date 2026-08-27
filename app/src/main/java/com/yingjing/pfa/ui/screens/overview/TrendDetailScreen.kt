@@ -1,5 +1,6 @@
 package com.yingjing.pfa.ui.screens.overview
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,11 +15,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.domain.model.AssetCategory
+import com.yingjing.pfa.domain.usecase.TREND_CUSTOM_ID
 import com.yingjing.pfa.domain.usecase.TREND_TOTAL_ID
 import com.yingjing.pfa.domain.usecase.TimeGranularity
 import com.yingjing.pfa.domain.usecase.TrendSeriesBuilder
@@ -43,7 +52,19 @@ import com.yingjing.pfa.ui.theme.Cat4
 import com.yingjing.pfa.ui.theme.Cat5
 import com.yingjing.pfa.ui.theme.Cat6
 import com.yingjing.pfa.ui.theme.Cat7
+import com.yingjing.pfa.ui.theme.CustomCombo
 import com.yingjing.pfa.ui.theme.GainRed
+
+/** 可参与自定义组合的资产类别（排除负债：负债为负值，混入合计会误导）。 */
+private val COMBO_CATEGORIES: List<AssetCategory> = listOf(
+    AssetCategory.REAL_ESTATE,
+    AssetCategory.DEPOSIT,
+    AssetCategory.STOCK,
+    AssetCategory.GOLD,
+    AssetCategory.BOND,
+    AssetCategory.EQUITY,
+    AssetCategory.CRYPTO,
+)
 
 @Composable
 fun TrendDetailScreen(
@@ -53,11 +74,20 @@ fun TrendDetailScreen(
     val raw by viewModel.raw.collectAsState()
     var granularity by remember { mutableStateOf(TimeGranularity.DAY) }
     var selected by remember { mutableStateOf(setOf(TREND_TOTAL_ID)) }
+    // 自定义组合选中的资产类别（仅 TREND_CUSTOM_ID 被勾选时使用）
+    var customCategories by remember { mutableStateOf(setOf<String>()) }
 
-    val available = remember(raw) { listOf(TREND_TOTAL_ID) + raw.categories.map { it.category }.distinct() }
+    val available = remember(raw) { listOf(TREND_TOTAL_ID, TREND_CUSTOM_ID) + raw.categories.map { it.category }.distinct() }
     val selectedIds = available.filter { it in selected }.ifEmpty { listOf(TREND_TOTAL_ID) }
-    val chartData = remember(raw, selectedIds, granularity) {
-        TrendSeriesBuilder.build(raw.totals, raw.categories, selectedIds, granularity) { seriesLabel(it) }
+    val chartData = remember(raw, selectedIds, granularity, customCategories) {
+        TrendSeriesBuilder.build(
+            totals = raw.totals,
+            categories = raw.categories,
+            selectedIds = selectedIds,
+            granularity = granularity,
+            categoryLabel = { seriesLabel(it) },
+            customCategories = customCategories,
+        )
     }
     val colors = selectedIds.map { seriesColor(it) }
 
@@ -86,7 +116,7 @@ fun TrendDetailScreen(
             }
         }
 
-        // 资产类别多选（总净值 + 各类别）
+        // 资产类别多选（总净值 + 自定义 + 各类别）
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -101,6 +131,17 @@ fun TrendDetailScreen(
                     label = { Text(seriesLabelWithTotal(id)) },
                 )
             }
+        }
+
+        // 自定义组合的二级类别多选（仅当「自定义」被勾选时展开）
+        AnimatedVisibility(visible = TREND_CUSTOM_ID in selectedIds) {
+            CustomComboSelector(
+                selectedCategories = customCategories,
+                onToggle = { name ->
+                    customCategories = if (name in customCategories) customCategories - name else customCategories + name
+                },
+                onReplace = { customCategories = it },
+            )
         }
 
         if (chartData.bucketLabels.size < 2) {
@@ -138,14 +179,107 @@ fun TrendDetailScreen(
     }
 }
 
+/**
+ * 自定义组合的资产类别多选器：一行 chip 展示已选类别，加一个下拉「+ 类别」追加。
+ * 排除负债（负值混入合计会误导）。支持「全选 / 清空」快捷（不可变整集合替换）。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomComboSelector(
+    selectedCategories: Set<String>,
+    onToggle: (String) -> Unit,
+    onReplace: (Set<String>) -> Unit,
+) {
+    val availableNames = COMBO_CATEGORIES.map { it.name }
+    val unselected = availableNames.filter { it !in selectedCategories }
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Text(
+            "自定义组合：勾选资产类别，系统按日合计其总值并显示为一条走势线",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            // 快捷：全选 / 清空（不可变整集合替换）
+            TextButton(
+                onClick = { onReplace(availableNames.toSet()) },
+                enabled = unselected.isNotEmpty(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            ) {
+                Text("全选", style = MaterialTheme.typography.labelMedium)
+            }
+            TextButton(
+                onClick = { onReplace(emptySet()) },
+                enabled = selectedCategories.isNotEmpty(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            ) {
+                Text("清空", style = MaterialTheme.typography.labelMedium)
+            }
+
+            // 已选类别 chip（可点取消）
+            selectedCategories.forEach { name ->
+                AssistChip(
+                    onClick = { onToggle(name) },
+                    label = { Text(seriesLabel(name), style = MaterialTheme.typography.labelMedium) },
+                    leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    colors = AssistChipDefaults.assistChipColors(containerColor = CustomCombo.copy(alpha = 0.12f)),
+                )
+            }
+
+            // 「+ 类别」下拉追加
+            Box {
+                AssistChip(
+                    onClick = { menuExpanded = true },
+                    enabled = unselected.isNotEmpty(),
+                    label = { Text("+ 类别", style = MaterialTheme.typography.labelMedium) },
+                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    if (unselected.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("已全选") },
+                            onClick = { menuExpanded = false },
+                        )
+                    } else {
+                        unselected.forEach { name ->
+                            DropdownMenuItem(
+                                text = { Text(seriesLabel(name)) },
+                                onClick = {
+                                    onToggle(name)
+                                    menuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 private fun seriesLabel(categoryName: String): String =
     runCatching { AssetCategory.valueOf(categoryName).displayName }.getOrDefault(categoryName)
 
-private fun seriesLabelWithTotal(id: String): String =
-    if (id == TREND_TOTAL_ID) "总净值" else seriesLabel(id)
+private fun seriesLabelWithTotal(id: String): String = when (id) {
+    TREND_TOTAL_ID -> "总净值"
+    TREND_CUSTOM_ID -> "自定义组合"
+    else -> seriesLabel(id)
+}
 
 private fun seriesColor(id: String): Color {
     if (id == TREND_TOTAL_ID) return BlueLightMode
+    if (id == TREND_CUSTOM_ID) return CustomCombo
     return when (runCatching { AssetCategory.valueOf(id) }.getOrNull()) {
         AssetCategory.REAL_ESTATE -> Cat1
         AssetCategory.DEPOSIT -> Cat2
