@@ -88,6 +88,8 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
 
+    implementation(libs.vico.compose.m3)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
