@@ -1,6 +1,11 @@
 package com.yingjing.pfa.ui.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
@@ -17,6 +22,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -56,6 +62,16 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // 资产页列表状态：提升到根，使 FAB 能感知滚动——停留在顶部时显示 ＋，向下滚动浏览明细时
+    // 隐藏，避免遮挡正好位于右下角的资产价值。
+    val portfolioListState = rememberLazyListState()
+    val fabVisible by remember {
+        derivedStateOf {
+            portfolioListState.firstVisibleItemIndex == 0 &&
+                portfolioListState.firstVisibleItemScrollOffset == 0
+        }
+    }
 
     fun goTab(route: String) {
         navController.navigate(route) {
@@ -105,8 +121,14 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
         },
         floatingActionButton = {
             if (currentRoute == TopDestination.Portfolio.route) {
-                FloatingActionButton(onClick = { navController.navigate(ROUTE_ADD_TYPE) }) {
-                    Icon(Icons.Filled.Add, contentDescription = "添加资产")
+                AnimatedVisibility(
+                    visible = fabVisible,
+                    enter = scaleIn(),
+                    exit = scaleOut(),
+                ) {
+                    FloatingActionButton(onClick = { navController.navigate(ROUTE_ADD_TYPE) }) {
+                        Icon(Icons.Filled.Add, contentDescription = "添加资产")
+                    }
                 }
             }
         },
@@ -120,7 +142,10 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
                 OverviewScreen(onOpenTrend = { navController.navigate(ROUTE_TREND) })
             }
             composable(TopDestination.Portfolio.route) {
-                PortfolioScreen(onOpenHolding = { id -> navController.navigate("holding_detail/$id") })
+                PortfolioScreen(
+                    onOpenHolding = { id -> navController.navigate("holding_detail/$id") },
+                    listState = portfolioListState,
+                )
             }
             composable(TopDestination.Alerts.route) { AlertsScreen() }
             composable(TopDestination.Settings.route) { SettingsScreen() }
