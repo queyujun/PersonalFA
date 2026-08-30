@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand -->
+    <string name="app_name">盈景私助</string>
+
+    <!-- Language options -->
+    <string name="lang_follow_system">Follow System</string>
+    <string name="lang_simplified_chinese">Simplified Chinese</string>
+    <string name="lang_traditional_hk">Traditional Chinese (HK)</string>
+    <string name="lang_english">English</string>
+
+    <!-- Navigation -->
+    <string name="nav_overview">Overview</string>
+    <string name="nav_portfolio">Portfolio</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Asset categories -->
+    <string name="cat_real_estate">Real Estate</string>
+    <string name="cat_deposit">Deposit</string>
+    <string name="cat_stock">Stock</string>
+    <string name="cat_gold">Gold</string>
+    <string name="cat_bond">Bond</string>
+    <string name="cat_equity">Equity</string>
+    <string name="cat_crypto">Crypto</string>
+    <string name="cat_otc_fund">OTC Fund</string>
+    <string name="cat_liability">Liability</string>
+
+    <!-- Asset types -->
+    <string name="type_real_estate">Real Estate</string>
+    <string name="type_deposit">Deposit</string>
+    <string name="type_a_share">A-Share</string>
+    <string name="type_hk_stock">HK Stock</string>
+    <string name="type_us_stock">US Stock</string>
+    <string name="type_account_cash">Cash</string>
+    <string name="type_gold_etf">Gold ETF</string>
+    <string name="type_bond_etf">Bond ETF</string>
+    <string name="type_equity">Equity</string>
+    <string name="type_crypto">Crypto</string>
+    <string name="type_otc_fund">OTC Fund</string>
+    <string name="type_liability">Liability</string>
+
+    <!-- Currencies -->
+    <string name="cur_symbol_cny">¥</string>
+    <string name="cur_symbol_hkd">HK$</string>
+    <string name="cur_symbol_usd">US$</string>
+    <string name="cur_label_cny">CNY</string>
+    <string name="cur_label_hkd">HKD</string>
+    <string name="cur_label_usd">USD</string>
+
+    <!-- Time granularity -->
+    <string name="granularity_day">Day</string>
+    <string name="granularity_month">Month</string>
+    <string name="granularity_year">Year</string>
+
+    <!-- Market indexes -->
+    <string name="idx_csi300">CSI 300</string>
+    <string name="idx_hsi">Hang Seng</string>
+    <string name="idx_spx">S&amp;P 500</string>
+
+    <!-- Stock sub-groups -->
+    <string name="stock_sub_us_stock">US Stock</string>
+    <string name="stock_sub_us_cash">US Cash</string>
+    <string name="stock_sub_a_share">A-Share</string>
+    <string name="stock_sub_a_cash">A Cash</string>
+    <string name="stock_sub_hk_stock">HK Stock</string>
+    <string name="stock_sub_hk_cash">HK Cash</string>
+
+    <!-- Portfolio row subtitles -->
+    <string name="sub_a_share">%1$s · %2$s shares</string>
+    <string name="sub_hk_stock">%1$s · %2$s shares</string>
+    <string name="sub_us_stock">%1$s · %2$s shares</string>
+    <string name="sub_gold_etf">%1$s · %2$s units</string>
+    <string name="sub_bond_etf">%1$s · %2$s units</string>
+    <string name="sub_otc_fund">%1$s · %2$s units</string>
+    <string name="sub_crypto">%1$s · %2$s</string>
+    <string name="sub_cash">%1$s Cash</string>
+    <string name="sub_deposit">Annual %1$.1f%% · daily interest</string>
+    <string name="sub_repay_day">Day %1$d each month</string>
+    <string name="sub_repay_last_day">Last day of month</string>
+    <string name="sub_equity">Unlisted · manual valuation</string>
+    <string name="sub_liability_template">%1$s · repay %2$s/mo · %3$s</string>
+    <string name="sub_liability_default">Liability</string>
+    <string name="sub_real_estate_fallback">Property</string>
+    <string name="sub_real_estate_area">%1$s m²</string>
+
+    <!-- Holding detail -->
+    <string name="detail_title_fallback">Details</string>
+    <string name="detail_label_type">Type</string>
+    <string name="detail_label_currency">Currency</string>
+    <string name="detail_label_symbol_name">Code / Name</string>
+    <string name="detail_label_quantity">Quantity</string>
+    <string name="detail_label_cost_price">Cost Price</string>
+    <string name="detail_label_current_price">Current Price</string>
+    <string name="detail_label_principal">Principal</string>
+    <string name="detail_label_annual_rate">Annual Rate</string>
+    <string name="detail_label_city">City</string>
+    <string name="detail_label_area">Area</string>
+    <string name="detail_label_current_value">Current Value</string>
+    <string name="detail_label_estimate_method">Estimate Method</string>
+    <string name="detail_label_estimate_value">Estimated Value</string>
+    <string name="detail_label_base_date">Base Date</string>
+    <string name="detail_label_adjust">Cumulative Adjust</string>
+    <string name="detail_label_share_percent">Share %</string>
+    <string name="detail_label_equity_cost">Equity Cost</string>
+    <string name="detail_label_cash_amount">Cash Amount</string>
+    <string name="detail_label_shares">Shares</string>
+    <string name="detail_label_cost_nav">Cost NAV</string>
+    <string name="detail_label_current_nav">Current NAV</string>
+    <string name="detail_label_liability_type">Liability Type</string>
+    <string name="detail_label_owed">Amount Owed</string>
+    <string name="detail_label_interest">Interest Rate</string>
+    <string name="detail_label_monthly_payment">Monthly Payment</string>
+    <string name="detail_price_pending">Pending market data</string>
+    <string name="detail_reit_index">70-city index</string>
+    <string name="detail_estimate_syncing">Updates after sync</string>
+    <string name="detail_otc_pending">Manual update pending</string>
+    <string name="detail_label_otc_region">Fund Region</string>
+    <string name="otc_region_mainland">Mainland China</string>
+    <string name="otc_region_other">Other</string>
+    <string name="detail_market_value">Market Value (%1$s)</string>
+    <string name="detail_holding_profit">Profit %1$s</string>
+    <string name="detail_delete_confirm_title">Delete \"%1$s\"?</string>
+    <string name="detail_delete_confirm_body">This cannot be undone.</string>
+
+    <!-- Trend -->
+    <string name="trend_detail_title">Net Worth Trend (10k)</string>
+    <string name="trend_range_7d">7D</string>
+    <string name="trend_range_30d">30D</string>
+    <string name="trend_range_all">All</string>
+    <string name="trend_total">Total</string>
+    <string name="trend_custom">Custom</string>
+    <string name="trend_accumulating_long">Accumulating data: one record per day. Use it a few more days to view the trend, switch day/month/year, and zoom.</string>
+    <string name="trend_accumulating_short">Accumulating data: one net-worth record per day. Use it a few more days to see the curve.</string>
+    <string name="trend_accumulating_chart">Accumulating data: one record per day. Use it a few more days to view the trend.</string>
+    <string name="trend_gesture_hint">Pinch to zoom · touch the curve for coordinates; landscape shows a larger chart</string>
+    <string name="trend_current">Current</string>
+    <string name="trend_range_pnl">Range P&amp;L</string>
+    <string name="trend_wan_unit">%1$s</string>
+    <string name="trend_high_low">High %1$s · Low %2$s</string>
+    <string name="trend_custom_hint">Custom combo: pick asset categories; the system sums their daily totals into one trend line</string>
+    <string name="trend_add_category">+ Category</string>
+    <string name="trend_all_selected">All selected</string>
+
+    <!-- Pie chart -->
+    <string name="pie_legend">%1$s%2$s · %3$d%%</string>
+
+    <!-- Alerts -->
+    <string name="alert_cat_holding">Holding</string>
+    <string name="alert_cat_ipo">IPO</string>
+    <string name="alert_cat_market">Market</string>
+    <string name="alert_cat_global">Global</string>
+    <string name="alert_channel_name">Asset Alerts</string>
+    <string name="alert_channel_desc">Holding / IPO / Market / Global alerts</string>
+    <string name="alert_deposit_title">Deposit maturing soon</string>
+    <string name="alert_deposit_body">\"%1$s\" matures in %2$d days. Renew or reinvest.</string>
+    <string name="alert_price_up">up</string>
+    <string name="alert_price_down">down</string>
+    <string name="alert_price_title">%1$s sharp move</string>
+    <string name="alert_price_body">\"%1$s\" %2$s %3$.1f%% vs last (±%4$.1f%% threshold).</string>
+    <string name="alert_market_title">%1$s %2$s %3$s%% in a day</string>
+    <string name="alert_market_body">Major index \"%1$s\" %2$s %3$s%% (±%4$.1f%% threshold).</string>
+    <string name="alert_ipo_title">%1$d new IPOs today</string>
+    <string name="alert_ipo_body">New IPOs today: %1$s. Don\'t forget to apply.</string>
+    <string name="alert_ipo_item">%1$s (code %2$s)</string>
+    <string name="alert_ipo_sep">", "</string>
+
+    <!-- Errors -->
+    <string name="err_username_empty">Enter username</string>
+    <string name="err_username_min">At least %1$d characters</string>
+    <string name="err_username_max">At most %1$d characters</string>
+    <string name="err_username_chars">Only Chinese, letters, digits, or _</string>
+    <string name="err_password_empty">Enter password</string>
+    <string name="err_password_min">At least %1$d digits</string>
+    <string name="err_password_max">At most %1$d digits</string>
+    <string name="err_login_blank">Enter username and password</string>
+    <string name="err_login_invalid">Invalid username or password</string>
+    <string name="err_password_mismatch">Passwords don\'t match</string>
+    <string name="err_username_taken">Username taken</string>
+    <string name="err_not_logged_in">Not logged in</string>
+    <string name="err_holding_name">Enter a name</string>
+    <string name="err_holding_symbol">Enter code / name</string>
+    <string name="err_holding_qty">Enter quantity</string>
+    <string name="err_holding_cash">Enter cash amount</string>
+    <string name="err_holding_value">Enter current value</string>
+    <string name="err_holding_principal">Enter principal</string>
+    <string name="err_holding_rate">Enter annual rate</string>
+    <string name="err_holding_liability">Enter liability amount</string>
+
+    <!-- Status messages -->
+    <string name="status_write_failed">Cannot write file</string>
+    <string name="status_backup_exported">✓ Backup exported</string>
+    <string name="status_backup_failed">Backup failed: %1$s</string>
+    <string name="status_read_failed">Read file failed</string>
+    <string name="status_restore_ok">✓ Restore succeeded</string>
+    <string name="status_restore_failed">Restore failed: wrong passphrase or invalid file</string>
+    <string name="status_sync_plan_updated">✓ Sync plan updated</string>
+    <string name="status_backup_plan_updated">✓ Backup plan updated</string>
+    <string name="status_currency_updated">✓ Default currency updated</string>
+    <string name="status_password_changed">✓ Password changed</string>
+    <string name="status_old_password_wrong">Old password incorrect</string>
+    <string name="status_username_changed">✓ Username changed</string>
+    <string name="status_username_taken">Username taken or invalid</string>
+    <string name="status_profile_saved">✓ Profile saved</string>
+    <string name="status_history_deleted">✓ Deleted snapshots before %1$s</string>
+    <string name="status_delete_failed">Delete failed: %1$s</string>
+    <string name="status_language_updated">✓ Language switched</string>
+
+    <!-- Settings -->
+    <string name="settings_group_profile">Profile</string>
+    <string name="settings_row_profile">Profile</string>
+    <string name="settings_group_security">Account &amp; Security</string>
+    <string name="settings_change_username">Change Username</string>
+    <string name="settings_change_password">Change Password</string>
+    <string name="settings_biometric">Biometric Login</string>
+    <string name="settings_biometric_subtitle">Use fingerprint/face to quickly log in on the login page</string>
+    <string name="settings_group_accounts">Account Management</string>
+    <string name="settings_group_sync">Data &amp; Sync</string>
+    <string name="settings_sync_detail">Quote refresh &amp; trend data</string>
+    <string name="settings_last_update">Last %1$s</string>
+    <string name="settings_not_updated">Never updated</string>
+    <string name="settings_group_backup">Data Backup</string>
+    <string name="settings_backup_detail">Backup &amp; Restore</string>
+    <string name="settings_auto_backup">Auto backup</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings_current_badge">Current</string>
+    <string name="settings_switch">Switch</string>
+    <string name="settings_new_username">New username</string>
+    <string name="settings_passphrase">Passphrase</string>
+    <string name="settings_old_password">Old password</string>
+    <string name="settings_new_password">New password (≥4 digits)</string>
+    <string name="settings_group_language">Language</string>
+    <string name="settings_language">App language</string>
+    <string name="settings_language_dialog_title">Select language</string>
+
+    <!-- Profile -->
+    <string name="profile_nickname">Nickname</string>
+    <string name="profile_gender">Gender</string>
+    <string name="profile_gender_male">Male</string>
+    <string name="profile_gender_female">Female</string>
+    <string name="profile_gender_other">Other</string>
+    <string name="profile_age">Age</string>
+    <string name="profile_age_years">%1$d years old</string>
+    <string name="profile_default_currency">Default Currency</string>
+    <string name="profile_save">Save Profile</string>
+    <string name="profile_account">Account</string>
+    <string name="profile_readonly">Read-only</string>
+
+    <!-- Schedule -->
+    <string name="schedule_period">Period</string>
+    <string name="schedule_hour_label">Hour (0-23)</string>
+    <string name="schedule_save">Save Plan</string>
+    <string name="every_day">Daily</string>
+    <string name="every_3_days">Every 3 days</string>
+    <string name="every_week">Weekly</string>
+    <string name="every_n_days">Every %1$d days</string>
+    <string name="hour_oclock">%1$d:00</string>
+    <string name="not_set">Not set</string>
+    <string name="common_on">On</string>
+    <string name="common_off">Off</string>
+
+    <!-- Sync -->
+    <string name="sync_refresh_now">Refresh quotes now</string>
+    <string name="sync_last_update">Last update: %1$s</string>
+    <string name="sync_purge_title">Purge old trend data</string>
+    <string name="sync_purge_subtitle">Delete net-worth trend snapshots before a date (holdings and alerts unaffected)</string>
+    <string name="sync_plan_subtitle">Quote refresh schedule</string>
+    <string name="sync_plan_hint">Alerts are fetched together with quote refresh (same time / period)</string>
+    <string name="sync_purge_confirm_title">Delete trends before %1$s?</string>
+    <string name="sync_purge_confirm_body">Permanently deletes net-worth &amp; category snapshots before this date (exclusive). Trend history will shorten. Irreversible — back up first.</string>
+
+    <!-- Backup -->
+    <string name="backup_now">Back up now</string>
+    <string name="backup_restore">Restore from file</string>
+    <string name="backup_auto_weekly">Weekly auto backup</string>
+    <string name="backup_auto_subtitle">On-device encrypted copy (use \"Back up now\" with a passphrase for portable backup)</string>
+    <string name="backup_plan_subtitle">Auto backup schedule</string>
+    <string name="backup_plan_hint">Runs on this period / time when \"Weekly auto backup\" is on</string>
+    <string name="backup_security_hint">Backups use AES-256-GCM (passphrase-derived key). Keep the exported file safe — a lost passphrase is unrecoverable.</string>
+    <string name="backup_set_passphrase">Set backup passphrase</string>
+    <string name="backup_export">Export</string>
+    <string name="backup_input_passphrase">Enter backup passphrase</string>
+    <string name="backup_filename_prefix">盈景私助-backup-</string>
+
+    <!-- Form -->
+    <string name="add_asset_title">Add Asset</string>
+    <string name="form_title_edit">Edit %1$s</string>
+    <string name="form_title_add">Add %1$s</string>
+    <string name="form_label_name">Name</string>
+    <string name="form_label_currency">Currency</string>
+    <string name="form_label_symbol">Code / Name</string>
+    <string name="form_label_quantity">Quantity</string>
+    <string name="form_label_cost_price">Cost price (optional)</string>
+    <string name="form_label_current_price">Current price (optional, auto-updates from P3)</string>
+    <string name="form_label_cash_amount">Cash amount</string>
+    <string name="form_label_shares">Shares</string>
+    <string name="form_label_cost_nav">Cost NAV (optional)</string>
+    <string name="form_label_current_nav">Current NAV (optional, manual)</string>
+    <string name="form_label_otc_region">Fund region</string>
+    <string name="form_otc_autonav_hint">Mainland China funds update NAV automatically after sync.</string>
+    <string name="form_label_area">Area ㎡ (optional)</string>
+    <string name="form_label_current_value">Current value</string>
+    <string name="form_reit_estimate">Auto-estimate via 70-city index</string>
+    <string name="form_reit_hint">Adjusts the entered value by monthly index changes; updates after sync</string>
+    <string name="form_label_principal">Principal</string>
+    <string name="form_label_annual_rate">Annual rate %</string>
+    <string name="form_label_maturity">Maturity yyyy-MM-dd (optional, for alerts)</string>
+    <string name="form_label_deposit_type">Deposit type (optional, e.g. term)</string>
+    <string name="form_label_share_percent">Share % (optional)</string>
+    <string name="form_label_equity_cost">Equity cost (optional)</string>
+    <string name="form_label_liability_type">Liability type (optional, e.g. mortgage)</string>
+    <string name="form_label_owed">Amount owed</string>
+    <string name="form_label_interest">Interest rate % (optional)</string>
+    <string name="form_label_monthly_payment">Monthly repayment (optional)</string>
+    <string name="form_label_repayment_day">Repayment day 1-31 (optional, blank = last day)</string>
+    <string name="form_label_city">City</string>
+    <string name="form_no_city_match">No matching city</string>
+    <string name="form_save_edit">Save changes</string>
+    <string name="form_save">Save</string>
+    <string name="form_price_hint">Note: stock / ETF / token prices auto-update daily from P3.</string>
+
+    <!-- Common -->
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_save">Save</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_next">Next</string>
+    <string name="common_select_all">Select all</string>
+    <string name="common_clear">Clear</string>
+    <string name="common_refresh">Refresh</string>
+
+    <!-- Auth -->
+    <string name="auth_tagline">Your personal asset overview</string>
+    <string name="auth_tab_login">Login</string>
+    <string name="auth_tab_register">Register</string>
+    <string name="auth_label_username">Username</string>
+    <string name="auth_label_password">Password</string>
+    <string name="auth_label_confirm_password">Confirm password</string>
+    <string name="auth_button_login">Log In</string>
+    <string name="auth_button_register">Register</string>
+    <string name="auth_biometric_login">Use fingerprint / face login</string>
+    <string name="auth_biometric_with_user">Use fingerprint / face for %1$s</string>
+    <string name="auth_local_only">🔐 Accounts &amp; data stay on-device (encrypted). Multi-user supported.</string>
+
+    <!-- Overview -->
+    <string name="overview_title">Overview</string>
+    <string name="overview_asset_distribution">Asset Distribution</string>
+    <string name="overview_price_hint">Current prices auto-update daily (refresh in Settings); net-worth trends accumulate daily.</string>
+    <string name="overview_net_worth">Net Worth</string>
+    <string name="overview_total_assets">Total assets %1$s</string>
+    <string name="overview_total_liabilities">Total liabilities %1$s</string>
+    <string name="overview_trend">Net Worth Trend</string>
+    <string name="overview_detail">Details ›</string>
+
+    <!-- Portfolio -->
+    <string name="portfolio_empty_hint">No assets yet. Tap + to add.</string>
+
+    <!-- Alerts screen -->
+    <string name="alerts_title">Alerts</string>
+    <string name="alerts_mark_all_read">Mark all read</string>
+    <string name="alerts_filter_all">All</string>
+    <string name="alerts_empty">No alerts</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">Back</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_close">Close</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_refresh_quotes">Refresh quotes now</string>
+    <string name="cd_add_asset">Add asset</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_expand">Expand</string>
+
+    <!-- Snackbars -->
+    <string name="snackbar_quote_refreshed">Quote refresh triggered</string>
+
+    <!-- Biometric -->
+    <string name="biometric_title">Biometric login</string>
+    <string name="biometric_subtitle">Quickly log in to 盈景私助 with fingerprint or face</string>
+    <string name="biometric_negative">Use password</string>
+
+    <!-- Placeholder -->
+    <string name="placeholder_subtitle">P0 scaffold placeholder</string>
+</resources>

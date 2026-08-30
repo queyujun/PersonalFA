@@ -1,5 +1,6 @@
 package com.yingjing.pfa.data.sync
 
+import com.yingjing.pfa.core.i18n.StringResolver
 import com.yingjing.pfa.data.remote.MarketIndexes
 import com.yingjing.pfa.domain.alert.AlertNotifier
 import com.yingjing.pfa.domain.alert.AlertRules
@@ -18,6 +19,7 @@ import com.yingjing.pfa.domain.repository.UserRepository
 import com.yingjing.pfa.domain.usecase.LiabilityRepayment
 import com.yingjing.pfa.domain.usecase.RealEstateEstimator
 import com.yingjing.pfa.domain.usecase.SummarizePortfolio
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,13 +44,14 @@ class SyncManager @Inject constructor(
     private val alertNotifier: AlertNotifier,
     private val syncStateStore: SyncStateStore,
     private val housePriceRepository: HousePriceRepository,
+    private val stringResolver: StringResolver,
 ) {
     suspend fun sync(): Boolean = runCatching {
         fxRepository.refresh()
         val rates = fxRepository.current()
         val indexChanges = runCatching { marketIndexRemote.fetch() }.getOrDefault(emptyMap())
         val ipos = runCatching { ipoRemote.fetch() }.getOrDefault(emptyList())
-        val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+        val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             .format(java.util.Date(nowProvider()))
 
         // 预读所有用户持仓，收集需要刷新指数的城市（去重 + 70 城校验）后批量刷新
@@ -97,10 +100,10 @@ class SyncManager @Inject constructor(
                 nowMs = now,
             )
 
-            val alerts = AlertRules.depositMaturity(updated, now) +
-                AlertRules.priceMoves(priceChanges, now) +
-                AlertRules.marketMoves(user.id, indexChanges, MarketIndexes.NAMES, now) +
-                AlertRules.ipoAlerts(user.id, ipos, todayDate, now)
+            val alerts = AlertRules.depositMaturity(updated, now, stringResolver) +
+                AlertRules.priceMoves(priceChanges, now, stringResolver) +
+                AlertRules.marketMoves(user.id, indexChanges, MarketIndexes.displayNames(stringResolver), now, stringResolver) +
+                AlertRules.ipoAlerts(user.id, ipos, todayDate, now, stringResolver)
             alerts.forEach { alert ->
                 if (alertRepository.insertIfNew(alert)) alertNotifier.notify(alert)
             }

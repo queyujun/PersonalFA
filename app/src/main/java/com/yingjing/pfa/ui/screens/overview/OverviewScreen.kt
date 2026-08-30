@@ -22,12 +22,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.AssetCategory
 import com.yingjing.pfa.domain.usecase.PortfolioSummary
 import com.yingjing.pfa.ui.components.AssetPieChart
+import com.yingjing.pfa.ui.components.MoneyText
 import com.yingjing.pfa.ui.components.NetWorthTrendChart
 import com.yingjing.pfa.ui.components.PieSlice
 import com.yingjing.pfa.ui.format.MoneyFormat
@@ -39,6 +42,8 @@ import com.yingjing.pfa.ui.theme.Cat4
 import com.yingjing.pfa.ui.theme.Cat5
 import com.yingjing.pfa.ui.theme.Cat6
 import com.yingjing.pfa.ui.theme.Cat7
+import com.yingjing.pfa.ui.theme.Cat8
+import com.yingjing.pfa.ui.theme.Cat9
 
 @Composable
 fun OverviewScreen(
@@ -47,6 +52,7 @@ fun OverviewScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val summary = state.summary
+    val categoryNames = AssetCategory.entries.associateWith { stringResource(it.displayRes) }
 
     Column(
         modifier = Modifier
@@ -54,7 +60,7 @@ fun OverviewScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        Text("总览", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.overview_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
 
         NetWorthCard(summary)
@@ -65,16 +71,16 @@ fun OverviewScreen(
         if (summary != null) {
             val slices = summary.byCategory
                 .filter { it.category != AssetCategory.LIABILITY && it.amount > 0 }
-                .map { PieSlice(it.category.displayName, it.amount, colorFor(it.category)) }
+                .map { PieSlice(categoryNames[it.category] ?: it.category.name, it.amount, colorFor(it.category)) }
             if (slices.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("资产分布", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.overview_asset_distribution), style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(10.dp))
                         AssetPieChart(
                             slices = slices,
-                            currencySymbol = summary.displayCurrency.symbol,
+                            currencySymbol = stringResource(summary.displayCurrency.symbolRes),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -84,7 +90,7 @@ fun OverviewScreen(
 
         Spacer(Modifier.height(16.dp))
         Text(
-            "现价由行情每日自动更新（可在「我的」页立即刷新）；净值走势按每日快照累积。",
+            stringResource(R.string.overview_price_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -93,16 +99,17 @@ fun OverviewScreen(
 
 @Composable
 private fun NetWorthCard(summary: PortfolioSummary?) {
+    val symbol = summary?.displayCurrency?.let { stringResource(it.symbolRes) } ?: ""
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(BlueLightMode, RoundedCornerShape(20.dp))
             .padding(20.dp),
     ) {
-        Text("总资产净值", color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.overview_net_worth), color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(4.dp))
-        Text(
-            summary?.let { MoneyFormat.format(it.netWorth, it.displayCurrency) } ?: "—",
+        MoneyText(
+            summary?.let { MoneyFormat.format(it.netWorth, symbol) } ?: "—",
             color = Color.White,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
@@ -110,13 +117,19 @@ private fun NetWorthCard(summary: PortfolioSummary?) {
         if (summary != null) {
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                Text(
-                    "总资产 ${MoneyFormat.format(summary.totalAssets, summary.displayCurrency)}",
+                MoneyText(
+                    stringResource(
+                        R.string.overview_total_assets,
+                        MoneyFormat.format(summary.totalAssets, symbol),
+                    ),
                     color = Color.White.copy(alpha = 0.92f),
                     style = MaterialTheme.typography.bodySmall,
                 )
-                Text(
-                    "总负债 ${MoneyFormat.format(summary.totalLiabilities, summary.displayCurrency)}",
+                MoneyText(
+                    stringResource(
+                        R.string.overview_total_liabilities,
+                        MoneyFormat.format(summary.totalLiabilities, symbol),
+                    ),
                     color = Color.White.copy(alpha = 0.92f),
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -134,8 +147,8 @@ private fun TrendCard(trend: List<Double>, onOpenTrend: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("净值走势", style = MaterialTheme.typography.titleMedium)
-                Text("详情 ›", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.overview_trend), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.overview_detail), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.height(10.dp))
             if (trend.size >= 2) {
@@ -148,7 +161,7 @@ private fun TrendCard(trend: List<Double>, onOpenTrend: () -> Unit) {
                 )
             } else {
                 Text(
-                    "数据积累中：每日自动记录一条净值，多用几天即可看到走势曲线。",
+                    stringResource(R.string.trend_accumulating_short),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -165,5 +178,7 @@ private fun colorFor(category: AssetCategory): Color = when (category) {
     AssetCategory.BOND -> Cat5
     AssetCategory.CRYPTO -> Cat6
     AssetCategory.EQUITY -> Cat7
+    AssetCategory.OTC_FUND -> Cat8
+    AssetCategory.MISC -> Cat9
     AssetCategory.LIABILITY -> Cat2
 }

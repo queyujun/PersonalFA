@@ -59,5 +59,5 @@ class OverviewViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OverviewUiState())
 
     private fun userCurrencyFlow(userId: Long) =
-        sessionManager.currentUserId.map { userRepository.getUser(userId)?.defaultCurrency ?: Currency.CNY }
+        userRepository.observeUser(userId).map { it?.defaultCurrency ?: Currency.CNY }
 }

@@ -6,6 +6,9 @@ import com.yingjing.pfa.domain.auth.RegisterResult
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
 import com.yingjing.pfa.domain.repository.UserRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
 /** 内存版 UserRepository，用于 UseCase / ViewModel 单元测试。 */
 class FakeUserRepository(
@@ -14,6 +17,9 @@ class FakeUserRepository(
     private val users = mutableListOf<User>()
     private val hashes = mutableMapOf<Long, String>()
     private var nextId = 1L
+
+    // 响应式状态：任一变更后 push 最新列表，observeUser 据此重发。
+    private val usersState = MutableStateFlow(users.toList())
 
     override suspend fun register(
         username: String,
@@ -24,6 +30,7 @@ class FakeUserRepository(
         val user = User(nextId++, username, defaultCurrency, 0L)
         users += user
         hashes[user.id] = hasher.hash(password, iterations = 1000)
+        publish()
         return RegisterResult.Success(user)
     }
 
@@ -40,9 +47,15 @@ class FakeUserRepository(
 
     override suspend fun getUser(id: Long): User? = users.firstOrNull { it.id == id }
 
+    override fun observeUser(id: Long): Flow<User?> =
+        usersState.map { list -> list.firstOrNull { it.id == id } }
+
     override suspend fun updateDefaultCurrency(userId: Long, currency: Currency) {
         val index = users.indexOfFirst { it.id == userId }
-        if (index >= 0) users[index] = users[index].copy(defaultCurrency = currency)
+        if (index >= 0) {
+            users[index] = users[index].copy(defaultCurrency = currency)
+            publish()
+        }
     }
 
     override suspend fun changePassword(userId: Long, oldPassword: String, newPassword: String): Boolean {
@@ -57,17 +70,28 @@ class FakeUserRepository(
         if (name.isBlank()) return false
         if (users.any { it.username == name && it.id != userId }) return false
         val index = users.indexOfFirst { it.id == userId }
-        if (index >= 0) users[index] = users[index].copy(username = name)
+        if (index >= 0) {
+            users[index] = users[index].copy(username = name)
+            publish()
+        }
         return true
     }
 
     override suspend fun updateProfile(userId: Long, nickname: String?, gender: String?, age: Int?) {
         val index = users.indexOfFirst { it.id == userId }
-        if (index >= 0) users[index] = users[index].copy(nickname = nickname, gender = gender, age = age)
+        if (index >= 0) {
+            users[index] = users[index].copy(nickname = nickname, gender = gender, age = age)
+            publish()
+        }
     }
 
     override suspend fun deleteUser(userId: Long) {
         users.removeAll { it.id == userId }
         hashes.remove(userId)
+        publish()
+    }
+
+    private fun publish() {
+        usersState.value = users.toList()
     }
 }

@@ -31,6 +31,13 @@ class FxRepositoryImpl @Inject constructor(
 
     override suspend fun current(): FxRates = observeRates().first()
 
+    override suspend fun save(rates: FxRates) {
+        context.fxDataStore.edit {
+            it[USD_CNY] = rates.usdToCny
+            it[HKD_CNY] = rates.hkdToCny
+        }
+    }
+
     override suspend fun refresh(): FxRates {
         val rates = fxRemote.fetch()
         context.fxDataStore.edit {

@@ -46,4 +46,12 @@ class SinaSymbolMapperTest {
     fun blankSymbol_returnsNull() {
         assertNull(SinaSymbolMapper.sinaCode(holding(AssetType.A_SHARE, null)))
     }
+
+    @Test
+    fun physicalGold_returnsSpotGold_regardlessOfSymbol() {
+        // 实物金特殊映射到新浪伦敦金现货 hf_XAU（USD/盎司），且在 symbol 校验之前短路返回
+        assertEquals("hf_XAU", SinaSymbolMapper.sinaCode(holding(AssetType.PHYSICAL_GOLD, null)))
+        // 即便误填了 symbol，仍走现货金（不会被当作 A 股代码映射）
+        assertEquals("hf_XAU", SinaSymbolMapper.sinaCode(holding(AssetType.PHYSICAL_GOLD, "518880")))
+    }
 }

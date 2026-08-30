@@ -21,8 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.AssetType
 
 @Composable
@@ -36,9 +38,9 @@ fun AddTypePickerScreen(onPick: (AssetType) -> Unit, onClose: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Filled.Close, contentDescription = "关闭")
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cd_close))
             }
-            Text("添加资产", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.add_asset_title), style = MaterialTheme.typography.titleLarge)
         }
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
@@ -56,7 +58,7 @@ fun AddTypePickerScreen(onPick: (AssetType) -> Unit, onClose: () -> Unit) {
                     ) {
                         Text(emojiFor(type), style = MaterialTheme.typography.headlineSmall)
                         Text(
-                            type.displayName,
+                            stringResource(type.displayRes),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 6.dp),
@@ -76,8 +78,11 @@ private fun emojiFor(type: AssetType): String = when (type) {
     AssetType.US_STOCK -> "🇺🇸"
     AssetType.ACCOUNT_CASH -> "💵"
     AssetType.GOLD_ETF -> "🪙"
+    AssetType.PHYSICAL_GOLD -> "🧈"
     AssetType.BOND_ETF -> "📜"
     AssetType.EQUITY -> "🏢"
     AssetType.CRYPTO -> "₿"
+    AssetType.OTC_FUND -> "📊"
+    AssetType.MISC -> "📦"
     AssetType.LIABILITY -> "💳"
 }

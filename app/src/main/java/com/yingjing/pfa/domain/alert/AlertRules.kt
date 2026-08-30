@@ -1,5 +1,7 @@
 package com.yingjing.pfa.domain.alert
 
+import com.yingjing.pfa.R
+import com.yingjing.pfa.core.i18n.StringResolver
 import com.yingjing.pfa.domain.model.Alert
 import com.yingjing.pfa.domain.model.AlertCategory
 import com.yingjing.pfa.domain.model.AlertSeverity
@@ -20,6 +22,8 @@ data class AlertThresholds(
 /**
  * 持仓相关提醒规则（纯函数，可单元测试）。
  * dedupKey 含自然日，保证「同一天同一事项」只提醒一次。
+ * 所有面向用户的文案经 [resolver] 按当前 locale 解析——提醒一旦生成即落库为最终文案
+ * （历史提醒保持生成时的语言，不改 locale 不重渲染）。
  */
 object AlertRules {
 
@@ -29,6 +33,7 @@ object AlertRules {
     fun depositMaturity(
         holdings: List<Holding>,
         nowMs: Long,
+        resolver: StringResolver,
         thresholds: AlertThresholds = AlertThresholds(),
     ): List<Alert> {
         val today = nowMs / MS_PER_DAY
@@ -41,8 +46,8 @@ object AlertRules {
                 userId = h.userId,
                 category = AlertCategory.HOLDING,
                 severity = if (daysLeft <= 7) AlertSeverity.WARNING else AlertSeverity.INFO,
-                title = "存款即将到期",
-                body = "「${h.name}」将在 $daysLeft 天后到期，记得续存 / 转投。",
+                title = resolver.get(R.string.alert_deposit_title),
+                body = resolver.get(R.string.alert_deposit_body, h.name, daysLeft),
                 refHoldingId = h.id,
                 dedupKey = "deposit_maturity_${h.id}_$hitBucket",
                 createdAtEpochMs = nowMs,
@@ -55,6 +60,7 @@ object AlertRules {
     fun priceMoves(
         changes: List<PriceChange>,
         nowMs: Long,
+        resolver: StringResolver,
         thresholds: AlertThresholds = AlertThresholds(),
     ): List<Alert> {
         val today = nowMs / MS_PER_DAY
@@ -64,13 +70,20 @@ object AlertRules {
             val pct = (change.newPrice - change.oldPrice) / change.oldPrice * 100.0
             if (abs(pct) < thresholds.holdingMovePercent) return@forEach
             val h = change.holding
-            val direction = if (pct >= 0) "上涨" else "下跌"
+            val directionRes = if (pct >= 0) R.string.alert_price_up else R.string.alert_price_down
+            val direction = resolver.get(directionRes)
             result += Alert(
                 userId = h.userId,
                 category = AlertCategory.HOLDING,
                 severity = AlertSeverity.SERIOUS,
-                title = "${h.name} 大幅波动",
-                body = "你持有的「${h.name}」较上次${direction} ${"%.1f".format(abs(pct))}%（触发 ±${thresholds.holdingMovePercent}% 阈值）。",
+                title = resolver.get(R.string.alert_price_title, h.name),
+                body = resolver.get(
+                    R.string.alert_price_body,
+                    h.name,
+                    direction,
+                    abs(pct),
+                    thresholds.holdingMovePercent,
+                ),
                 refHoldingId = h.id,
                 dedupKey = "price_move_${h.id}_$today",
                 createdAtEpochMs = nowMs,
@@ -85,20 +98,22 @@ object AlertRules {
         changes: Map<String, Double>,
         names: Map<String, String>,
         nowMs: Long,
+        resolver: StringResolver,
         thresholds: AlertThresholds = AlertThresholds(),
     ): List<Alert> {
         val today = nowMs / MS_PER_DAY
         return changes.mapNotNull { (code, pct) ->
             if (abs(pct) < thresholds.marketMovePercent) return@mapNotNull null
             val name = names[code] ?: code
-            val direction = if (pct >= 0) "上涨" else "下跌"
+            val directionRes = if (pct >= 0) R.string.alert_price_up else R.string.alert_price_down
+            val direction = resolver.get(directionRes)
             val pctText = "%.2f".format(abs(pct))
             Alert(
                 userId = userId,
                 category = AlertCategory.MARKET,
                 severity = AlertSeverity.SERIOUS,
-                title = "$name 单日$direction $pctText%",
-                body = "主要指数「$name」当日$direction $pctText%，触发 ±${thresholds.marketMovePercent}% 阈值。",
+                title = resolver.get(R.string.alert_market_title, name, direction, pctText),
+                body = resolver.get(R.string.alert_market_body, name, direction, pctText, thresholds.marketMovePercent),
                 dedupKey = "market_${code}_$today",
                 createdAtEpochMs = nowMs,
             )
@@ -111,17 +126,21 @@ object AlertRules {
         ipos: List<IpoItem>,
         todayDate: String,
         nowMs: Long,
+        resolver: StringResolver,
     ): List<Alert> {
         val todays = ipos.filter { it.applyDate == todayDate }
         if (todays.isEmpty()) return emptyList()
-        val list = todays.joinToString("、") { "${it.name}（申购代码 ${it.applyCode}）" }
+        val sep = resolver.get(R.string.alert_ipo_sep)
+        val list = todays.joinToString(sep) {
+            resolver.get(R.string.alert_ipo_item, it.name, it.applyCode)
+        }
         return listOf(
             Alert(
                 userId = userId,
                 category = AlertCategory.IPO,
                 severity = AlertSeverity.INFO,
-                title = "今日可申购新股 ${todays.size} 只",
-                body = "今日可打新：$list。别忘申购。",
+                title = resolver.get(R.string.alert_ipo_title, todays.size),
+                body = resolver.get(R.string.alert_ipo_body, list),
                 dedupKey = "ipo_$todayDate",
                 createdAtEpochMs = nowMs,
             ),

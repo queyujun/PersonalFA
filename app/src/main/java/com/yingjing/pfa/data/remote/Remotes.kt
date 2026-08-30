@@ -16,3 +16,8 @@ interface CryptoQuoteRemote {
 interface FxRemote {
     suspend fun fetch(): FxRates
 }
+
+/** 场外基金净值（基金代码 → 单位净值，以基金本身币种计，中国大陆基金通常为 CNY）。 */
+interface FundQuoteRemote {
+    suspend fun fetch(codes: List<String>): Map<String, Double>
+}

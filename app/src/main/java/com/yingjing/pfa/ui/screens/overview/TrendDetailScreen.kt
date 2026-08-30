@@ -1,6 +1,7 @@
 package com.yingjing.pfa.ui.screens.overview
 
 import android.content.res.Configuration
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -46,9 +47,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.AssetCategory
 import com.yingjing.pfa.domain.usecase.TREND_CUSTOM_ID
 import com.yingjing.pfa.domain.usecase.TREND_TOTAL_ID
@@ -56,6 +59,7 @@ import com.yingjing.pfa.domain.usecase.TimeGranularity
 import com.yingjing.pfa.domain.usecase.TrendSeriesBuilder
 import com.yingjing.pfa.domain.usecase.TrendSeries
 import com.yingjing.pfa.ui.components.MultiSeriesTrendChart
+import com.yingjing.pfa.ui.components.MoneyText
 import com.yingjing.pfa.ui.format.MoneyFormat
 import com.yingjing.pfa.ui.theme.BlueLightMode
 import com.yingjing.pfa.ui.theme.Cat1
@@ -65,6 +69,8 @@ import com.yingjing.pfa.ui.theme.Cat4
 import com.yingjing.pfa.ui.theme.Cat5
 import com.yingjing.pfa.ui.theme.Cat6
 import com.yingjing.pfa.ui.theme.Cat7
+import com.yingjing.pfa.ui.theme.Cat8
+import com.yingjing.pfa.ui.theme.Cat9
 import com.yingjing.pfa.ui.theme.CustomCombo
 import com.yingjing.pfa.ui.theme.GainRed
 import com.yingjing.pfa.ui.theme.LossGreen
@@ -78,13 +84,14 @@ private val COMBO_CATEGORIES: List<AssetCategory> = listOf(
     AssetCategory.BOND,
     AssetCategory.EQUITY,
     AssetCategory.CRYPTO,
+    AssetCategory.OTC_FUND,
 )
 
 /** 时间范围快捷（null = 全部）。按自然日裁剪最新 N 天，三种粒度通用。 */
-private enum class TrendRange(val label: String, val days: Int?) {
-    D7("近7天", 7),
-    D30("近30天", 30),
-    ALL("全部", null),
+private enum class TrendRange(@StringRes val labelRes: Int, val days: Int?) {
+    D7(R.string.trend_range_7d, 7),
+    D30(R.string.trend_range_30d, 30),
+    ALL(R.string.trend_range_all, null),
 }
 
 @Composable
@@ -98,6 +105,11 @@ fun TrendDetailScreen(
     var selected by remember { mutableStateOf(setOf(TREND_TOTAL_ID)) }
     // 自定义组合选中的资产类别（仅 TREND_CUSTOM_ID 被勾选时使用）
     var customCategories by remember { mutableStateOf(setOf<String>()) }
+
+    // 预解析资产类别名 → 本地化文案（纯函数 build() 与多个 chip 复用，避免在非 @Composable 处调 stringResource）。
+    val categoryLabels: Map<String, String> = AssetCategory.entries.associate { it.name to stringResource(it.displayRes) }
+    val totalLabel = stringResource(R.string.trend_total)
+    val customLabel = stringResource(R.string.trend_custom)
 
     val available = remember(raw) { listOf(TREND_TOTAL_ID, TREND_CUSTOM_ID) + raw.categories.map { it.category }.distinct() }
     val selectedIds = available.filter { it in selected }.ifEmpty { listOf(TREND_TOTAL_ID) }
@@ -119,33 +131,40 @@ fun TrendDetailScreen(
         raw.categories.filter { it.epochDay >= threshold }
     }
 
-    val chartData = remember(filteredTotals, filteredCategories, selectedIds, granularity, customCategories) {
+    val chartData = remember(filteredTotals, filteredCategories, selectedIds, granularity, customCategories, categoryLabels, totalLabel, customLabel) {
         TrendSeriesBuilder.build(
             totals = filteredTotals,
             categories = filteredCategories,
             selectedIds = selectedIds,
             granularity = granularity,
-            categoryLabel = { seriesLabel(it) },
+            categoryLabel = { categoryLabels[it] ?: it },
+            totalLabel = totalLabel,
+            customLabel = customLabel,
             customCategories = customCategories,
         )
     }
     val colors = selectedIds.map { seriesColor(it) }
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // 横屏纵向空间紧张：收紧控制行/图例的纵向内边距、压低顶栏、隐藏底部提示，把高度让给走势图。
+    val controlVerticalPad = if (isLandscape) 0.dp else 2.dp
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (isLandscape) Modifier.height(44.dp) else Modifier.height(52.dp))
+                .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
             }
-            Text("净值走势（万元）", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.trend_detail_title), style = MaterialTheme.typography.titleLarge)
         }
 
         // 紧凑控制区：日/月/年 与 近7天/近30天/全部 合并为一行，节省纵向空间。
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 2.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = controlVerticalPad),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -153,7 +172,7 @@ fun TrendDetailScreen(
                 FilterChip(
                     selected = granularity == g,
                     onClick = { granularity = g },
-                    label = { Text(g.label, style = MaterialTheme.typography.labelMedium) },
+                    label = { Text(stringResource(g.labelRes), style = MaterialTheme.typography.labelMedium) },
                 )
             }
             // 视觉分隔
@@ -167,14 +186,14 @@ fun TrendDetailScreen(
                 FilterChip(
                     selected = range == r,
                     onClick = { range = r },
-                    label = { Text(r.label, style = MaterialTheme.typography.labelMedium) },
+                    label = { Text(stringResource(r.labelRes), style = MaterialTheme.typography.labelMedium) },
                 )
             }
         }
 
         // 资产类别多选（总净值 + 自定义 + 各类别）
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 2.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = controlVerticalPad),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             available.forEach { id ->
@@ -184,7 +203,7 @@ fun TrendDetailScreen(
                         selected = if (id in selected) (selected - id) else (selected + id)
                         if (selected.none { it in available }) selected = setOf(TREND_TOTAL_ID)
                     },
-                    label = { Text(seriesLabelWithTotal(id), style = MaterialTheme.typography.labelMedium) },
+                    label = { Text(seriesLabelWithTotal(id, totalLabel, customLabel, categoryLabels), style = MaterialTheme.typography.labelMedium) },
                 )
             }
         }
@@ -197,13 +216,14 @@ fun TrendDetailScreen(
                     customCategories = if (name in customCategories) customCategories - name else customCategories + name
                 },
                 onReplace = { customCategories = it },
+                categoryLabels = categoryLabels,
             )
         }
 
         if (chartData.bucketLabels.size < 2) {
             Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    "数据积累中：每日自动记录一条，多用几天后即可查看走势、切换日/月/年并缩放。",
+                    stringResource(R.string.trend_accumulating_long),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -219,11 +239,11 @@ fun TrendDetailScreen(
             MultiSeriesTrendChart(
                 data = chartData,
                 colors = colors,
-                modifier = Modifier.fillMaxWidth().weight(1f).padding(8.dp),
+                modifier = Modifier.fillMaxWidth().weight(1f).padding(if (isLandscape) 4.dp else 8.dp),
             )
             // 可点击图例：点击切换该序列可见性
             Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 2.dp),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = controlVerticalPad),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 chartData.series.forEachIndexed { i, s ->
@@ -238,12 +258,15 @@ fun TrendDetailScreen(
                     )
                 }
             }
-            Text(
-                "双指缩放 · 触摸曲线查看横纵坐标；横屏可看更大图",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            )
+            // 横屏纵向空间紧张，隐藏底部提示以把高度让给走势图
+            if (!isLandscape) {
+                Text(
+                    stringResource(R.string.trend_gesture_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
+            }
         }
     }
 }
@@ -296,31 +319,31 @@ private fun TrendStatsCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text("当前净值", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    "${MoneyFormat.wan(stats.current)} 万",
+                Text(stringResource(R.string.trend_current), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                MoneyText(
+                    stringResource(R.string.trend_wan_unit, MoneyFormat.wan(stats.current)),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("区间盈亏", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.trend_range_pnl), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        "$sign${MoneyFormat.wan(stats.delta)} 万",
+                    MoneyText(
+                        stringResource(R.string.trend_wan_unit, "$sign${MoneyFormat.wan(stats.delta)}"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = gainColor,
                     )
                     Spacer(Modifier.width(6.dp))
-                    Text(
+                    MoneyText(
                         "${"%.1f".format(stats.deltaPercent)}%",
                         style = MaterialTheme.typography.bodyMedium,
                         color = gainColor,
                     )
                 }
-                Text(
-                    "高 ${MoneyFormat.wan(stats.high)} · 低 ${MoneyFormat.wan(stats.low)}",
+                MoneyText(
+                    stringResource(R.string.trend_high_low, MoneyFormat.wan(stats.high), MoneyFormat.wan(stats.low)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -359,6 +382,7 @@ private fun CustomComboSelector(
     selectedCategories: Set<String>,
     onToggle: (String) -> Unit,
     onReplace: (Set<String>) -> Unit,
+    categoryLabels: Map<String, String>,
 ) {
     val availableNames = COMBO_CATEGORIES.map { it.name }
     val unselected = availableNames.filter { it !in selectedCategories }
@@ -370,7 +394,7 @@ private fun CustomComboSelector(
             .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
         Text(
-            "自定义组合：勾选资产类别，系统按日合计其总值并显示为一条走势线",
+            stringResource(R.string.trend_custom_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -385,21 +409,21 @@ private fun CustomComboSelector(
                 enabled = unselected.isNotEmpty(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
             ) {
-                Text("全选", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.common_select_all), style = MaterialTheme.typography.labelMedium)
             }
             TextButton(
                 onClick = { onReplace(emptySet()) },
                 enabled = selectedCategories.isNotEmpty(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
             ) {
-                Text("清空", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.common_clear), style = MaterialTheme.typography.labelMedium)
             }
 
             // 已选类别 chip（可点取消）
             selectedCategories.forEach { name ->
                 AssistChip(
                     onClick = { onToggle(name) },
-                    label = { Text(seriesLabel(name), style = MaterialTheme.typography.labelMedium) },
+                    label = { Text(seriesLabel(name, categoryLabels), style = MaterialTheme.typography.labelMedium) },
                     leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) },
                     colors = AssistChipDefaults.assistChipColors(containerColor = CustomCombo.copy(alpha = 0.12f)),
                 )
@@ -410,7 +434,7 @@ private fun CustomComboSelector(
                 AssistChip(
                     onClick = { menuExpanded = true },
                     enabled = unselected.isNotEmpty(),
-                    label = { Text("+ 类别", style = MaterialTheme.typography.labelMedium) },
+                    label = { Text(stringResource(R.string.trend_add_category), style = MaterialTheme.typography.labelMedium) },
                 )
                 DropdownMenu(
                     expanded = menuExpanded,
@@ -418,13 +442,13 @@ private fun CustomComboSelector(
                 ) {
                     if (unselected.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("已全选") },
+                            text = { Text(stringResource(R.string.trend_all_selected)) },
                             onClick = { menuExpanded = false },
                         )
                     } else {
                         unselected.forEach { name ->
                             DropdownMenuItem(
-                                text = { Text(seriesLabel(name)) },
+                                text = { Text(seriesLabel(name, categoryLabels)) },
                                 onClick = {
                                     onToggle(name)
                                     menuExpanded = false
@@ -438,13 +462,18 @@ private fun CustomComboSelector(
     }
 }
 
-private fun seriesLabel(categoryName: String): String =
-    runCatching { AssetCategory.valueOf(categoryName).displayName }.getOrDefault(categoryName)
+private fun seriesLabel(categoryName: String, categoryLabels: Map<String, String>): String =
+    categoryLabels[categoryName] ?: categoryName
 
-private fun seriesLabelWithTotal(id: String): String = when (id) {
-    TREND_TOTAL_ID -> "总净值"
-    TREND_CUSTOM_ID -> "自定义组合"
-    else -> seriesLabel(id)
+private fun seriesLabelWithTotal(
+    id: String,
+    totalLabel: String,
+    customLabel: String,
+    categoryLabels: Map<String, String>,
+): String = when (id) {
+    TREND_TOTAL_ID -> totalLabel
+    TREND_CUSTOM_ID -> customLabel
+    else -> seriesLabel(id, categoryLabels)
 }
 
 private fun seriesColor(id: String): Color {
@@ -458,6 +487,8 @@ private fun seriesColor(id: String): Color {
         AssetCategory.BOND -> Cat5
         AssetCategory.CRYPTO -> Cat6
         AssetCategory.EQUITY -> Cat7
+        AssetCategory.OTC_FUND -> Cat8
+        AssetCategory.MISC -> Cat9
         AssetCategory.LIABILITY -> GainRed
         null -> Color.Gray
     }

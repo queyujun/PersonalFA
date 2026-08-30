@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.yingjing.pfa.R
 import com.yingjing.pfa.core.security.BiometricAuthenticator
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.ui.theme.BlueLightMode
@@ -50,6 +52,8 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
     val deviceHasBiometric = remember { BiometricAuthenticator.isAvailable(context) }
     val showBiometric = state.mode == AuthMode.Login && deviceHasBiometric &&
         state.lastUserId != null && state.biometricEnabled
+    val biometricLogin = stringResource(R.string.auth_biometric_login)
+    val localOnly = stringResource(R.string.auth_local_only)
 
     Column(
         modifier = Modifier
@@ -69,9 +73,9 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             Text("盈", color = Color.White, style = MaterialTheme.typography.headlineMedium)
         }
         Spacer(Modifier.height(12.dp))
-        Text("盈景私助", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(
-            "您的个人资产全景管家",
+            stringResource(R.string.auth_tagline),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -81,12 +85,12 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             Tab(
                 selected = state.mode == AuthMode.Login,
                 onClick = { viewModel.setMode(AuthMode.Login) },
-                text = { Text("登录") },
+                text = { Text(stringResource(R.string.auth_tab_login)) },
             )
             Tab(
                 selected = state.mode == AuthMode.Register,
                 onClick = { viewModel.setMode(AuthMode.Register) },
-                text = { Text("注册") },
+                text = { Text(stringResource(R.string.auth_tab_register)) },
             )
         }
         Spacer(Modifier.height(20.dp))
@@ -94,7 +98,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
         OutlinedTextField(
             value = state.username,
             onValueChange = viewModel::onUsernameChange,
-            label = { Text("用户名") },
+            label = { Text(stringResource(R.string.auth_label_username)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -102,7 +106,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
         OutlinedTextField(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            label = { Text("密码") },
+            label = { Text(stringResource(R.string.auth_label_password)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -114,7 +118,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             OutlinedTextField(
                 value = state.confirmPassword,
                 onValueChange = viewModel::onConfirmPasswordChange,
-                label = { Text("确认密码") },
+                label = { Text(stringResource(R.string.auth_label_confirm_password)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -122,7 +126,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "默认计价货币",
+                stringResource(R.string.profile_default_currency),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -135,7 +139,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
                     FilterChip(
                         selected = state.defaultCurrency == currency,
                         onClick = { viewModel.onCurrencyChange(currency) },
-                        label = { Text("${currency.symbol} ${currency.label}") },
+                        label = { Text("${stringResource(currency.symbolRes)} ${stringResource(currency.labelRes)}") },
                     )
                 }
             }
@@ -163,7 +167,11 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             if (state.isSubmitting) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
             } else {
-                Text(if (state.mode == AuthMode.Login) "登 录" else "注 册")
+                Text(
+                    stringResource(
+                        if (state.mode == AuthMode.Login) R.string.auth_button_login else R.string.auth_button_register,
+                    ),
+                )
             }
         }
 
@@ -181,13 +189,16 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("使用指纹 / 面容登录" + (state.lastUsername?.let { "（$it）" } ?: ""))
+                Text(
+                    state.lastUsername?.let { stringResource(R.string.auth_biometric_with_user, it) }
+                        ?: biometricLogin,
+                )
             }
         }
 
         Spacer(Modifier.height(24.dp))
         Text(
-            "🔐 账户与数据仅保存在本机（加密存储），支持多用户。",
+            localOnly,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

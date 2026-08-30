@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 应用窗口主题（浅色）；实际 UI 配色由 Compose Material3 主题控制 -->
-    <style name="Theme.PersonalFA" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- 应用窗口主题（浅色）；实际 UI 配色由 Compose Material3 主题控制。
+         使用 AppCompat 系主题以支持 AppCompatActivity + per-app locale 切换。 -->
+    <style name="Theme.PersonalFA" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>

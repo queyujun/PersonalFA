@@ -1,14 +1,16 @@
 package com.yingjing.pfa.domain.usecase
 
+import androidx.annotation.StringRes
+import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.CategoryPoint
 import com.yingjing.pfa.domain.model.NetWorthPoint
 import java.time.LocalDate
 
 /** 时间粒度。 */
-enum class TimeGranularity(val label: String) {
-    DAY("日"),
-    MONTH("月"),
-    YEAR("年"),
+enum class TimeGranularity(@StringRes val labelRes: Int) {
+    DAY(R.string.granularity_day),
+    MONTH(R.string.granularity_month),
+    YEAR(R.string.granularity_year),
 }
 
 /** 一条走势序列，值对齐到 [TrendChartData.bucketLabels]（null 表示该桶无数据）。 */
@@ -22,12 +24,15 @@ const val TREND_TOTAL_ID = "TOTAL"
 /** 自定义组合序列的固定 id（用户多选若干资产类别，按日求和成一条线）。 */
 const val TREND_CUSTOM_ID = "CUSTOM"
 
-/** 自定义组合序列的展示名。 */
+/** 自定义组合序列的展示名（兼容测试常量；生产代码请通过 [build] 的 customLabel 传入本地化文案）。 */
 const val TREND_CUSTOM_LABEL = "自定义组合"
 
 /**
  * 把每日总净值 + 各类别金额，按粒度重采样为多序列走势（纯函数，可测）。
  * 每个时间桶取该桶内「最后一天」的值（净值/金额为时点量）。
+ *
+ * 序列名由调用方传入（[totalLabel] / [customLabel] / [categoryLabel]），本函数不接触字符串资源，
+ * 保持纯函数可测性。Composable 调用方负责用 `stringResource` 预解析后传入。
  *
  * [customCategories] 仅对 [TREND_CUSTOM_ID] 序列生效：把这些类别同一 epochDay 的金额
  * 求和，作为该序列在该日的值（某类别某日无数据视为 0，即不贡献）。某类别当日缺失不影响
@@ -41,6 +46,8 @@ object TrendSeriesBuilder {
         selectedIds: List<String>,
         granularity: TimeGranularity,
         categoryLabel: (String) -> String,
+        totalLabel: String,
+        customLabel: String,
         customCategories: Set<String> = emptySet(),
     ): TrendChartData {
         // 每个选中序列 → (epochDay → 值)
@@ -77,8 +84,8 @@ object TrendSeriesBuilder {
             TrendSeries(
                 id = id,
                 name = when (id) {
-                    TREND_TOTAL_ID -> "总净值"
-                    TREND_CUSTOM_ID -> TREND_CUSTOM_LABEL
+                    TREND_TOTAL_ID -> totalLabel
+                    TREND_CUSTOM_ID -> customLabel
                     else -> categoryLabel(id)
                 },
                 values = values,

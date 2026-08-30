@@ -46,9 +46,9 @@ class AndroidAlertNotifier @Inject constructor(
     private fun ensureChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "资产提醒",
+            context.getString(R.string.alert_channel_name),
             NotificationManager.IMPORTANCE_DEFAULT,
-        ).apply { description = "持仓 / 新股 / 市场 / 国际 提醒" }
+        ).apply { description = context.getString(R.string.alert_channel_desc) }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 

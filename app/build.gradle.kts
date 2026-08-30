@@ -89,6 +89,7 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.vico.compose.m3)
+    implementation(libs.androidx.appcompat)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

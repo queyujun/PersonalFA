@@ -34,6 +34,8 @@ data class HoldingEntity(
     val autoEstimate: Boolean? = null,
     val valueBaseDateEpochMs: Long? = null,
     val estimatedValue: Double? = null,
+    val note: String? = null,
+    val autoFetchNav: Boolean? = null,
     val createdAt: Long,
     val updatedAt: Long,
 )

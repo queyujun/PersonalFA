@@ -4,14 +4,20 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yingjing.pfa.R
 import com.yingjing.pfa.data.backup.BackupManager
 import com.yingjing.pfa.data.backup.BackupScheduler
 import com.yingjing.pfa.data.session.SessionManager
+import com.yingjing.pfa.data.sync.LanguageStore
 import com.yingjing.pfa.data.sync.SyncScheduler
 import com.yingjing.pfa.core.security.BiometricAuthenticator
 import com.yingjing.pfa.data.sync.SyncStateStore
+import com.yingjing.pfa.core.i18n.AppLanguage
+import com.yingjing.pfa.PersonalFaApp
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
+import com.yingjing.pfa.domain.repository.FxRepository
+import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class SettingsUiState(
@@ -34,7 +41,9 @@ data class SettingsUiState(
     val syncHour: Int = 9,
     val backupIntervalDays: Int = 7,
     val backupHour: Int = 3,
+    val currentLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
     val statusMessage: String? = null,
+    val purgeMessage: String? = null,
 )
 
 @HiltViewModel
@@ -46,6 +55,9 @@ class SettingsViewModel @Inject constructor(
     private val syncStateStore: SyncStateStore,
     private val backupManager: BackupManager,
     private val backupScheduler: BackupScheduler,
+    private val snapshotRepository: SnapshotRepository,
+    private val fxRepository: FxRepository,
+    private val languageStore: LanguageStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -74,6 +86,11 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             syncStateStore.backupHour.collect { v -> _uiState.update { it.copy(backupHour = v) } }
+        }
+        viewModelScope.launch {
+            languageStore.languageTag.collect { tag ->
+                _uiState.update { it.copy(currentLanguage = AppLanguage.fromTag(tag)) }
+            }
         }
     }
 
@@ -109,24 +126,35 @@ class SettingsViewModel @Inject constructor(
         val result = runCatching {
             val bytes = backupManager.export(passphrase.toCharArray())
             context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                ?: error("无法写入文件")
+                ?: error(context.getString(R.string.status_write_failed))
         }
         _uiState.update {
-            it.copy(statusMessage = if (result.isSuccess) "✓ 备份已导出" else "备份失败：${result.exceptionOrNull()?.message}")
+            it.copy(
+                statusMessage = if (result.isSuccess) context.getString(R.string.status_backup_exported)
+                else context.getString(R.string.status_backup_failed, result.exceptionOrNull()?.message ?: ""),
+            )
         }
     }
 
     fun importFrom(uri: Uri, passphrase: String) = viewModelScope.launch {
         val bytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
         if (bytes == null) {
-            _uiState.update { it.copy(statusMessage = "读取文件失败") }
+            _uiState.update { it.copy(statusMessage = context.getString(R.string.status_read_failed)) }
             return@launch
         }
         val ok = backupManager.import(bytes, passphrase.toCharArray())
         _uiState.update {
-            it.copy(statusMessage = if (ok) "✓ 恢复成功" else "恢复失败：口令错误或文件无效")
+            it.copy(
+                statusMessage = if (ok) context.getString(R.string.status_restore_ok)
+                else context.getString(R.string.status_restore_failed),
+            )
         }
-        if (ok) refresh()
+        if (ok) {
+            refresh()
+            // 恢复后异步拉取最新汇率：备份里的汇率可能是旧值，联网成功后覆盖为最新；
+            // 失败则静默降级，保留从备份写回的汇率（若无则仍默认 1.0）。
+            viewModelScope.launch { runCatching { fxRepository.refresh() } }
+        }
     }
 
     fun setAutoBackup(enabled: Boolean) = viewModelScope.launch {
@@ -146,7 +174,7 @@ class SettingsViewModel @Inject constructor(
     fun setSyncSchedule(intervalDays: Int, hour: Int) = viewModelScope.launch {
         syncStateStore.setSyncSchedule(intervalDays, hour)
         syncScheduler.schedule(intervalDays, hour, forceReplace = true)
-        _uiState.update { it.copy(statusMessage = "✓ 行情计划已更新") }
+        _uiState.update { it.copy(statusMessage = context.getString(R.string.status_sync_plan_updated)) }
     }
 
     fun setBackupSchedule(intervalDays: Int, hour: Int) = viewModelScope.launch {
@@ -154,26 +182,36 @@ class SettingsViewModel @Inject constructor(
         if (syncStateStore.autoBackupEnabled.first()) {
             backupScheduler.schedule(true, intervalDays, hour, forceReplace = true)
         }
-        _uiState.update { it.copy(statusMessage = "✓ 备份计划已更新") }
+        _uiState.update { it.copy(statusMessage = context.getString(R.string.status_backup_plan_updated)) }
     }
 
     fun updateCurrency(currency: Currency) = viewModelScope.launch {
         val id = sessionManager.currentUserId.first() ?: return@launch
         userRepository.updateDefaultCurrency(id, currency)
         refresh()
-        _uiState.update { it.copy(statusMessage = "✓ 默认货币已更新") }
+        _uiState.update { it.copy(statusMessage = context.getString(R.string.status_currency_updated)) }
     }
 
     fun changePassword(old: String, new: String) = viewModelScope.launch {
         val id = sessionManager.currentUserId.first() ?: return@launch
         val ok = userRepository.changePassword(id, old, new)
-        _uiState.update { it.copy(statusMessage = if (ok) "✓ 密码已修改" else "旧密码不正确") }
+        _uiState.update {
+            it.copy(
+                statusMessage = if (ok) context.getString(R.string.status_password_changed)
+                else context.getString(R.string.status_old_password_wrong),
+            )
+        }
     }
 
     fun changeUsername(newName: String) = viewModelScope.launch {
         val id = sessionManager.currentUserId.first() ?: return@launch
         val ok = userRepository.changeUsername(id, newName)
-        _uiState.update { it.copy(statusMessage = if (ok) "✓ 用户名已修改" else "用户名已被占用或无效") }
+        _uiState.update {
+            it.copy(
+                statusMessage = if (ok) context.getString(R.string.status_username_changed)
+                else context.getString(R.string.status_username_taken),
+            )
+        }
         if (ok) refresh()
     }
 
@@ -181,8 +219,34 @@ class SettingsViewModel @Inject constructor(
         val id = sessionManager.currentUserId.first() ?: return@launch
         userRepository.updateProfile(id, nickname, gender, age)
         refresh()
-        _uiState.update { it.copy(statusMessage = "✓ 资料已保存") }
+        _uiState.update { it.copy(statusMessage = context.getString(R.string.status_profile_saved)) }
     }
 
-    fun clearStatus() = _uiState.update { it.copy(statusMessage = null) }
+    /** 切换应用语言：应用到 AppCompatDelegate + 写入 DataStore + 反馈。 */
+    fun setLanguage(lang: AppLanguage) = viewModelScope.launch {
+        // 先 applyLanguage（同步设置 AppCompatDelegate 的 per-app locale），再写 DataStore：
+        // 这样 languageTag Flow 重发触发资产页 combine 重跑、build() 重新解析文本时，
+        // AppStringResolver 读到的已是新 locale，避免「locale 已切换但配置滞后」的竞态。
+        PersonalFaApp.applyLanguage(lang.tag)
+        languageStore.setLanguage(lang.tag)
+        _uiState.update {
+            it.copy(currentLanguage = lang, statusMessage = context.getString(R.string.status_language_updated))
+        }
+    }
+
+    /** 删除当前用户指定日期（不含当天）之前的所有历史快照（净值 + 分类）。 */
+    fun purgeSnapshotsBefore(epochDay: Long) = viewModelScope.launch {
+        val id = sessionManager.currentUserId.first() ?: return@launch
+        val result = runCatching { snapshotRepository.deleteBefore(id, epochDay) }
+        val dateStr = LocalDate.ofEpochDay(epochDay).toString()
+        _uiState.update {
+            it.copy(
+                purgeMessage = if (result.isSuccess)
+                    context.getString(R.string.status_history_deleted, dateStr)
+                else context.getString(R.string.status_delete_failed, result.exceptionOrNull()?.message ?: ""),
+            )
+        }
+    }
+
+    fun clearStatus() = _uiState.update { it.copy(statusMessage = null, purgeMessage = null) }
 }

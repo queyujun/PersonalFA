@@ -48,4 +48,19 @@ class HoldingValidatorTest {
     fun realEstate_valid_isNull() {
         assertNull(HoldingValidator.validate(holding(AssetType.REAL_ESTATE) { copy(manualValue = 1_750_000.0) }))
     }
+
+    @Test
+    fun otcFund_missingSymbol_isInvalid() {
+        assertNotNull(HoldingValidator.validate(holding(AssetType.OTC_FUND) { copy(quantity = 100.0) }))
+    }
+
+    @Test
+    fun otcFund_missingQuantity_isInvalid() {
+        assertNotNull(HoldingValidator.validate(holding(AssetType.OTC_FUND) { copy(symbol = "005827") }))
+    }
+
+    @Test
+    fun otcFund_valid_isNull() {
+        assertNull(HoldingValidator.validate(holding(AssetType.OTC_FUND) { copy(symbol = "005827", quantity = 1_000.0) }))
+    }
 }

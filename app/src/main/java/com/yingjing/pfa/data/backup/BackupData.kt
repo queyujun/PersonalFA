@@ -11,6 +11,18 @@ data class BackupData(
     val snapshots: List<BackupSnapshot> = emptyList(),
     val categorySnapshots: List<BackupCategorySnapshot> = emptyList(),
     val alerts: List<BackupAlert> = emptyList(),
+    /**
+     * 导出时刻的汇率（可选）。恢复时写回 fx DataStore，避免换算退化为不换算。
+     * 老备份无此字段 → null → 不写回（向后兼容，靠后台刷新补救）。
+     */
+    val fxRates: BackupFxRates? = null,
+)
+
+/** 备份中的汇率快照（以人民币 CNY 为基准：1 单位外币 = ? 人民币）。 */
+@Serializable
+data class BackupFxRates(
+    val usdToCny: Double,
+    val hkdToCny: Double,
 )
 
 @Serializable
@@ -60,6 +72,8 @@ data class BackupHolding(
     val autoEstimate: Boolean? = null,
     val valueBaseDateEpochMs: Long? = null,
     val estimatedValue: Double? = null,
+    val note: String? = null,
+    val autoFetchNav: Boolean? = null,
     val createdAt: Long,
     val updatedAt: Long,
 )

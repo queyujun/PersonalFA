@@ -26,4 +26,8 @@ interface NetWorthSnapshotDao {
 
     @Query("DELETE FROM net_worth_snapshots")
     suspend fun deleteAll()
+
+    /** 删除某用户指定日期（不含当天）之前的所有净值快照。 */
+    @Query("DELETE FROM net_worth_snapshots WHERE userId = :userId AND dayEpochDay < :dayEpochDay")
+    suspend fun deleteOlderThan(userId: Long, dayEpochDay: Long)
 }

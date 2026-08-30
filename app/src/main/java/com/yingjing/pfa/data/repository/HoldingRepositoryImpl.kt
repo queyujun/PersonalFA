@@ -39,7 +39,7 @@ class HoldingRepositoryImpl @Inject constructor(
 private fun HoldingEntity.toDomain() = Holding(
     id = id,
     userId = userId,
-    type = AssetType.valueOf(type),
+    type = runCatching { AssetType.valueOf(type) }.getOrDefault(AssetType.EQUITY),
     name = name,
     currency = Currency.fromCode(currency),
     quantity = quantity,
@@ -61,6 +61,8 @@ private fun HoldingEntity.toDomain() = Holding(
     autoEstimate = autoEstimate,
     valueBaseDateEpochMs = valueBaseDateEpochMs,
     estimatedValue = estimatedValue,
+    note = note,
+    autoFetchNav = autoFetchNav,
     createdAtEpochMs = createdAt,
     updatedAtEpochMs = updatedAt,
 )
@@ -90,6 +92,8 @@ private fun Holding.toEntity() = HoldingEntity(
     autoEstimate = autoEstimate,
     valueBaseDateEpochMs = valueBaseDateEpochMs,
     estimatedValue = estimatedValue,
+    note = note,
+    autoFetchNav = autoFetchNav,
     createdAt = createdAtEpochMs,
     updatedAt = updatedAtEpochMs,
 )

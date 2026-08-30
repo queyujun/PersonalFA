@@ -2,6 +2,9 @@ package com.yingjing.pfa.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yingjing.pfa.R
+import com.yingjing.pfa.core.i18n.StringResolver
+import com.yingjing.pfa.core.validation.ValidationFailure
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.data.sync.SyncStateStore
 import com.yingjing.pfa.domain.auth.LoginResult
@@ -25,6 +28,7 @@ class AuthViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val userRepository: UserRepository,
     private val syncStateStore: SyncStateStore,
+    private val stringResolver: StringResolver,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -73,22 +77,27 @@ class AuthViewModel @Inject constructor(
     private suspend fun handleLogin(username: String, password: String) {
         when (val result = login(username, password)) {
             is LoginResult.Success -> sessionManager.setCurrentUser(result.user.id)
-            LoginResult.InvalidCredentials -> setError("用户名或密码错误")
-            is LoginResult.Invalid -> setError(result.reason)
+            LoginResult.InvalidCredentials -> setError(stringResolver.get(R.string.err_login_invalid))
+            is LoginResult.Invalid -> setError(result.failure.resolve())
         }
     }
 
     private suspend fun handleRegister(state: AuthUiState) {
         if (state.password != state.confirmPassword) {
-            setError("两次输入的密码不一致")
+            setError(stringResolver.get(R.string.err_password_mismatch))
             return
         }
         when (val result = registerUser(state.username, state.password, state.defaultCurrency)) {
             is RegisterResult.Success -> sessionManager.setCurrentUser(result.user.id)
-            RegisterResult.UsernameTaken -> setError("用户名已被占用")
-            is RegisterResult.Invalid -> setError(result.reason)
+            RegisterResult.UsernameTaken -> setError(stringResolver.get(R.string.err_username_taken))
+            is RegisterResult.Invalid -> setError(result.failure.resolve())
         }
     }
 
     private fun setError(message: String) = _uiState.update { it.copy(error = message) }
+
+    /** 把 [ValidationFailure] 经 [stringResolver] 解析为当前 locale 文案。 */
+    private fun ValidationFailure.resolve(): String =
+        if (args.isEmpty()) stringResolver.get(resId)
+        else stringResolver.get(resId, *args.toTypedArray())
 }

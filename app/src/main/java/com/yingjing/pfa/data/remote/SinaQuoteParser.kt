@@ -7,6 +7,7 @@ package com.yingjing.pfa.data.remote
  * - A股 / ETF（sh/sz）：索引 3
  * - 港股（rt_hk）：索引 6
  * - 美股（gb_）：索引 1
+ * - 外盘现货/期货（hf_，如伦敦金 hf_XAU）：索引 7（名称,开,高,低,昨收,买,卖,最新价,…）
  *
  * 空 payload（停牌 / 无效代码）跳过。
  */
@@ -30,6 +31,7 @@ object SinaQuoteParser {
         val index = when {
             code.startsWith("gb_") -> 1
             code.startsWith("rt_hk") -> 6
+            code.startsWith("hf_") -> 7
             code.startsWith("sh") || code.startsWith("sz") -> 3
             else -> return null
         }

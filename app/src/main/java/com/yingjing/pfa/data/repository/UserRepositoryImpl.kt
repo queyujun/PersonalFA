@@ -8,6 +8,8 @@ import com.yingjing.pfa.domain.auth.RegisterResult
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
 import com.yingjing.pfa.domain.repository.UserRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class UserRepositoryImpl @Inject constructor(
@@ -43,6 +45,9 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun listUsers(): List<User> = userDao.getAll().map { it.toDomain() }
 
     override suspend fun getUser(id: Long): User? = userDao.findById(id)?.toDomain()
+
+    override fun observeUser(id: Long): Flow<User?> =
+        userDao.observeById(id).map { it?.toDomain() }
 
     override suspend fun updateDefaultCurrency(userId: Long, currency: Currency) =
         userDao.updateDefaultCurrency(userId, currency.code)

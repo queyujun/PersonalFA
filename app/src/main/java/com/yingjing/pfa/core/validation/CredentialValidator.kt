@@ -1,28 +1,30 @@
 package com.yingjing.pfa.core.validation
 
-/** 纯函数凭据校验，返回中文错误信息；null 表示通过。 */
+import com.yingjing.pfa.R
+
+/** 纯函数凭据校验，返回 [ValidationFailure]；null 表示通过。文案由渲染端经 StringResolver 解析。 */
 object CredentialValidator {
     const val MIN_USERNAME = 2
     const val MAX_USERNAME = 20
     const val MIN_PASSWORD = 6
     const val MAX_PASSWORD = 64
 
-    fun validateUsername(username: String): String? {
+    fun validateUsername(username: String): ValidationFailure? {
         val name = username.trim()
         return when {
-            name.isEmpty() -> "请输入用户名"
-            name.length < MIN_USERNAME -> "用户名至少 $MIN_USERNAME 个字符"
-            name.length > MAX_USERNAME -> "用户名最多 $MAX_USERNAME 个字符"
+            name.isEmpty() -> ValidationFailure(R.string.err_username_empty)
+            name.length < MIN_USERNAME -> ValidationFailure(R.string.err_username_min, listOf(MIN_USERNAME))
+            name.length > MAX_USERNAME -> ValidationFailure(R.string.err_username_max, listOf(MAX_USERNAME))
             !name.all { it.isLetterOrDigit() || it == '_' || it in '一'..'鿿' } ->
-                "用户名只能包含中文、字母、数字或下划线"
+                ValidationFailure(R.string.err_username_chars)
             else -> null
         }
     }
 
-    fun validatePassword(password: String): String? = when {
-        password.isEmpty() -> "请输入密码"
-        password.length < MIN_PASSWORD -> "密码至少 $MIN_PASSWORD 位"
-        password.length > MAX_PASSWORD -> "密码最多 $MAX_PASSWORD 位"
+    fun validatePassword(password: String): ValidationFailure? = when {
+        password.isEmpty() -> ValidationFailure(R.string.err_password_empty)
+        password.length < MIN_PASSWORD -> ValidationFailure(R.string.err_password_min, listOf(MIN_PASSWORD))
+        password.length > MAX_PASSWORD -> ValidationFailure(R.string.err_password_max, listOf(MAX_PASSWORD))
         else -> null
     }
 }

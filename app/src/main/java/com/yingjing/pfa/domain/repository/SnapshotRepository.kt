@@ -22,6 +22,9 @@ interface SnapshotRepository {
         nowMs: Long,
     )
 
+    /** 删除某用户指定日期（不含当天）之前的所有历史快照（净值 + 分类）。 */
+    suspend fun deleteBefore(userId: Long, dayEpochDay: Long)
+
     companion object {
         const val MS_PER_DAY = 86_400_000L
         fun epochDay(nowMs: Long): Long = nowMs / MS_PER_DAY

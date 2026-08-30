@@ -31,10 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.AssetCategory
+import com.yingjing.pfa.ui.components.MoneyText
 import com.yingjing.pfa.ui.theme.Cat1
 import com.yingjing.pfa.ui.theme.Cat2
 import com.yingjing.pfa.ui.theme.Cat3
@@ -42,6 +45,8 @@ import com.yingjing.pfa.ui.theme.Cat4
 import com.yingjing.pfa.ui.theme.Cat5
 import com.yingjing.pfa.ui.theme.Cat6
 import com.yingjing.pfa.ui.theme.Cat7
+import com.yingjing.pfa.ui.theme.Cat8
+import com.yingjing.pfa.ui.theme.Cat9
 import com.yingjing.pfa.ui.theme.GainRed
 import com.yingjing.pfa.ui.theme.LossGreen
 
@@ -59,7 +64,7 @@ fun PortfolioScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                "还没有资产，点右下角 ＋ 添加",
+                stringResource(R.string.portfolio_empty_hint),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -104,6 +109,8 @@ private fun CategoryBlock(
     onOpenHolding: (Long) -> Unit,
 ) {
     val color = categoryColor(section.category)
+    val collapseCd = stringResource(R.string.cd_collapse)
+    val expandCd = stringResource(R.string.cd_expand)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -121,7 +128,7 @@ private fun CategoryBlock(
         ) {
             Icon(
                 imageVector = if (expanded) Icons.Filled.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = if (expanded) "折叠" else "展开",
+                contentDescription = if (expanded) collapseCd else expandCd,
                 tint = color,
             )
             Text(
@@ -131,7 +138,7 @@ private fun CategoryBlock(
                 color = color,
                 modifier = Modifier.weight(1f).padding(start = 4.dp),
             )
-            Text(
+            MoneyText(
                 section.totalText,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -144,8 +151,8 @@ private fun CategoryBlock(
                     // 非股票：无子标题，直接列条目
                     sg.rows.forEach { row -> HoldingRowItem(row = row, onClick = { onOpenHolding(row.id) }) }
                 } else {
-                    // 二级子类目：可各自折叠
-                    val key = "${section.category.name}|$title"
+                    // 二级子类目：可各自折叠。key 用 locale 无关的 subKey，语言切换不丢折叠态。
+                    val key = sg.subKey ?: "${section.category.name}|$title"
                     val sgExpanded = key in expandedSubGroups
                     Row(
                         modifier = Modifier
@@ -156,7 +163,7 @@ private fun CategoryBlock(
                     ) {
                         Icon(
                             imageVector = if (sgExpanded) Icons.Filled.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = if (sgExpanded) "折叠" else "展开",
+                            contentDescription = if (sgExpanded) collapseCd else expandCd,
                             tint = color,
                             modifier = Modifier.size(18.dp),
                         )
@@ -166,7 +173,7 @@ private fun CategoryBlock(
                             color = color,
                             modifier = Modifier.weight(1f).padding(start = 2.dp),
                         )
-                        Text(
+                        MoneyText(
                             sg.totalText,
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -202,9 +209,9 @@ private fun HoldingRowItem(row: HoldingRow, onClick: () -> Unit) {
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(row.valueText, style = MaterialTheme.typography.titleMedium)
+                MoneyText(row.valueText, style = MaterialTheme.typography.titleMedium)
                 row.profitText?.let {
-                    Text(
+                    MoneyText(
                         it,
                         style = MaterialTheme.typography.bodySmall,
                         color = if (row.profitPositive) GainRed else LossGreen,
@@ -224,5 +231,7 @@ private fun categoryColor(category: AssetCategory): Color = when (category) {
     AssetCategory.BOND -> Cat5
     AssetCategory.CRYPTO -> Cat6
     AssetCategory.EQUITY -> Cat7
+    AssetCategory.OTC_FUND -> Cat8
+    AssetCategory.MISC -> Cat9
     AssetCategory.LIABILITY -> GainRed
 }

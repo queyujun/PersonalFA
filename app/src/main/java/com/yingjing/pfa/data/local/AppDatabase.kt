@@ -13,7 +13,7 @@ import androidx.room.RoomDatabase
         AlertEntity::class,
         HousePriceIndexEntity::class,
     ],
-    version = 9,
+    version = 11,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

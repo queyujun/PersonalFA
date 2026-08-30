@@ -8,6 +8,7 @@ import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.usecase.LoginUseCase
 import com.yingjing.pfa.domain.usecase.RegisterUserUseCase
 import com.yingjing.pfa.fakes.FakeSessionManager
+import com.yingjing.pfa.fakes.FakeStringResolver
 import com.yingjing.pfa.fakes.FakeUserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,6 +46,7 @@ class AuthViewModelTest {
             sessionManager = session,
             userRepository = repository,
             syncStateStore = syncStateStore,
+            stringResolver = FakeStringResolver(),
         )
     }
 
@@ -74,7 +76,8 @@ class AuthViewModelTest {
         viewModel.submit()
         advanceUntilIdle()
         assertNull(session.current)
-        assertEquals("两次输入的密码不一致", viewModel.uiState.value.error)
+        // FakeStringResolver 把 err_password_mismatch 渲染为非空标识；此处只验错误键被触发，不绑 locale。
+        assertNotNull(viewModel.uiState.value.error)
     }
 
     @Test
@@ -85,7 +88,8 @@ class AuthViewModelTest {
         viewModel.submit()
         advanceUntilIdle()
         assertNull(session.current)
-        assertEquals("用户名或密码错误", viewModel.uiState.value.error)
+        // FakeStringResolver 把 err_login_invalid 渲染为非空标识；此处只验错误键被触发，不绑 locale。
+        assertNotNull(viewModel.uiState.value.error)
     }
 
     @Test

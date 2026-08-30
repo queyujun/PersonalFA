@@ -40,6 +40,11 @@ data class Holding(
     val autoEstimate: Boolean? = null,
     val valueBaseDateEpochMs: Long? = null,
     val estimatedValue: Double? = null,
+    // 其他(MISC)备注；可为空，向后兼容旧备份（缺省 → null）
+    val note: String? = null,
+    // 场外基金子分类：autoFetchNav=true=中国大陆（在线抓取净值），null/false=其他（手录净值）。
+    // 可为空，向后兼容旧 OTC 持仓（缺省 → null，视为手录）。
+    val autoFetchNav: Boolean? = null,
     val createdAtEpochMs: Long = 0,
     val updatedAtEpochMs: Long = 0,
 ) {

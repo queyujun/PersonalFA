@@ -30,9 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.Alert
 import com.yingjing.pfa.domain.model.AlertCategory
 import com.yingjing.pfa.domain.model.AlertSeverity
@@ -45,6 +47,7 @@ fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
     val alerts by viewModel.alerts.collectAsState()
     var filter by remember { mutableStateOf<AlertCategory?>(null) }
     val filtered = filter?.let { c -> alerts.filter { it.category == c } } ?: alerts
+    val categoryNames = AlertCategory.entries.associateWith { stringResource(it.displayRes) }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Row(
@@ -52,9 +55,9 @@ fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text("提醒", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.alerts_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             if (alerts.any { !it.read }) {
-                TextButton(onClick = viewModel::markAllRead) { Text("全部已读") }
+                TextButton(onClick = viewModel::markAllRead) { Text(stringResource(R.string.alerts_mark_all_read)) }
             }
         }
 
@@ -62,20 +65,20 @@ fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterChip(selected = filter == null, onClick = { filter = null }, label = { Text("全部") })
+            FilterChip(selected = filter == null, onClick = { filter = null }, label = { Text(stringResource(R.string.alerts_filter_all)) })
             AlertCategory.entries.forEach { c ->
-                FilterChip(selected = filter == c, onClick = { filter = c }, label = { Text(c.displayName) })
+                FilterChip(selected = filter == c, onClick = { filter = c }, label = { Text(categoryNames[c] ?: c.name) })
             }
         }
 
         if (filtered.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("暂无提醒", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.alerts_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(filtered, key = { it.id }) { alert ->
-                    AlertItem(alert, onClick = { viewModel.markRead(alert.id) })
+                    AlertItem(alert, categoryNames[alert.category] ?: alert.category.name, onClick = { viewModel.markRead(alert.id) })
                 }
             }
         }
@@ -83,7 +86,7 @@ fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun AlertItem(alert: Alert, onClick: () -> Unit) {
+private fun AlertItem(alert: Alert, categoryLabel: String, onClick: () -> Unit) {
     val alpha = if (alert.read) 0.55f else 1f
     Row(
         modifier = Modifier
@@ -101,7 +104,7 @@ private fun AlertItem(alert: Alert, onClick: () -> Unit) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    alert.category.displayName,
+                    categoryLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -138,4 +141,4 @@ private fun severityColor(severity: AlertSeverity): Color = when (severity) {
 }
 
 private fun formatTime(epochMs: Long): String =
-    java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA).format(java.util.Date(epochMs))
+    java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(epochMs))

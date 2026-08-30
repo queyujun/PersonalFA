@@ -1,5 +1,7 @@
 package com.yingjing.pfa.di
 
+import com.yingjing.pfa.core.i18n.AppStringResolver
+import com.yingjing.pfa.core.i18n.StringResolver
 import com.yingjing.pfa.data.notification.AndroidAlertNotifier
 import com.yingjing.pfa.data.repository.AlertRepositoryImpl
 import com.yingjing.pfa.data.repository.FxRepositoryImpl
@@ -10,6 +12,8 @@ import com.yingjing.pfa.data.repository.SnapshotRepositoryImpl
 import com.yingjing.pfa.data.repository.UserRepositoryImpl
 import com.yingjing.pfa.data.session.DataStoreSessionManager
 import com.yingjing.pfa.data.session.SessionManager
+import com.yingjing.pfa.data.sync.LanguageStore
+import com.yingjing.pfa.data.sync.LanguageStoreImpl
 import com.yingjing.pfa.domain.alert.AlertNotifier
 import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
@@ -62,4 +66,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindHousePriceRepository(impl: HousePriceRepositoryImpl): HousePriceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindStringResolver(impl: AppStringResolver): StringResolver
+
+    @Binds
+    @Singleton
+    abstract fun bindLanguageStore(impl: LanguageStoreImpl): LanguageStore
 }

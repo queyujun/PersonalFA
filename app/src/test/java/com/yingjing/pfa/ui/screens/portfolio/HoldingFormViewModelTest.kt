@@ -8,6 +8,7 @@ import com.yingjing.pfa.domain.usecase.AddHoldingUseCase
 import com.yingjing.pfa.domain.usecase.UpdateHoldingUseCase
 import com.yingjing.pfa.fakes.FakeHoldingRepository
 import com.yingjing.pfa.fakes.FakeSessionManager
+import com.yingjing.pfa.fakes.FakeStringResolver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -20,6 +21,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -46,6 +48,7 @@ class HoldingFormViewModelTest {
         holdingRepository = repository,
         addHolding = AddHoldingUseCase(repository),
         updateHolding = UpdateHoldingUseCase(repository),
+        stringResolver = FakeStringResolver(),
     )
 
     @Test
@@ -148,5 +151,86 @@ class HoldingFormViewModelTest {
         val base = repository.getHolding(id)!!.valueBaseDateEpochMs
         assertNotNull(base)
         assertTrue(base!! >= before)
+    }
+
+    // —— 其他(MISC)：备注字段保存与编辑回填 ——
+
+    @Test
+    fun misc_newWithNote_savesNote() = runTest {
+        session.setCurrentUser(1)
+        val vm = viewModel(type = "MISC")
+        vm.onField { copy(name = "收藏品", manualValue = "5000", note = "老物件") }
+        var saved = false
+        vm.submit { saved = true }
+        advanceUntilIdle()
+        assertTrue(saved)
+        val savedHolding = repository.observeHoldings(1).first().single()
+        assertEquals("收藏品", savedHolding.name)
+        assertEquals(5_000.0, savedHolding.manualValue!!, 0.001)
+        assertEquals("老物件", savedHolding.note)
+    }
+
+    @Test
+    fun misc_blankNote_savesAsNull() = runTest {
+        session.setCurrentUser(1)
+        val vm = viewModel(type = "MISC")
+        vm.onField { copy(name = "杂项", manualValue = "100", note = "   ") }
+        vm.submit { }
+        advanceUntilIdle()
+        val savedHolding = repository.observeHoldings(1).first().single()
+        assertNull(savedHolding.note)
+    }
+
+    @Test
+    fun misc_edit_prefillsNote() = runTest {
+        session.setCurrentUser(1)
+        val id = repository.addHolding(
+            Holding(userId = 1, type = AssetType.MISC, name = "收藏品", currency = Currency.CNY, manualValue = 5_000.0, note = "老物件"),
+        )
+        val vm = viewModel(type = "MISC", holdingId = id.toString())
+        advanceUntilIdle()
+        assertEquals("收藏品", vm.state.value.name)
+        assertEquals("老物件", vm.state.value.note)
+    }
+
+    // —— 场外基金子分类：中国大陆(autoFetchNav=true) 保存与编辑回填 —— //
+
+    @Test
+    fun otcFund_newWithAutoFetchNav_savesFlag() = runTest {
+        session.setCurrentUser(1)
+        val vm = viewModel(type = "OTC_FUND")
+        vm.onField {
+            copy(name = "易方达蓝筹", symbol = "005827", quantity = "1000", costPrice = "1.50", autoFetchNav = true)
+        }
+        var saved = false
+        vm.submit { saved = true }
+        advanceUntilIdle()
+        assertTrue(saved)
+        val savedHolding = repository.observeHoldings(1).first().single()
+        assertEquals(true, savedHolding.autoFetchNav)
+    }
+
+    @Test
+    fun otcFund_newWithManualRegion_savesNullFlag() = runTest {
+        session.setCurrentUser(1)
+        val vm = viewModel(type = "OTC_FUND")
+        vm.onField {
+            copy(name = "某QDII", symbol = "000834", quantity = "100", costPrice = "1.20", autoFetchNav = false, currentPrice = "1.30")
+        }
+        vm.submit { }
+        advanceUntilIdle()
+        val savedHolding = repository.observeHoldings(1).first().single()
+        assertNull(savedHolding.autoFetchNav)
+    }
+
+    @Test
+    fun otcFund_edit_prefillsAutoFetchNav() = runTest {
+        session.setCurrentUser(1)
+        val id = repository.addHolding(
+            Holding(userId = 1, type = AssetType.OTC_FUND, name = "易方达蓝筹", currency = Currency.CNY, symbol = "005827", quantity = 1_000.0, autoFetchNav = true),
+        )
+        val vm = viewModel(type = "OTC_FUND", holdingId = id.toString())
+        advanceUntilIdle()
+        assertEquals(true, vm.state.value.autoFetchNav)
     }
 }

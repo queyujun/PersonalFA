@@ -12,12 +12,15 @@ object HoldingValue {
         AssetType.HK_STOCK,
         AssetType.US_STOCK,
         AssetType.GOLD_ETF,
+        AssetType.PHYSICAL_GOLD,
         AssetType.BOND_ETF,
-        AssetType.CRYPTO ->
+        AssetType.CRYPTO,
+        AssetType.OTC_FUND ->
             (holding.quantity ?: 0.0) * (holding.currentPrice ?: holding.costPrice ?: 0.0)
 
         AssetType.ACCOUNT_CASH,
-        AssetType.EQUITY ->
+        AssetType.EQUITY,
+        AssetType.MISC ->
             holding.manualValue ?: 0.0
 
         AssetType.REAL_ESTATE ->
@@ -47,8 +50,10 @@ object HoldingValue {
         AssetType.HK_STOCK,
         AssetType.US_STOCK,
         AssetType.GOLD_ETF,
+        AssetType.PHYSICAL_GOLD,
         AssetType.BOND_ETF,
-        AssetType.CRYPTO -> {
+        AssetType.CRYPTO,
+        AssetType.OTC_FUND -> {
             val cost = holding.costPrice ?: return null
             val quantity = holding.quantity ?: 0.0
             currentValue(holding, nowMs) - cost * quantity

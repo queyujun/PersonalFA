@@ -22,6 +22,7 @@ import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
 import com.yingjing.pfa.fakes.FakeHoldingRepository
 import com.yingjing.pfa.fakes.FakeHousePriceRepository
+import com.yingjing.pfa.fakes.FakeStringResolver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.emptyFlow
@@ -47,6 +48,7 @@ class SyncManagerTest {
             com.yingjing.pfa.domain.auth.LoginResult.InvalidCredentials
         override suspend fun listUsers() = listOf(User(1, "alex", Currency.CNY, 0))
         override suspend fun getUser(id: Long) = null
+        override fun observeUser(id: Long) = flowOf<User?>(null)
         override suspend fun updateDefaultCurrency(userId: Long, currency: Currency) {}
         override suspend fun changePassword(userId: Long, oldPassword: String, newPassword: String) = false
         override suspend fun changeUsername(userId: Long, newUsername: String) = false
@@ -59,6 +61,7 @@ class SyncManagerTest {
         override fun observeRates(): Flow<FxRates> = flowOf(FxRates())
         override suspend fun current() = FxRates()
         override suspend fun refresh(): FxRates { fxRefreshed = true; return FxRates(7.0, 0.9) }
+        override suspend fun save(rates: FxRates) {}
     }
 
     private val recorded = mutableListOf<Double>()
@@ -78,6 +81,7 @@ class SyncManagerTest {
         ) {
             recorded += netWorth
         }
+        override suspend fun deleteBefore(userId: Long, dayEpochDay: Long) {}
     }
 
     private val insertedAlerts = mutableListOf<Alert>()
@@ -110,7 +114,7 @@ class SyncManagerTest {
         val quoteRepo = object : QuoteRepository {
             override suspend fun fetchPrices(holdings: List<Holding>) = mapOf(id to 1354.5)
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
 
         val ok = manager.sync()
 
@@ -129,7 +133,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>): Map<Long, Double> =
                 throw RuntimeException("network")
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
         // 加一个持仓触发抓取路径
         holdingRepo.addHolding(
             Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
@@ -161,7 +165,7 @@ class SyncManagerTest {
         val quoteRepo = object : QuoteRepository {
             override suspend fun fetchPrices(holdings: List<Holding>) = emptyMap<Long, Double>()
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
         manager.nowProvider = { nowMs }
 
         val ok = manager.sync()
@@ -188,7 +192,7 @@ class SyncManagerTest {
         val quoteRepo = object : QuoteRepository {
             override suspend fun fetchPrices(holdings: List<Holding>) = emptyMap<Long, Double>()
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
         manager.nowProvider = { msOf(2026, 7) }
 
         assertTrue(manager.sync())

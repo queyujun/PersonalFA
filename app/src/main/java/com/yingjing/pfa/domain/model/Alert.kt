@@ -1,11 +1,14 @@
 package com.yingjing.pfa.domain.model
 
+import androidx.annotation.StringRes
+import com.yingjing.pfa.R
+
 /** 提醒分类。 */
-enum class AlertCategory(val displayName: String) {
-    HOLDING("持仓"),
-    IPO("新股"),
-    MARKET("市场"),
-    GLOBAL("国际"),
+enum class AlertCategory(@StringRes val displayRes: Int) {
+    HOLDING(R.string.alert_cat_holding),
+    IPO(R.string.alert_cat_ipo),
+    MARKET(R.string.alert_cat_market),
+    GLOBAL(R.string.alert_cat_global),
 }
 
 /** 提醒严重度（对应 UI 颜色 / 图标）。 */

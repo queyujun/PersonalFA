@@ -7,6 +7,9 @@ import com.yingjing.pfa.domain.model.Holding
 object SinaSymbolMapper {
 
     fun sinaCode(holding: Holding): String? {
+        // 实物金无 symbol：固定取新浪伦敦金现货（hf_XAU，USD/盎司），
+        // 由 QuoteRepositoryImpl 按汇率 + 克数换算为持仓币种的「每克」价。
+        if (holding.type == AssetType.PHYSICAL_GOLD) return SPOT_GOLD
         val symbol = holding.symbol?.trim() ?: return null
         if (symbol.isBlank()) return null
         return when (holding.type) {
@@ -22,4 +25,7 @@ object SinaSymbolMapper {
         val prefix = if (digits.firstOrNull() in listOf('5', '6', '9')) "sh" else "sz"
         return prefix + digits
     }
+
+    // 新浪伦敦金现货代码（hf_XAU，USD/盎司）
+    private const val SPOT_GOLD = "hf_XAU"
 }

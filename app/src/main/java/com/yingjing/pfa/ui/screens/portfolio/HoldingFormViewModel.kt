@@ -3,6 +3,9 @@ package com.yingjing.pfa.ui.screens.portfolio
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yingjing.pfa.R
+import com.yingjing.pfa.core.i18n.StringResolver
+import com.yingjing.pfa.core.validation.ValidationFailure
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
@@ -39,7 +42,10 @@ data class HoldingFormState(
     val liabilityType: String = "",
     val monthlyPayment: String = "",
     val repaymentDay: String = "",
+    val note: String = "",
     val autoEstimate: Boolean = false,
+    // 场外基金子分类：true=中国大陆（在线抓取净值），false=其他（手录净值）
+    val autoFetchNav: Boolean = false,
     val error: String? = null,
     val isSubmitting: Boolean = false,
 )
@@ -51,10 +57,13 @@ class HoldingFormViewModel @Inject constructor(
     private val holdingRepository: HoldingRepository,
     private val addHolding: AddHoldingUseCase,
     private val updateHolding: UpdateHoldingUseCase,
+    private val stringResolver: StringResolver,
 ) : ViewModel() {
 
     private val type: AssetType =
-        AssetType.valueOf(savedStateHandle.get<String>("type") ?: AssetType.A_SHARE.name)
+        runCatching {
+            AssetType.valueOf(savedStateHandle.get<String>("type") ?: AssetType.A_SHARE.name)
+        }.getOrDefault(AssetType.A_SHARE)
     private val holdingId: Long = savedStateHandle.get<String>("holdingId")?.toLongOrNull() ?: -1L
     private val isEdit = holdingId > 0
     private var loaded: Holding? = null
@@ -82,14 +91,14 @@ class HoldingFormViewModel @Inject constructor(
             _state.update { it.copy(isSubmitting = true, error = null) }
             val userId = sessionManager.currentUserId.first()
             if (userId == null) {
-                _state.update { it.copy(isSubmitting = false, error = "未登录") }
+                _state.update { it.copy(isSubmitting = false, error = stringResolver.get(R.string.err_not_logged_in)) }
                 return@launch
             }
             val result = if (isEdit) updateHolding(buildHolding(userId)) else addHolding(buildHolding(userId))
             when (result) {
                 is SaveHoldingResult.Success -> onSaved()
                 is SaveHoldingResult.Invalid ->
-                    _state.update { it.copy(isSubmitting = false, error = result.reason) }
+                    _state.update { it.copy(isSubmitting = false, error = result.failure.resolve()) }
             }
         }
     }
@@ -140,6 +149,11 @@ class HoldingFormViewModel @Inject constructor(
             autoEstimate = if (type == AssetType.REAL_ESTATE) s.autoEstimate else null,
             valueBaseDateEpochMs = valueBaseDateEpochMs,
             estimatedValue = loaded?.estimatedValue,
+            // 其他(MISC)备注；其余类型固定 null（向后兼容）
+            note = if (type == AssetType.MISC) s.note.trim().ifBlank { null } else null,
+            // 场外基金子分类：中国大陆(autoFetchNav=true) 在线抓取净值；其他/非 OTC → null。
+            // 仅 true 才表示「中国大陆」，false（其他）归一为 null，与旧版 OTC 默认值一致。
+            autoFetchNav = if (type == AssetType.OTC_FUND) s.autoFetchNav.takeIf { it } else null,
             createdAtEpochMs = loaded?.createdAtEpochMs ?: 0,
         )
     }
@@ -163,7 +177,9 @@ class HoldingFormViewModel @Inject constructor(
         liabilityType = liabilityType ?: "",
         monthlyPayment = monthlyPayment.toEditText(),
         repaymentDay = repaymentDay?.toString() ?: "",
+        note = note ?: "",
         autoEstimate = autoEstimate == true,
+        autoFetchNav = autoFetchNav == true,
     )
 
     private fun Double?.toEditText(): String {
@@ -174,11 +190,16 @@ class HoldingFormViewModel @Inject constructor(
     private fun parseDate(text: String): Long? {
         if (text.isBlank()) return null
         return runCatching {
-            java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+            java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                 .parse(text.trim())?.time
         }.getOrNull()
     }
 
     private fun formatDate(epochMs: Long): String =
-        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA).format(java.util.Date(epochMs))
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(epochMs))
+
+    /** 把 [ValidationFailure] 经 [stringResolver] 解析为当前 locale 文案。 */
+    private fun ValidationFailure.resolve(): String =
+        if (args.isEmpty()) stringResolver.get(resId)
+        else stringResolver.get(resId, *args.toTypedArray())
 }

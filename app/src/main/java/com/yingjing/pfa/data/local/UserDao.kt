@@ -3,6 +3,7 @@ package com.yingjing.pfa.data.local
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UserDao {
@@ -20,6 +21,10 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE id = :id")
     suspend fun findById(id: Long): UserEntity?
+
+    /** 响应式查询：整表替换（恢复备份）后自动重发。 */
+    @Query("SELECT * FROM users WHERE id = :id")
+    fun observeById(id: Long): Flow<UserEntity?>
 
     @Query("SELECT * FROM users ORDER BY createdAt ASC")
     suspend fun getAll(): List<UserEntity>

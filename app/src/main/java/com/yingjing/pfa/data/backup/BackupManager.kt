@@ -11,6 +11,8 @@ import com.yingjing.pfa.data.local.NetWorthSnapshotDao
 import com.yingjing.pfa.data.local.NetWorthSnapshotEntity
 import com.yingjing.pfa.data.local.UserDao
 import com.yingjing.pfa.data.local.UserEntity
+import com.yingjing.pfa.domain.model.FxRates
+import com.yingjing.pfa.domain.repository.FxRepository
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -24,6 +26,7 @@ class BackupManager @Inject constructor(
     private val snapshotDao: NetWorthSnapshotDao,
     private val categorySnapshotDao: CategorySnapshotDao,
     private val alertDao: AlertDao,
+    private val fxRepository: FxRepository,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -35,6 +38,7 @@ class BackupManager @Inject constructor(
             snapshots = snapshotDao.getAllForBackup().map { it.toBackup() },
             categorySnapshots = categorySnapshotDao.getAllForBackup().map { it.toBackup() },
             alerts = alertDao.getAllForBackup().map { it.toBackup() },
+            fxRates = fxRepository.current().toBackup(),
         )
         return BackupCrypto.encrypt(json.encodeToString(data).toByteArray(Charsets.UTF_8), passphrase)
     }
@@ -56,6 +60,8 @@ class BackupManager @Inject constructor(
         snapshotDao.insertAll(data.snapshots.map { it.toEntity() })
         categorySnapshotDao.insertAll(data.categorySnapshots.map { it.toEntity() })
         alertDao.insertAll(data.alerts.map { it.toEntity() })
+        // 汇率写回本地缓存（老备份无此字段 → null → 不写回，靠后台刷新补救）。
+        data.fxRates?.let { fxRepository.save(it.toDomain()) }
         return true
     }
 }
@@ -70,14 +76,14 @@ private fun HoldingEntity.toBackup() = BackupHolding(
     id, userId, type, name, currency, quantity, costPrice, currentPrice, symbol, manualValue,
     city, areaSqm, annualRatePercent, startDateEpochMs, maturityDateEpochMs, depositType,
     sharePercent, liabilityType, monthlyPayment, repaymentDay, lastRepaidYearMonth,
-    autoEstimate, valueBaseDateEpochMs, estimatedValue, createdAt, updatedAt,
+    autoEstimate, valueBaseDateEpochMs, estimatedValue, note, autoFetchNav, createdAt, updatedAt,
 )
 
 private fun BackupHolding.toEntity() = HoldingEntity(
     id, userId, type, name, currency, quantity, costPrice, currentPrice, symbol, manualValue,
     city, areaSqm, annualRatePercent, startDateEpochMs, maturityDateEpochMs, depositType,
     sharePercent, liabilityType, monthlyPayment, repaymentDay, lastRepaidYearMonth,
-    autoEstimate, valueBaseDateEpochMs, estimatedValue, createdAt, updatedAt,
+    autoEstimate, valueBaseDateEpochMs, estimatedValue, note, autoFetchNav, createdAt, updatedAt,
 )
 
 private fun NetWorthSnapshotEntity.toBackup() =
@@ -97,3 +103,7 @@ private fun AlertEntity.toBackup() =
 
 private fun BackupAlert.toEntity() =
     AlertEntity(id, userId, category, severity, title, body, refHoldingId, dedupKey, createdAt, read)
+
+private fun FxRates.toBackup() = BackupFxRates(usdToCny = usdToCny, hkdToCny = hkdToCny)
+
+private fun BackupFxRates.toDomain() = FxRates(usdToCny = usdToCny, hkdToCny = hkdToCny)

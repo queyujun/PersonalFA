@@ -8,4 +8,7 @@ interface FxRepository {
     fun observeRates(): Flow<FxRates>
     suspend fun current(): FxRates
     suspend fun refresh(): FxRates
+
+    /** 直接写入本地缓存（不联网）；用于从备份恢复汇率。 */
+    suspend fun save(rates: FxRates)
 }

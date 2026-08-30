@@ -27,14 +27,14 @@ class TrendSeriesBuilderTest {
 
     @Test
     fun daily_keepsEveryDay() {
-        val data = TrendSeriesBuilder.build(totals, categories, listOf(TREND_TOTAL_ID), TimeGranularity.DAY, label)
+        val data = TrendSeriesBuilder.build(totals, categories, listOf(TREND_TOTAL_ID), TimeGranularity.DAY, label, totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL)
         assertEquals(3, data.bucketLabels.size)
         assertEquals(listOf(1000.0, 1100.0, 1200.0), data.series[0].values)
     }
 
     @Test
     fun monthly_takesLastValuePerMonth() {
-        val data = TrendSeriesBuilder.build(totals, categories, listOf(TREND_TOTAL_ID), TimeGranularity.MONTH, label)
+        val data = TrendSeriesBuilder.build(totals, categories, listOf(TREND_TOTAL_ID), TimeGranularity.MONTH, label, totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL)
         // 10 月两天取最后一天(1100)，11 月一天(1200)
         assertEquals(2, data.bucketLabels.size)
         assertEquals(listOf(1100.0, 1200.0), data.series[0].values)
@@ -44,6 +44,7 @@ class TrendSeriesBuilderTest {
     fun multiSeries_totalAndCategory() {
         val data = TrendSeriesBuilder.build(
             totals, categories, listOf(TREND_TOTAL_ID, "STOCK"), TimeGranularity.DAY, label,
+            totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL,
         )
         assertEquals(2, data.series.size)
         assertEquals("总净值", data.series[0].name)
@@ -52,14 +53,14 @@ class TrendSeriesBuilderTest {
 
     @Test
     fun yearly_takesLastOfYear() {
-        val data = TrendSeriesBuilder.build(totals, categories, listOf(TREND_TOTAL_ID), TimeGranularity.YEAR, label)
+        val data = TrendSeriesBuilder.build(totals, categories, listOf(TREND_TOTAL_ID), TimeGranularity.YEAR, label, totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL)
         assertEquals(1, data.bucketLabels.size)
         assertEquals(listOf(1200.0), data.series[0].values)
     }
 
     @Test
     fun empty_returnsEmpty() {
-        val data = TrendSeriesBuilder.build(emptyList(), emptyList(), listOf(TREND_TOTAL_ID), TimeGranularity.DAY, label)
+        val data = TrendSeriesBuilder.build(emptyList(), emptyList(), listOf(TREND_TOTAL_ID), TimeGranularity.DAY, label, totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL)
         assertTrue(data.bucketLabels.isEmpty())
     }
 
@@ -75,6 +76,7 @@ class TrendSeriesBuilderTest {
         )
         val data = TrendSeriesBuilder.build(
             totals, cats, listOf(TREND_CUSTOM_ID), TimeGranularity.DAY, label,
+            totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL,
             customCategories = setOf("STOCK", "DEPOSIT"),
         )
         assertEquals(1, data.series.size)
@@ -94,6 +96,7 @@ class TrendSeriesBuilderTest {
         )
         val data = TrendSeriesBuilder.build(
             emptyList(), cats, listOf(TREND_CUSTOM_ID), TimeGranularity.DAY, label,
+            totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL,
             customCategories = setOf("STOCK", "BOND"),
         )
         // d1=450, d2=450(仅 STOCK), d3=580
@@ -112,6 +115,7 @@ class TrendSeriesBuilderTest {
         )
         val data = TrendSeriesBuilder.build(
             totals, cats, listOf(TREND_TOTAL_ID, TREND_CUSTOM_ID), TimeGranularity.MONTH, label,
+            totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL,
             customCategories = setOf("STOCK", "DEPOSIT"),
         )
         assertEquals(2, data.series.size)
@@ -125,6 +129,7 @@ class TrendSeriesBuilderTest {
         // 选中 CUSTOM 但未选任何类别：靠 totals 提供时间轴，CUSTOM 序列全 null（无类别可加）
         val data = TrendSeriesBuilder.build(
             totals, categories, listOf(TREND_TOTAL_ID, TREND_CUSTOM_ID), TimeGranularity.DAY, label,
+            totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL,
             customCategories = emptySet(),
         )
         assertEquals(2, data.series.size)

@@ -56,4 +56,9 @@ class SnapshotRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    override suspend fun deleteBefore(userId: Long, dayEpochDay: Long) {
+        dao.deleteOlderThan(userId, dayEpochDay)
+        categoryDao.deleteOlderThan(userId, dayEpochDay)
+    }
 }

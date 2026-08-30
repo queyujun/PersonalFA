@@ -1,5 +1,7 @@
 package com.yingjing.pfa.domain.usecase
 
+import com.yingjing.pfa.R
+import com.yingjing.pfa.core.validation.ValidationFailure
 import com.yingjing.pfa.domain.auth.LoginResult
 import com.yingjing.pfa.domain.repository.UserRepository
 import javax.inject.Inject
@@ -10,7 +12,7 @@ class LoginUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(username: String, password: String): LoginResult {
         if (username.isBlank() || password.isEmpty()) {
-            return LoginResult.Invalid("请输入用户名和密码")
+            return LoginResult.Invalid(ValidationFailure(R.string.err_login_blank))
         }
         return userRepository.login(username.trim(), password)
     }

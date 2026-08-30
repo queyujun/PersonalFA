@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 品牌 -->
+    <string name="app_name">盈景私助</string>
+
+    <!-- 語言選項 -->
+    <string name="lang_follow_system">跟隨系統</string>
+    <string name="lang_simplified_chinese">簡體中文</string>
+    <string name="lang_traditional_hk">繁體中文（香港）</string>
+    <string name="lang_english">英文</string>
+
+    <!-- 導航 -->
+    <string name="nav_overview">總覽</string>
+    <string name="nav_portfolio">資產</string>
+    <string name="nav_alerts">提醒</string>
+    <string name="nav_settings">我的</string>
+
+    <!-- 資產類別 -->
+    <string name="cat_real_estate">房產</string>
+    <string name="cat_deposit">存款</string>
+    <string name="cat_stock">股票</string>
+    <string name="cat_gold">黃金</string>
+    <string name="cat_bond">國債</string>
+    <string name="cat_equity">公司股權</string>
+    <string name="cat_crypto">區塊鏈</string>
+    <string name="cat_otc_fund">場外基金</string>
+    <string name="cat_misc">其他</string>
+    <string name="cat_liability">負債</string>
+
+    <!-- 資產類型 -->
+    <string name="type_real_estate">房產</string>
+    <string name="type_deposit">存款</string>
+    <string name="type_a_share">A股</string>
+    <string name="type_hk_stock">港股</string>
+    <string name="type_us_stock">美股</string>
+    <string name="type_account_cash">帳戶現金</string>
+    <string name="type_gold_etf">黃金ETF</string>
+    <string name="type_physical_gold">實物金</string>
+    <string name="type_bond_etf">國債ETF</string>
+    <string name="type_equity">公司股權</string>
+    <string name="type_crypto">區塊鏈</string>
+    <string name="type_otc_fund">場外基金</string>
+    <string name="type_misc">其他</string>
+    <string name="type_liability">負債</string>
+
+    <!-- 貨幣 -->
+    <string name="cur_symbol_cny">¥</string>
+    <string name="cur_symbol_hkd">HK$</string>
+    <string name="cur_symbol_usd">US$</string>
+    <string name="cur_label_cny">人民幣</string>
+    <string name="cur_label_hkd">港幣</string>
+    <string name="cur_label_usd">美元</string>
+
+    <!-- 時間粒度 -->
+    <string name="granularity_day">日</string>
+    <string name="granularity_month">月</string>
+    <string name="granularity_year">年</string>
+
+    <!-- 市場指數 -->
+    <string name="idx_csi300">滬深300</string>
+    <string name="idx_hsi">恆生指數</string>
+    <string name="idx_spx">標普500</string>
+
+    <!-- 股票子分組 -->
+    <string name="stock_sub_us_stock">美股</string>
+    <string name="stock_sub_us_cash">美股現金</string>
+    <string name="stock_sub_a_share">A股</string>
+    <string name="stock_sub_a_cash">A股現金</string>
+    <string name="stock_sub_hk_stock">港股</string>
+    <string name="stock_sub_hk_cash">港股現金</string>
+
+    <!-- 黃金子分組 -->
+    <string name="gold_sub_gold_etf">黃金ETF</string>
+    <string name="gold_sub_physical_gold">實物金</string>
+
+    <!-- 資產行副標題 -->
+    <string name="sub_a_share">%1$s · %2$s股</string>
+    <string name="sub_hk_stock">%1$s · %2$s股</string>
+    <string name="sub_us_stock">%1$s · %2$s股</string>
+    <string name="sub_gold_etf">%1$s · %2$s份</string>
+    <string name="sub_physical_gold">%1$s克 · %2$s/克</string>
+    <string name="sub_misc">%1$s</string>
+    <string name="sub_bond_etf">%1$s · %2$s份</string>
+    <string name="sub_otc_fund">%1$s · %2$s份</string>
+    <string name="sub_crypto">%1$s · %2$s</string>
+    <string name="sub_cash">%1$s現金</string>
+    <string name="sub_deposit">年化 %1$.1f%% · 每日計息</string>
+    <string name="sub_repay_day">每月%1$d號</string>
+    <string name="sub_repay_last_day">每月最後一天</string>
+    <string name="sub_equity">未上市 · 手動估值</string>
+    <string name="sub_liability_template">%1$s · 還本 %2$s/月 · %3$s</string>
+    <string name="sub_liability_default">負債</string>
+    <string name="sub_real_estate_fallback">房產</string>
+    <string name="sub_real_estate_area">%1$s㎡</string>
+
+    <!-- 持倉詳情 -->
+    <string name="detail_title_fallback">詳情</string>
+    <string name="detail_label_type">類型</string>
+    <string name="detail_label_currency">計價貨幣</string>
+    <string name="detail_label_symbol_name">代碼 / 名稱</string>
+    <string name="detail_label_quantity">持有數量</string>
+    <string name="detail_label_cost_price">成本價</string>
+    <string name="detail_label_current_price">現價</string>
+    <string name="detail_label_principal">本金</string>
+    <string name="detail_label_annual_rate">年化利率</string>
+    <string name="detail_label_city">城市</string>
+    <string name="detail_label_area">建築面積</string>
+    <string name="detail_label_current_value">當前估值</string>
+    <string name="detail_label_estimate_method">估算方式</string>
+    <string name="detail_label_estimate_value">估算現值</string>
+    <string name="detail_label_base_date">錄入基準</string>
+    <string name="detail_label_adjust">累計調整</string>
+    <string name="detail_label_share_percent">持股比例</string>
+    <string name="detail_label_equity_cost">入股成本</string>
+    <string name="detail_label_cash_amount">現金金額</string>
+    <string name="detail_label_note">備註</string>
+    <string name="detail_label_grams">克數</string>
+    <string name="detail_label_cost_per_gram">每克成本</string>
+    <string name="detail_label_current_per_gram">每克現價</string>
+    <string name="detail_label_shares">持有份額</string>
+    <string name="detail_label_cost_nav">成本淨值</string>
+    <string name="detail_label_current_nav">當前淨值</string>
+    <string name="detail_label_liability_type">負債類型</string>
+    <string name="detail_label_owed">欠款金額</string>
+    <string name="detail_label_interest">年利率</string>
+    <string name="detail_label_monthly_payment">月供</string>
+    <string name="detail_price_pending">待接入行情</string>
+    <string name="detail_reit_index">70 城二手住宅指數</string>
+    <string name="detail_estimate_syncing">同步後更新</string>
+    <string name="detail_otc_pending">待手錄更新</string>
+    <string name="detail_label_otc_region">基金分類</string>
+    <string name="otc_region_mainland">中國大陸</string>
+    <string name="otc_region_other">其他</string>
+    <string name="detail_market_value">當前市值（%1$s）</string>
+    <string name="detail_holding_profit">持倉收益 %1$s</string>
+    <string name="detail_delete_confirm_title">刪除「%1$s」？</string>
+    <string name="detail_delete_confirm_body">刪除後無法恢復。</string>
+
+    <!-- 走勢 -->
+    <string name="trend_detail_title">淨值走勢（萬元）</string>
+    <string name="trend_range_7d">近7天</string>
+    <string name="trend_range_30d">近30天</string>
+    <string name="trend_range_all">全部</string>
+    <string name="trend_total">總淨值</string>
+    <string name="trend_custom">自訂組合</string>
+    <string name="trend_accumulating_long">數據積累中：每日自動記錄一條，多用幾天後即可查看走勢、切換日/月/年並縮放。</string>
+    <string name="trend_accumulating_short">數據積累中：每日自動記錄一條淨值，多用幾天即可看到走勢曲線。</string>
+    <string name="trend_accumulating_chart">數據積累中：每日自動記錄一條，多用幾天後即可查看走勢。</string>
+    <string name="trend_gesture_hint">雙指縮放 · 觸摸曲線查看橫縱坐標；橫屏可看更大圖</string>
+    <string name="trend_current">當前淨值</string>
+    <string name="trend_range_pnl">區間盈虧</string>
+    <string name="trend_wan_unit">%1$s 萬</string>
+    <string name="trend_high_low">高 %1$s · 低 %2$s</string>
+    <string name="trend_custom_hint">自訂組合：勾選資產類別，系統按日合計其總值並顯示為一條走勢線</string>
+    <string name="trend_add_category">+ 類別</string>
+    <string name="trend_all_selected">已全選</string>
+
+    <!-- 餅圖 -->
+    <string name="pie_legend">%1$s%2$s萬 · %3$d%%</string>
+
+    <!-- 提醒 -->
+    <string name="alert_cat_holding">持倉</string>
+    <string name="alert_cat_ipo">新股</string>
+    <string name="alert_cat_market">市場</string>
+    <string name="alert_cat_global">國際</string>
+    <string name="alert_channel_name">資產提醒</string>
+    <string name="alert_channel_desc">持倉 / 新股 / 市場 / 國際 提醒</string>
+    <string name="alert_deposit_title">存款即將到期</string>
+    <string name="alert_deposit_body">「%1$s」將在 %2$d 天後到期，記得續存 / 轉投。</string>
+    <string name="alert_price_up">上漲</string>
+    <string name="alert_price_down">下跌</string>
+    <string name="alert_price_title">%1$s 大幅波動</string>
+    <string name="alert_price_body">你持有的「%1$s」較上次%2$s %3$.1f%%（觸發 ±%4$.1f%% 閾值）。</string>
+    <string name="alert_market_title">%1$s 單日%2$s %3$s%%</string>
+    <string name="alert_market_body">主要指數「%1$s」當日%2$s %3$s%%，觸發 ±%4$.1f%% 閾值。</string>
+    <string name="alert_ipo_title">今日可申購新股 %1$d 只</string>
+    <string name="alert_ipo_body">今日可打新：%1$s。別忘申購。</string>
+    <string name="alert_ipo_item">%1$s（申購代碼 %2$s）</string>
+    <string name="alert_ipo_sep">、</string>
+
+    <!-- 錯誤 -->
+    <string name="err_username_empty">請輸入用戶名</string>
+    <string name="err_username_min">用戶名至少 %1$d 個字元</string>
+    <string name="err_username_max">用戶名最多 %1$d 個字元</string>
+    <string name="err_username_chars">用戶名只能包含中文、字母、數字或下劃線</string>
+    <string name="err_password_empty">請輸入密碼</string>
+    <string name="err_password_min">密碼至少 %1$d 位</string>
+    <string name="err_password_max">密碼最多 %1$d 位</string>
+    <string name="err_login_blank">請輸入用戶名和密碼</string>
+    <string name="err_login_invalid">用戶名或密碼錯誤</string>
+    <string name="err_password_mismatch">兩次輸入的密碼不一致</string>
+    <string name="err_username_taken">用戶名已被佔用</string>
+    <string name="err_not_logged_in">未登入</string>
+    <string name="err_holding_name">請輸入名稱</string>
+    <string name="err_holding_symbol">請輸入代碼 / 名稱</string>
+    <string name="err_holding_qty">請輸入持有數量</string>
+    <string name="err_holding_cash">請輸入現金金額</string>
+    <string name="err_holding_value">請輸入當前估值</string>
+    <string name="err_holding_grams">請輸入克數</string>
+    <string name="err_holding_principal">請輸入本金金額</string>
+    <string name="err_holding_rate">請輸入年化利率</string>
+    <string name="err_holding_liability">請輸入負債金額</string>
+
+    <!-- 狀態消息 -->
+    <string name="status_write_failed">無法寫入檔案</string>
+    <string name="status_backup_exported">✓ 備份已匯出</string>
+    <string name="status_backup_failed">備份失敗：%1$s</string>
+    <string name="status_read_failed">讀取檔案失敗</string>
+    <string name="status_restore_ok">✓ 恢復成功</string>
+    <string name="status_restore_failed">恢復失敗：口令錯誤或檔案無效</string>
+    <string name="status_sync_plan_updated">✓ 行情計劃已更新</string>
+    <string name="status_backup_plan_updated">✓ 備份計劃已更新</string>
+    <string name="status_currency_updated">✓ 預設貨幣已更新</string>
+    <string name="status_password_changed">✓ 密碼已修改</string>
+    <string name="status_old_password_wrong">舊密碼不正確</string>
+    <string name="status_username_changed">✓ 用戶名已修改</string>
+    <string name="status_username_taken">用戶名已被佔用或無效</string>
+    <string name="status_profile_saved">✓ 資料已儲存</string>
+    <string name="status_history_deleted">✓ 已刪除 %1$s 之前的歷史快照</string>
+    <string name="status_delete_failed">刪除失敗：%1$s</string>
+    <string name="status_language_updated">✓ 語言已切換</string>
+
+    <!-- 設定 -->
+    <string name="settings_group_profile">個人資料</string>
+    <string name="settings_row_profile">資料</string>
+    <string name="settings_group_security">帳號與安全</string>
+    <string name="settings_change_username">修改用戶名</string>
+    <string name="settings_change_password">修改密碼</string>
+    <string name="settings_biometric">指紋 / 面容登入</string>
+    <string name="settings_biometric_subtitle">開啟後可在登入頁用指紋/面容快速登入上次帳號</string>
+    <string name="settings_group_accounts">帳號管理</string>
+    <string name="settings_group_sync">數據與同步</string>
+    <string name="settings_sync_detail">行情刷新與走勢數據</string>
+    <string name="settings_last_update">上次 %1$s</string>
+    <string name="settings_not_updated">尚未更新</string>
+    <string name="settings_group_backup">數據備份</string>
+    <string name="settings_backup_detail">備份與恢復</string>
+    <string name="settings_auto_backup">自動備份</string>
+    <string name="settings_logout">退出登入</string>
+    <string name="settings_current_badge">當前</string>
+    <string name="settings_switch">切換</string>
+    <string name="settings_new_username">新用戶名</string>
+    <string name="settings_passphrase">口令</string>
+    <string name="settings_old_password">舊密碼</string>
+    <string name="settings_new_password">新密碼（≥4 位）</string>
+    <string name="settings_group_language">語言</string>
+    <string name="settings_language">介面語言</string>
+    <string name="settings_language_dialog_title">選擇語言</string>
+
+    <!-- 個人資料 -->
+    <string name="profile_nickname">暱稱</string>
+    <string name="profile_gender">性別</string>
+    <string name="profile_gender_male">男</string>
+    <string name="profile_gender_female">女</string>
+    <string name="profile_gender_other">其他</string>
+    <string name="profile_age">年齡</string>
+    <string name="profile_age_years">%1$d 歲</string>
+    <string name="profile_default_currency">預設計價貨幣</string>
+    <string name="profile_save">儲存資料</string>
+    <string name="profile_account">帳號</string>
+    <string name="profile_readonly">唯讀</string>
+
+    <!-- 計劃 -->
+    <string name="schedule_period">週期</string>
+    <string name="schedule_hour_label">時間（整點，0-23）</string>
+    <string name="schedule_save">儲存計劃</string>
+    <string name="every_day">每天</string>
+    <string name="every_3_days">每3天</string>
+    <string name="every_week">每週</string>
+    <string name="every_n_days">每%1$d天</string>
+    <string name="hour_oclock">%1$d 點</string>
+    <string name="not_set">未設定</string>
+    <string name="common_on">開</string>
+    <string name="common_off">關</string>
+
+    <!-- 同步 -->
+    <string name="sync_refresh_now">立即刷新行情</string>
+    <string name="sync_last_update">上次更新：%1$s</string>
+    <string name="sync_purge_title">清理歷史走勢數據</string>
+    <string name="sync_purge_subtitle">刪除某日期之前的淨值走勢快照（不影響持倉與提醒）</string>
+    <string name="sync_plan_subtitle">行情刷新計劃</string>
+    <string name="sync_plan_hint">「提醒」抓取隨行情刷新一起進行（同一時間 / 週期）</string>
+    <string name="sync_purge_confirm_title">刪除 %1$s 之前的歷史走勢？</string>
+    <string name="sync_purge_confirm_body">將永久刪除該日期（不含）之前的淨值與分類快照，走勢圖歷史將縮短。此操作不可恢復，建議先備份。</string>
+
+    <!-- 備份 -->
+    <string name="backup_now">立即備份</string>
+    <string name="backup_restore">從檔案恢復</string>
+    <string name="backup_auto_weekly">每週自動備份</string>
+    <string name="backup_auto_subtitle">本機加密安全副本（便攜備份請用「立即備份」自選口令）</string>
+    <string name="backup_plan_subtitle">自動備份計劃</string>
+    <string name="backup_plan_hint">啟用上方「每週自動備份」後，按此週期 / 時間執行</string>
+    <string name="backup_security_hint">備份採用 AES-256-GCM 加密（口令派生密鑰）；匯出檔案建議妥善保存，口令遺失將無法恢復。</string>
+    <string name="backup_set_passphrase">設定備份口令</string>
+    <string name="backup_export">匯出</string>
+    <string name="backup_input_passphrase">輸入備份口令</string>
+    <string name="backup_filename_prefix">盈景私助-backup-</string>
+
+    <!-- 表單 -->
+    <string name="add_asset_title">添加資產</string>
+    <string name="form_title_edit">編輯%1$s</string>
+    <string name="form_title_add">添加%1$s</string>
+    <string name="form_label_name">名稱</string>
+    <string name="form_label_currency">計價貨幣</string>
+    <string name="form_label_symbol">代碼 / 名稱</string>
+    <string name="form_label_quantity">持有數量</string>
+    <string name="form_label_cost_price">成本價（可選）</string>
+    <string name="form_label_current_price">現價（可選，P3 起自動更新）</string>
+    <string name="form_label_cash_amount">現金金額</string>
+    <string name="form_label_shares">持有份額</string>
+    <string name="form_label_cost_nav">成本淨值（可選）</string>
+    <string name="form_label_current_nav">當前淨值（可選，手錄更新）</string>
+    <string name="form_label_otc_region">基金分類</string>
+    <string name="form_otc_autonav_hint">中國大陸基金在同步後自動更新淨值。</string>
+    <string name="form_label_area">建築面積 ㎡（可選）</string>
+    <string name="form_label_current_value">當前估值</string>
+    <string name="form_label_note">備註（可選）</string>
+    <string name="form_label_grams">克數</string>
+    <string name="form_label_cost_per_gram">每克成本（可選）</string>
+    <string name="form_label_current_per_gram">每克現價（自動取現貨金）</string>
+    <string name="form_reit_estimate">按 70 城二手住宅指數自動估算</string>
+    <string name="form_reit_hint">以錄入值為基準，按每月二手住宅環比指數自動微調，同步後更新</string>
+    <string name="form_label_principal">本金金額</string>
+    <string name="form_label_annual_rate">年化利率 %</string>
+    <string name="form_label_maturity">到期日 yyyy-MM-dd（可選，用於到期提醒）</string>
+    <string name="form_label_deposit_type">存款類型（可選，如定期）</string>
+    <string name="form_label_share_percent">持股比例 %（可選）</string>
+    <string name="form_label_equity_cost">入股成本（可選）</string>
+    <string name="form_label_liability_type">負債類型（可選，如房貸）</string>
+    <string name="form_label_owed">欠款金額</string>
+    <string name="form_label_interest">年利率 %（可選）</string>
+    <string name="form_label_monthly_payment">每月還款本金（可選）</string>
+    <string name="form_label_repayment_day">每月還款日 1-31（可選，留空=每月最後一天）</string>
+    <string name="form_label_city">所在城市</string>
+    <string name="form_no_city_match">無匹配城市</string>
+    <string name="form_save_edit">儲存修改</string>
+    <string name="form_save">儲 存</string>
+    <string name="form_price_hint">提示：股票 / ETF / 代幣的現價將在 P3（行情介面）起每日自動更新。</string>
+
+    <!-- 通用 -->
+    <string name="common_cancel">取消</string>
+    <string name="common_delete">刪除</string>
+    <string name="common_edit">編輯</string>
+    <string name="common_save">儲存</string>
+    <string name="common_loading">載入中…</string>
+    <string name="common_next">下一步</string>
+    <string name="common_select_all">全選</string>
+    <string name="common_clear">清空</string>
+    <string name="common_refresh">刷新</string>
+
+    <!-- 登入註冊 -->
+    <string name="auth_tagline">您的個人資產全景管家</string>
+    <string name="auth_tab_login">登入</string>
+    <string name="auth_tab_register">註冊</string>
+    <string name="auth_label_username">用戶名</string>
+    <string name="auth_label_password">密碼</string>
+    <string name="auth_label_confirm_password">確認密碼</string>
+    <string name="auth_button_login">登 入</string>
+    <string name="auth_button_register">註 冊</string>
+    <string name="auth_biometric_login">使用指紋 / 面容登入</string>
+    <string name="auth_biometric_with_user">使用指紋 / 面容登入 %1$s</string>
+    <string name="auth_local_only">🔐 帳戶與數據僅保存在本機（加密存儲），支持多用戶。</string>
+
+    <!-- 總覽 -->
+    <string name="overview_title">總覽</string>
+    <string name="overview_asset_distribution">資產分佈</string>
+    <string name="overview_price_hint">現價由行情每日自動更新（可在「我的」頁立即刷新）；淨值走勢按每日快照累積。</string>
+    <string name="overview_net_worth">總資產淨值</string>
+    <string name="overview_total_assets">總資產 %1$s</string>
+    <string name="overview_total_liabilities">總負債 %1$s</string>
+    <string name="overview_trend">淨值走勢</string>
+    <string name="overview_detail">詳情 ›</string>
+
+    <!-- 資產頁 -->
+    <string name="portfolio_empty_hint">還沒有資產，點右下角 ＋ 添加</string>
+
+    <!-- 提醒頁 -->
+    <string name="alerts_title">提醒</string>
+    <string name="alerts_mark_all_read">全部已讀</string>
+    <string name="alerts_filter_all">全部</string>
+    <string name="alerts_empty">暫無提醒</string>
+
+    <!-- 無障礙描述 -->
+    <string name="cd_back">返回</string>
+    <string name="cd_edit">編輯</string>
+    <string name="cd_close">關閉</string>
+    <string name="cd_settings">設定</string>
+    <string name="cd_refresh_quotes">立即刷新行情</string>
+    <string name="cd_add_asset">添加資產</string>
+    <string name="cd_collapse">折疊</string>
+    <string name="cd_expand">展開</string>
+
+    <!-- Snackbar -->
+    <string name="snackbar_quote_refreshed">已觸發行情刷新</string>
+
+    <!-- 生物識別 -->
+    <string name="biometric_title">生物識別登入</string>
+    <string name="biometric_subtitle">使用指紋或面容快速登入盈景私助</string>
+    <string name="biometric_negative">用密碼登入</string>
+
+    <!-- 佔位 -->
+    <string name="placeholder_subtitle">P0 腳手架占位</string>
+</resources>
