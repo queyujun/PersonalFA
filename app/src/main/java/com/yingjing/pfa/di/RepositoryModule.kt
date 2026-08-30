@@ -14,6 +14,8 @@ import com.yingjing.pfa.data.session.DataStoreSessionManager
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.data.sync.LanguageStore
 import com.yingjing.pfa.data.sync.LanguageStoreImpl
+import com.yingjing.pfa.data.sync.ThemeStore
+import com.yingjing.pfa.data.sync.ThemeStoreImpl
 import com.yingjing.pfa.domain.alert.AlertNotifier
 import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
@@ -74,4 +76,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindLanguageStore(impl: LanguageStoreImpl): LanguageStore
+
+    @Binds
+    @Singleton
+    abstract fun bindThemeStore(impl: ThemeStoreImpl): ThemeStore
 }

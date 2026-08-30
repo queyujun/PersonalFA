@@ -14,11 +14,13 @@ import com.yingjing.pfa.core.security.BiometricAuthenticator
 import com.yingjing.pfa.data.sync.SyncStateStore
 import com.yingjing.pfa.core.i18n.AppLanguage
 import com.yingjing.pfa.PersonalFaApp
+import com.yingjing.pfa.data.sync.ThemeStore
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
+import com.yingjing.pfa.ui.theme.AppTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +44,7 @@ data class SettingsUiState(
     val backupIntervalDays: Int = 7,
     val backupHour: Int = 3,
     val currentLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
+    val currentTheme: AppTheme = AppTheme.MORANDI,
     val statusMessage: String? = null,
     val purgeMessage: String? = null,
 )
@@ -58,6 +61,7 @@ class SettingsViewModel @Inject constructor(
     private val snapshotRepository: SnapshotRepository,
     private val fxRepository: FxRepository,
     private val languageStore: LanguageStore,
+    private val themeStore: ThemeStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -90,6 +94,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             languageStore.languageTag.collect { tag ->
                 _uiState.update { it.copy(currentLanguage = AppLanguage.fromTag(tag)) }
+            }
+        }
+        viewModelScope.launch {
+            themeStore.themeId.collect { id ->
+                _uiState.update { it.copy(currentTheme = AppTheme.fromId(id)) }
             }
         }
     }
@@ -231,6 +240,14 @@ class SettingsViewModel @Inject constructor(
         languageStore.setLanguage(lang.tag)
         _uiState.update {
             it.copy(currentLanguage = lang, statusMessage = context.getString(R.string.status_language_updated))
+        }
+    }
+
+    /** 切换主题配色：写入 DataStore，主题流下发到 MainActivity 即时生效（深浅跟随系统）。 */
+    fun setTheme(theme: AppTheme) = viewModelScope.launch {
+        themeStore.setTheme(theme.id)
+        _uiState.update {
+            it.copy(currentTheme = theme, statusMessage = context.getString(R.string.status_theme_updated))
         }
     }
 

@@ -156,7 +156,7 @@
     <string name="trend_all_selected">All selected</string>
 
     <!-- Pie chart -->
-    <string name="pie_legend">%1$s%2$s · %3$d%%</string>
+    <string name="pie_legend">%1$s%2$s</string>
 
     <!-- Alerts -->
     <string name="alert_cat_holding">Holding</string>
@@ -246,6 +246,17 @@
     <string name="settings_group_language">Language</string>
     <string name="settings_language">App language</string>
     <string name="settings_language_dialog_title">Select language</string>
+
+    <!-- Appearance -->
+    <string name="settings_group_appearance">Appearance</string>
+    <string name="settings_theme">Theme color</string>
+    <string name="settings_theme_dialog_title">Select theme</string>
+    <string name="settings_dark_mode">Dark mode</string>
+    <string name="settings_dark_mode_subtitle">Follows system day/night</string>
+    <string name="theme_morandi">Morandi</string>
+    <string name="theme_celadon">Celadon</string>
+    <string name="theme_ink">Ink</string>
+    <string name="status_theme_updated">✓ Theme switched</string>
 
     <!-- Profile -->
     <string name="profile_nickname">Nickname</string>
@@ -366,8 +377,8 @@
     <string name="overview_asset_distribution">Asset Distribution</string>
     <string name="overview_price_hint">Current prices auto-update daily (refresh in Settings); net-worth trends accumulate daily.</string>
     <string name="overview_net_worth">Net Worth</string>
-    <string name="overview_total_assets">Total assets %1$s</string>
-    <string name="overview_total_liabilities">Total liabilities %1$s</string>
+    <string name="overview_total_assets">Total assets</string>
+    <string name="overview_total_liabilities">Total liabilities</string>
     <string name="overview_trend">Net Worth Trend</string>
     <string name="overview_detail">Details ›</string>
 

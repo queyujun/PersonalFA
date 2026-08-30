@@ -2,11 +2,13 @@ package com.yingjing.pfa.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// 品牌主色
-val BlueLightMode = Color(0xFF2A78D6)
-val BlueDarkMode = Color(0xFF3987E5)
-
-// 中国市场惯例：红涨 / 绿跌
+/**
+ * 数据语义色（跨主题保持一致，确保涨跌/分类的辨识度不随主题变化）。
+ *
+ * 中国市场惯例：红涨 / 绿跌，颜色固定以保证语义辨识。
+ * 资产分类色为固定顺序（房产/存款/股票/黄金/国债/区块链/公司股权/场外基金/其他），
+ * 走势/饼图依赖该稳定色序区分类别，不随主题切换。
+ */
 val GainRed = Color(0xFFD03B3B)
 val LossGreen = Color(0xFF0CA30C)
 
@@ -23,19 +25,3 @@ val Cat9 = Color(0xFF6B7280)
 
 // 自定义组合走势线（用户多选资产类别合计），紫红色，区别于上述固定分类色
 val CustomCombo = Color(0xFF8E24AA)
-
-// 中性 / 表面（浅色）
-val InkLight = Color(0xFF0B0B0B)
-val Ink2Light = Color(0xFF52514E)
-val SurfaceLight = Color(0xFFFCFCFB)
-val SurfaceVariantLight = Color(0xFFF2F2EF)
-val PagePlaneLight = Color(0xFFF9F9F7)
-val OutlineLight = Color(0xFFE6E6E2)
-
-// 中性 / 表面（深色）
-val InkDark = Color(0xFFFFFFFF)
-val Ink2Dark = Color(0xFFC3C2B7)
-val SurfaceDark = Color(0xFF1A1A19)
-val SurfaceVariantDark = Color(0xFF2C2C2A)
-val PagePlaneDark = Color(0xFF0D0D0D)
-val OutlineDark = Color(0xFF2C2C2A)

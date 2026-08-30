@@ -2,7 +2,6 @@ package com.yingjing.pfa.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,8 +59,7 @@ import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
 import com.yingjing.pfa.ui.components.AvatarCircle
-import com.yingjing.pfa.ui.theme.BlueDarkMode
-import com.yingjing.pfa.ui.theme.BlueLightMode
+import com.yingjing.pfa.ui.theme.LocalBrandColors
 
 /**
  * 设置二级界面通用骨架：手写返回顶栏 + 加深背景 + 垂直滚动内容槽。
@@ -76,8 +74,7 @@ internal fun SettingsDetailScaffold(
     onBack: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
-    val pageBg = if (isDark) Color(0xFF080807) else Color(0xFFE9E9E3)
+    val pageBg = LocalBrandColors.current.pageBackground
 
     Column(
         modifier = Modifier
@@ -112,19 +109,17 @@ internal fun SettingsDetailScaffold(
     }
 }
 
-/** 页头：品牌蓝渐变卡 + 64dp 头像 + 名称/@用户名 + 退出登录。 */
+/** 页头：品牌色渐变卡 + 64dp 头像 + 名称/@用户名 + 退出登录。 */
 @Composable
 internal fun GradientUserHeader(user: User?, onLogout: () -> Unit) {
-    val isDark = isSystemInDarkTheme()
-    val startColor = if (isDark) BlueDarkMode else BlueLightMode
-    val endColor = if (isDark) Color(0xFF5BA0F0) else Color(0xFF4A90E2)
+    val brand = LocalBrandColors.current
     val display = user?.let { it.nickname?.takeIf { s -> s.isNotBlank() } ?: it.username } ?: "-"
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(Brush.linearGradient(listOf(startColor, endColor)))
+            .background(Brush.linearGradient(listOf(brand.gradientStart, brand.gradientEnd)))
             .padding(20.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

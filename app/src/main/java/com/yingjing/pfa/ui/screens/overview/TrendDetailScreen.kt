@@ -61,7 +61,6 @@ import com.yingjing.pfa.domain.usecase.TrendSeries
 import com.yingjing.pfa.ui.components.MultiSeriesTrendChart
 import com.yingjing.pfa.ui.components.MoneyText
 import com.yingjing.pfa.ui.format.MoneyFormat
-import com.yingjing.pfa.ui.theme.BlueLightMode
 import com.yingjing.pfa.ui.theme.Cat1
 import com.yingjing.pfa.ui.theme.Cat2
 import com.yingjing.pfa.ui.theme.Cat3
@@ -73,6 +72,7 @@ import com.yingjing.pfa.ui.theme.Cat8
 import com.yingjing.pfa.ui.theme.Cat9
 import com.yingjing.pfa.ui.theme.CustomCombo
 import com.yingjing.pfa.ui.theme.GainRed
+import com.yingjing.pfa.ui.theme.LocalBrandColors
 import com.yingjing.pfa.ui.theme.LossGreen
 
 /** 可参与自定义组合的资产类别（排除负债：负债为负值，混入合计会误导）。 */
@@ -143,7 +143,8 @@ fun TrendDetailScreen(
             customCategories = customCategories,
         )
     }
-    val colors = selectedIds.map { seriesColor(it) }
+    val brandTotalColor = LocalBrandColors.current.primary
+    val colors = selectedIds.map { seriesColor(it, brandTotalColor) }
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     // 横屏纵向空间紧张：收紧控制行/图例的纵向内边距、压低顶栏、隐藏底部提示，把高度让给走势图。
     val controlVerticalPad = if (isLandscape) 0.dp else 2.dp
@@ -476,8 +477,8 @@ private fun seriesLabelWithTotal(
     else -> seriesLabel(id, categoryLabels)
 }
 
-private fun seriesColor(id: String): Color {
-    if (id == TREND_TOTAL_ID) return BlueLightMode
+private fun seriesColor(id: String, totalColor: Color): Color {
+    if (id == TREND_TOTAL_ID) return totalColor
     if (id == TREND_CUSTOM_ID) return CustomCombo
     return when (runCatching { AssetCategory.valueOf(id) }.getOrNull()) {
         AssetCategory.REAL_ESTATE -> Cat1

@@ -64,7 +64,11 @@ object TrendSeriesBuilder {
             }
         }
 
-        val allDays = sources.values.flatMap { it.keys }.toSortedSet()
+        // 时间轴基准：选中序列的天数并集，并并入净值快照的全部天数。
+        // 净值每天必记，保证只勾某单一类别（如已删除、仅留历史点）时，
+        // 该类别有数据的那天也落在完整时间轴上正常画图，而非因自身天数不足 2
+        // 触发"数据积累中"遮掉孤点。无净值快照时退化为类别自身天数并集。
+        val allDays = (sources.values.flatMap { it.keys } + totals.map { it.epochDay }).toSortedSet()
         if (allDays.isEmpty()) return TrendChartData(emptyList(), emptyList())
 
         val dayToBucketKey = allDays.associateWith { bucketKey(it, granularity) }

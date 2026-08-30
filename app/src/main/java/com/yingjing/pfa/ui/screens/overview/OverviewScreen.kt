@@ -21,9 +21,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
@@ -33,8 +35,9 @@ import com.yingjing.pfa.ui.components.AssetPieChart
 import com.yingjing.pfa.ui.components.MoneyText
 import com.yingjing.pfa.ui.components.NetWorthTrendChart
 import com.yingjing.pfa.ui.components.PieSlice
+import com.yingjing.pfa.ui.components.StackedAreaSeries
+import com.yingjing.pfa.ui.components.StackedAreaTrendChart
 import com.yingjing.pfa.ui.format.MoneyFormat
-import com.yingjing.pfa.ui.theme.BlueLightMode
 import com.yingjing.pfa.ui.theme.Cat1
 import com.yingjing.pfa.ui.theme.Cat2
 import com.yingjing.pfa.ui.theme.Cat3
@@ -44,6 +47,7 @@ import com.yingjing.pfa.ui.theme.Cat6
 import com.yingjing.pfa.ui.theme.Cat7
 import com.yingjing.pfa.ui.theme.Cat8
 import com.yingjing.pfa.ui.theme.Cat9
+import com.yingjing.pfa.ui.theme.LocalBrandColors
 
 @Composable
 fun OverviewScreen(
@@ -66,11 +70,12 @@ fun OverviewScreen(
         NetWorthCard(summary)
 
         Spacer(Modifier.height(12.dp))
-        TrendCard(state.trend, onOpenTrend)
+        TrendCard(state, onOpenTrend)
 
         if (summary != null) {
             val slices = summary.byCategory
                 .filter { it.category != AssetCategory.LIABILITY && it.amount > 0 }
+                .sortedByDescending { it.amount }
                 .map { PieSlice(categoryNames[it.category] ?: it.category.name, it.amount, colorFor(it.category)) }
             if (slices.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
@@ -100,10 +105,11 @@ fun OverviewScreen(
 @Composable
 private fun NetWorthCard(summary: PortfolioSummary?) {
     val symbol = summary?.displayCurrency?.let { stringResource(it.symbolRes) } ?: ""
+    val brand = LocalBrandColors.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BlueLightMode, RoundedCornerShape(20.dp))
+            .background(Brush.linearGradient(listOf(brand.gradientStart, brand.gradientEnd)), RoundedCornerShape(20.dp))
             .padding(20.dp),
     ) {
         Text(stringResource(R.string.overview_net_worth), color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium)
@@ -116,30 +122,56 @@ private fun NetWorthCard(summary: PortfolioSummary?) {
         )
         if (summary != null) {
             Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                MoneyText(
-                    stringResource(
-                        R.string.overview_total_assets,
-                        MoneyFormat.format(summary.totalAssets, symbol),
-                    ),
-                    color = Color.White.copy(alpha = 0.92f),
-                    style = MaterialTheme.typography.bodySmall,
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                NetWorthBreakdownRow(
+                    label = stringResource(R.string.overview_total_assets),
+                    amount = MoneyFormat.formatFixed2(summary.totalAssets, symbol),
                 )
-                MoneyText(
-                    stringResource(
-                        R.string.overview_total_liabilities,
-                        MoneyFormat.format(summary.totalLiabilities, symbol),
-                    ),
-                    color = Color.White.copy(alpha = 0.92f),
-                    style = MaterialTheme.typography.bodySmall,
+                NetWorthBreakdownRow(
+                    label = stringResource(R.string.overview_total_liabilities),
+                    amount = MoneyFormat.formatFixed2(summary.totalLiabilities, symbol),
                 )
             }
         }
     }
 }
 
+/**
+ * 总资产 / 总负债的一行：左标签 + 右金额。两行共用此布局，金额用等宽字体
+ * 且右对齐到同一右边缘，使两个数字的小数位、个位纵向对齐（数字低位对齐）。
+ * 标签与数字分置两端，避免数字过大时一行放不下。
+ */
 @Composable
-private fun TrendCard(trend: List<Double>, onOpenTrend: () -> Unit) {
+private fun NetWorthBreakdownRow(
+    label: String,
+    amount: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            color = Color.White.copy(alpha = 0.92f),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        MoneyText(
+            amount,
+            modifier = Modifier.padding(start = 12.dp),
+            color = Color.White.copy(alpha = 0.92f),
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
+private fun TrendCard(state: OverviewUiState, onOpenTrend: () -> Unit) {
+    val trend = state.trend
+    val stacked = state.stackedTrend
+    val categoryNames = AssetCategory.entries.associateWith { stringResource(it.displayRes) }
+
     Card(modifier = Modifier.fillMaxWidth().clickable { onOpenTrend() }) {
         Column(Modifier.padding(16.dp)) {
             Row(
@@ -152,13 +184,33 @@ private fun TrendCard(trend: List<Double>, onOpenTrend: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             if (trend.size >= 2) {
-                NetWorthTrendChart(
-                    points = trend,
-                    lineColor = BlueLightMode,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp),
-                )
+                // 堆叠面积图：按资产类别分层着色，顶部包络线=总资产走势。
+                val series = stacked.series
+                    .filter { it.values.any { v -> v > 0.0 } }
+                    .map { s ->
+                        StackedAreaSeries(
+                            name = categoryNames[s.category] ?: s.category.name,
+                            color = colorFor(s.category),
+                            values = s.values,
+                        )
+                    }
+                if (series.isNotEmpty()) {
+                    StackedAreaTrendChart(
+                        series = series,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                    )
+                } else {
+                    // 分类快照尚未积累，退回单线总净值。
+                    NetWorthTrendChart(
+                        points = trend,
+                        lineColor = LocalBrandColors.current.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                    )
+                }
             } else {
                 Text(
                     stringResource(R.string.trend_accumulating_short),

@@ -156,7 +156,7 @@
     <string name="trend_all_selected">已全选</string>
 
     <!-- 饼图 -->
-    <string name="pie_legend">%1$s%2$s万 · %3$d%%</string>
+    <string name="pie_legend">%1$s%2$s万</string>
 
     <!-- 提醒 -->
     <string name="alert_cat_holding">持仓</string>
@@ -246,6 +246,17 @@
     <string name="settings_group_language">语言</string>
     <string name="settings_language">界面语言</string>
     <string name="settings_language_dialog_title">选择语言</string>
+
+    <!-- 外观 -->
+    <string name="settings_group_appearance">外观</string>
+    <string name="settings_theme">主题配色</string>
+    <string name="settings_theme_dialog_title">选择主题</string>
+    <string name="settings_dark_mode">深色模式</string>
+    <string name="settings_dark_mode_subtitle">跟随系统昼夜切换</string>
+    <string name="theme_morandi">莫兰迪</string>
+    <string name="theme_celadon">青瓷</string>
+    <string name="theme_ink">墨韵</string>
+    <string name="status_theme_updated">✓ 主题已切换</string>
 
     <!-- 个人资料 -->
     <string name="profile_nickname">昵称</string>
@@ -366,8 +377,8 @@
     <string name="overview_asset_distribution">资产分布</string>
     <string name="overview_price_hint">现价由行情每日自动更新（可在「我的」页立即刷新）；净值走势按每日快照累积。</string>
     <string name="overview_net_worth">总资产净值</string>
-    <string name="overview_total_assets">总资产 %1$s</string>
-    <string name="overview_total_liabilities">总负债 %1$s</string>
+    <string name="overview_total_assets">总资产</string>
+    <string name="overview_total_liabilities">总负债</string>
     <string name="overview_trend">净值走势</string>
     <string name="overview_detail">详情 ›</string>
 

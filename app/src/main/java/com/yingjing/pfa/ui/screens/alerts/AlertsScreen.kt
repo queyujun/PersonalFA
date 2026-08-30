@@ -38,7 +38,7 @@ import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.Alert
 import com.yingjing.pfa.domain.model.AlertCategory
 import com.yingjing.pfa.domain.model.AlertSeverity
-import com.yingjing.pfa.ui.theme.BlueLightMode
+import com.yingjing.pfa.ui.theme.Cat1
 import com.yingjing.pfa.ui.theme.Cat2
 import com.yingjing.pfa.ui.theme.Cat4
 
@@ -134,8 +134,9 @@ private fun AlertItem(alert: Alert, categoryLabel: String, onClick: () -> Unit) 
     }
 }
 
+@Composable
 private fun severityColor(severity: AlertSeverity): Color = when (severity) {
-    AlertSeverity.INFO -> BlueLightMode
+    AlertSeverity.INFO -> MaterialTheme.colorScheme.primary
     AlertSeverity.WARNING -> Cat4
     AlertSeverity.SERIOUS -> Cat2
 }

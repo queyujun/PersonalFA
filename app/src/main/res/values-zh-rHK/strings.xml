@@ -156,7 +156,7 @@
     <string name="trend_all_selected">已全選</string>
 
     <!-- 餅圖 -->
-    <string name="pie_legend">%1$s%2$s萬 · %3$d%%</string>
+    <string name="pie_legend">%1$s%2$s萬</string>
 
     <!-- 提醒 -->
     <string name="alert_cat_holding">持倉</string>
@@ -246,6 +246,17 @@
     <string name="settings_group_language">語言</string>
     <string name="settings_language">介面語言</string>
     <string name="settings_language_dialog_title">選擇語言</string>
+
+    <!-- 外觀 -->
+    <string name="settings_group_appearance">外觀</string>
+    <string name="settings_theme">主題配色</string>
+    <string name="settings_theme_dialog_title">選擇主題</string>
+    <string name="settings_dark_mode">深色模式</string>
+    <string name="settings_dark_mode_subtitle">跟隨系統晝夜切換</string>
+    <string name="theme_morandi">莫蘭迪</string>
+    <string name="theme_celadon">青瓷</string>
+    <string name="theme_ink">墨韻</string>
+    <string name="status_theme_updated">✓ 主題已切換</string>
 
     <!-- 個人資料 -->
     <string name="profile_nickname">暱稱</string>
@@ -366,8 +377,8 @@
     <string name="overview_asset_distribution">資產分佈</string>
     <string name="overview_price_hint">現價由行情每日自動更新（可在「我的」頁立即刷新）；淨值走勢按每日快照累積。</string>
     <string name="overview_net_worth">總資產淨值</string>
-    <string name="overview_total_assets">總資產 %1$s</string>
-    <string name="overview_total_liabilities">總負債 %1$s</string>
+    <string name="overview_total_assets">總資產</string>
+    <string name="overview_total_liabilities">總負債</string>
     <string name="overview_trend">淨值走勢</string>
     <string name="overview_detail">詳情 ›</string>
 

@@ -136,4 +136,32 @@ class TrendSeriesBuilderTest {
         assertEquals(TREND_CUSTOM_LABEL, data.series[1].name)
         assertTrue(data.series[1].values.all { it == null })
     }
+
+    @Test
+    fun singleCategory_usesTotalDaysAsTimelineSoLonePointIsNotDropped() {
+        // 模拟"房产已删除"：STOCK 仅 d1 有快照（d2/d3 无记录，因持仓已删），
+        // 但净值快照 totals 每天都有。只勾 STOCK 时，时间轴应以 totals 为基准，
+        // 让 d1 那个孤点仍落在完整时间轴上正常画图（否则 allDays 只剩 {d1}，
+        // bucketLabels.size < 2，整张图被"数据积累中"遮掉，孤点也看不见）。
+        val cats = listOf(CategoryPoint(d1, "STOCK", 400.0))
+        val data = TrendSeriesBuilder.build(
+            totals, cats, listOf("STOCK"), TimeGranularity.DAY, label,
+            totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL,
+        )
+        assertEquals(3, data.bucketLabels.size)
+        assertEquals(listOf(400.0, null, null), data.series[0].values)
+    }
+
+    @Test
+    fun singleCategory_noTotals_keepsOwnDaysOnly() {
+        // 无净值快照（totals 空）时，时间轴仍退化为所选类别自身的天数并集，
+        // 不应因 totals 空而把别处的天数硬塞进来。
+        val cats = listOf(CategoryPoint(d1, "STOCK", 400.0), CategoryPoint(d3, "STOCK", 500.0))
+        val data = TrendSeriesBuilder.build(
+            emptyList(), cats, listOf("STOCK"), TimeGranularity.DAY, label,
+            totalLabel = "总净值", customLabel = TREND_CUSTOM_LABEL,
+        )
+        assertEquals(listOf(400.0, 500.0), data.series[0].values)
+        assertEquals(2, data.bucketLabels.size)
+    }
 }

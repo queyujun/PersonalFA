@@ -43,7 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
 import com.yingjing.pfa.core.security.BiometricAuthenticator
 import com.yingjing.pfa.domain.model.Currency
-import com.yingjing.pfa.ui.theme.BlueLightMode
+import com.yingjing.pfa.ui.theme.LocalBrandColors
 
 @Composable
 fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
@@ -67,7 +67,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
         Box(
             modifier = Modifier
                 .size(66.dp)
-                .background(BlueLightMode, RoundedCornerShape(20.dp)),
+                .background(LocalBrandColors.current.primary, RoundedCornerShape(20.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Text("盈", color = Color.White, style = MaterialTheme.typography.headlineMedium)

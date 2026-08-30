@@ -1,7 +1,6 @@
 package com.yingjing.pfa.ui.screens.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +13,7 @@ import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -28,12 +28,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
 import com.yingjing.pfa.core.i18n.AppLanguage
+import com.yingjing.pfa.ui.theme.AppTheme
+import com.yingjing.pfa.ui.theme.LocalBrandColors
 
 /**
  * 设置页（一级）：6 个语义分组卡片，仅显示设置好的结果摘要 + › 进入二级界面。
@@ -53,11 +54,11 @@ fun SettingsScreen(
     var showUsernameDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
-    // 设置页背景单独加深：默认 background(#F9F9F7) 与卡片 surface(#FCFCFB) 几乎同色，
-    // 背景前景难区分。给页面上一层更深的暖灰，白色卡片即可凸显（仅作用于设置页，不动全局主题）。
-    val isDark = isSystemInDarkTheme()
-    val pageBg = if (isDark) Color(0xFF080807) else Color(0xFFE9E9E3)
+    // 设置页背景：取当前主题品牌色提供的页面底色（已按系统深浅解析），
+    // 默认 background 与卡片 surface 接近时卡片不凸显，故用更深的暖灰，且随主题变化。
+    val pageBg = LocalBrandColors.current.pageBackground
 
     Column(
         modifier = Modifier
@@ -140,6 +141,19 @@ fun SettingsScreen(
                 onClick = { showLanguageDialog = true },
             )
         }
+
+        // 7. 外观（主题选择 + 深浅跟随系统）
+        SettingsGroupCard(icon = Icons.Outlined.Palette, title = stringResource(R.string.settings_group_appearance)) {
+            SettingRow(
+                title = stringResource(R.string.settings_theme),
+                subtitle = stringResource(state.currentTheme.labelRes),
+                onClick = { showThemeDialog = true },
+            )
+            SettingRow(
+                title = stringResource(R.string.settings_dark_mode),
+                subtitle = stringResource(R.string.settings_dark_mode_subtitle),
+            )
+        }
     }
 
     if (showUsernameDialog) {
@@ -169,6 +183,52 @@ fun SettingsScreen(
             onDismiss = { showLanguageDialog = false },
         )
     }
+
+    if (showThemeDialog) {
+        ThemePickerDialog(
+            current = state.currentTheme,
+            onPick = { theme ->
+                showThemeDialog = false
+                viewModel.setTheme(theme)
+            },
+            onDismiss = { showThemeDialog = false },
+        )
+    }
+}
+
+/** 主题选择对话框：列出 [AppTheme] 选项，当前选中打勾。 */
+@Composable
+private fun ThemePickerDialog(
+    current: AppTheme,
+    onPick: (AppTheme) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_theme_dialog_title)) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+        text = {
+            Column {
+                AppTheme.entries.forEach { theme ->
+                    SettingRow(
+                        title = stringResource(theme.labelRes),
+                        onClick = { onPick(theme) },
+                        trailing = {
+                            if (theme == current) {
+                                Text(
+                                    stringResource(R.string.settings_current_badge),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        },
+                    )
+                }
+            }
+        },
+    )
 }
 
 /** 语言选择对话框：列出 [AppLanguage] 选项，当前选中打勾。 */
