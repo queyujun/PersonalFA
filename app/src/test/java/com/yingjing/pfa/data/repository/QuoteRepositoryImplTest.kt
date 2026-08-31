@@ -7,12 +7,14 @@ import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.FxRates
 import com.yingjing.pfa.domain.model.Holding
+import com.yingjing.pfa.domain.model.SyncSource
 import com.yingjing.pfa.domain.repository.FxRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class QuoteRepositoryImplTest {
@@ -63,7 +65,7 @@ class QuoteRepositoryImplTest {
         val repo = QuoteRepositoryImpl(stock, crypto, FakeFxRepository(FxRates()), fund)
 
         val result = repo.fetchPrices(listOf(holding(10, AssetType.A_SHARE, "600519")))
-        assertEquals(1354.5, result[10]!!, 0.001)
+        assertEquals(1354.5, result.prices[10]!!, 0.001)
         assertEquals(listOf("sh600519"), stock.requested)
     }
 
@@ -75,10 +77,10 @@ class QuoteRepositoryImplTest {
         val repo = QuoteRepositoryImpl(stock, crypto, FakeFxRepository(FxRates()), fund)
 
         val cnyResult = repo.fetchPrices(listOf(holding(20, AssetType.CRYPTO, "bitcoin", Currency.CNY)))
-        assertEquals(429733.0, cnyResult[20]!!, 0.001)
+        assertEquals(429733.0, cnyResult.prices[20]!!, 0.001)
 
         val usdResult = repo.fetchPrices(listOf(holding(21, AssetType.CRYPTO, "bitcoin", Currency.USD)))
-        assertEquals(63709.0, usdResult[21]!!, 0.001)
+        assertEquals(63709.0, usdResult.prices[21]!!, 0.001)
     }
 
     @Test
@@ -94,8 +96,8 @@ class QuoteRepositoryImplTest {
                 holding(2, AssetType.CRYPTO, "ethereum"),
             ),
         )
-        assertEquals(9.024, result[1]!!, 0.001)
-        assertEquals(12753.75, result[2]!!, 0.001)
+        assertEquals(9.024, result.prices[1]!!, 0.001)
+        assertEquals(12753.75, result.prices[2]!!, 0.001)
     }
 
     @Test
@@ -103,7 +105,7 @@ class QuoteRepositoryImplTest {
         val fund = FakeFundRemote(emptyMap())
         val repo = QuoteRepositoryImpl(FakeStockRemote(emptyMap()), FakeCryptoRemote(emptyMap()), FakeFxRepository(FxRates()), fund)
         val house = Holding(id = 5, userId = 1, type = AssetType.REAL_ESTATE, name = "房", currency = Currency.CNY, manualValue = 1.0)
-        assertEquals(0, repo.fetchPrices(listOf(house)).size)
+        assertEquals(0, repo.fetchPrices(listOf(house)).prices.size)
     }
 
     @Test
@@ -124,8 +126,8 @@ class QuoteRepositoryImplTest {
         )
         val usdPerGram = 2000.0 / 31.1035
         // 注意：fetchPrices 返回的是「单位价格」（每克价），而非市值（市值由 holding×quantity 在估值层计算）
-        assertEquals(usdPerGram * 7.0, result[30]!!, 0.001)
-        assertEquals(usdPerGram, result[31]!!, 0.001)
+        assertEquals(usdPerGram * 7.0, result.prices[30]!!, 0.001)
+        assertEquals(usdPerGram, result.prices[31]!!, 0.001)
         // hf_XAU 应被抓取
         assertEquals(listOf("hf_XAU"), stock.requested)
     }
@@ -139,7 +141,7 @@ class QuoteRepositoryImplTest {
         val repo = QuoteRepositoryImpl(stock, crypto, FakeFxRepository(FxRates(usdToCny = 7.0)), fund)
 
         val result = repo.fetchPrices(listOf(physicalGold(40, 10.0)))
-        assertEquals(false, result.containsKey(40))
+        assertFalse(result.prices.containsKey(40))
     }
 
     // —— 场外基金净值：仅 autoFetchNav=true 的「中国大陆」持仓走在线抓取 —— //
@@ -152,7 +154,7 @@ class QuoteRepositoryImplTest {
         val repo = QuoteRepositoryImpl(stock, crypto, FakeFxRepository(FxRates()), fund)
 
         val result = repo.fetchPrices(listOf(otcFund(50, "005827", autoFetchNav = true)))
-        assertEquals(1.68, result[50]!!, 0.001)
+        assertEquals(1.68, result.prices[50]!!, 0.001)
         assertEquals(listOf("005827"), fund.requested)
     }
 
@@ -163,7 +165,7 @@ class QuoteRepositoryImplTest {
         val repo = QuoteRepositoryImpl(FakeStockRemote(emptyMap()), FakeCryptoRemote(emptyMap()), FakeFxRepository(FxRates()), fund)
 
         val result = repo.fetchPrices(listOf(otcFund(51, "005827", autoFetchNav = true)))
-        assertFalse(result.containsKey(51))
+        assertFalse(result.prices.containsKey(51))
     }
 
     @Test
@@ -174,9 +176,55 @@ class QuoteRepositoryImplTest {
 
         val resultNull = repo.fetchPrices(listOf(otcFund(52, "005827", autoFetchNav = null)))
         val resultFalse = repo.fetchPrices(listOf(otcFund(53, "005827", autoFetchNav = false)))
-        assertFalse(resultNull.containsKey(52))
-        assertFalse(resultFalse.containsKey(53))
+        assertFalse(resultNull.prices.containsKey(52))
+        assertFalse(resultFalse.prices.containsKey(53))
         assertEquals(emptyList<String>(), fund.requested)
     }
-}
 
+    // —— 失败源追踪：有持仓却抓空 → 计入 failedSources —— //
+
+    @Test
+    fun stockSource_failedWhenHoldingsExistButPricesEmpty() = runTest {
+        // 有股票持仓、抓取返回空 → STOCK 计入失败源
+        val stock = FakeStockRemote(emptyMap())
+        val repo = QuoteRepositoryImpl(stock, FakeCryptoRemote(emptyMap()), FakeFxRepository(FxRates()), FakeFundRemote(emptyMap()))
+
+        val result = repo.fetchPrices(listOf(holding(10, AssetType.A_SHARE, "600519")))
+
+        assertTrue(result.failedSources.contains(SyncSource.STOCK))
+        assertFalse(result.failedSources.contains(SyncSource.CRYPTO)) // 无加密持仓 → 不计
+        assertFalse(result.failedSources.contains(SyncSource.FUND))     // 无基金持仓 → 不计
+    }
+
+    @Test
+    fun cryptoSource_failedWhenHoldingsExistButPricesEmpty() = runTest {
+        val crypto = FakeCryptoRemote(emptyMap())
+        val repo = QuoteRepositoryImpl(FakeStockRemote(emptyMap()), crypto, FakeFxRepository(FxRates()), FakeFundRemote(emptyMap()))
+
+        val result = repo.fetchPrices(listOf(holding(20, AssetType.CRYPTO, "bitcoin")))
+
+        assertTrue(result.failedSources.contains(SyncSource.CRYPTO))
+        assertFalse(result.failedSources.contains(SyncSource.STOCK))
+    }
+
+    @Test
+    fun noFailure_whenFetchSucceeds() = runTest {
+        val stock = FakeStockRemote(mapOf("sh600519" to 1354.5))
+        val repo = QuoteRepositoryImpl(stock, FakeCryptoRemote(emptyMap()), FakeFxRepository(FxRates()), FakeFundRemote(emptyMap()))
+
+        val result = repo.fetchPrices(listOf(holding(10, AssetType.A_SHARE, "600519")))
+
+        assertEquals(emptyList<SyncSource>(), result.failedSources)
+    }
+
+    @Test
+    fun noFailure_whenNoHoldingsToFetch() = runTest {
+        // 无任何行情型持仓 → 不产生失败（本应有数据却没拿到才计失败）
+        val repo = QuoteRepositoryImpl(FakeStockRemote(emptyMap()), FakeCryptoRemote(emptyMap()), FakeFxRepository(FxRates()), FakeFundRemote(emptyMap()))
+        val house = Holding(id = 5, userId = 1, type = AssetType.REAL_ESTATE, name = "房", currency = Currency.CNY, manualValue = 1.0)
+
+        val result = repo.fetchPrices(listOf(house))
+
+        assertEquals(emptyList<SyncSource>(), result.failedSources)
+    }
+}

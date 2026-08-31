@@ -5,6 +5,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.yingjing.pfa.R
 
 /** 生物识别（指纹/面容）快速登录封装。 */
 object BiometricAuthenticator {
@@ -37,9 +38,9 @@ object BiometricAuthenticator {
             },
         )
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("生物识别登录")
-            .setSubtitle("使用指纹或面容快速登录盈景私助")
-            .setNegativeButtonText("用密码登录")
+            .setTitle(activity.getString(R.string.biometric_title))
+            .setSubtitle(activity.getString(R.string.biometric_subtitle))
+            .setNegativeButtonText(activity.getString(R.string.biometric_negative))
             .setAllowedAuthenticators(ALLOWED)
             .build()
         prompt.authenticate(info)

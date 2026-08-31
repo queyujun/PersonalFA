@@ -8,11 +8,11 @@ import com.yingjing.pfa.data.local.AppMetaEntity
 import com.yingjing.pfa.data.remote.HousePricePoint
 import com.yingjing.pfa.data.remote.HousePriceRemote
 import com.yingjing.pfa.domain.repository.HousePriceRepository
+import com.yingjing.pfa.domain.repository.HouseRefreshOutcome
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,8 +47,7 @@ class HousePriceRepositoryImplTest {
         // 固定当前时间，确保 isStale 为 true（无上次抓取记录 → stale）
         repository.nowMsOverride = 10_000_000_000L
 
-        val refreshed = repository.refresh(listOf("北京"))
-        assertTrue(refreshed)
+        assertEquals(HouseRefreshOutcome.REFRESHED, repository.refresh(listOf("北京")))
 
         val history = repository.history("北京")
         assertEquals(listOf("2026-03", "2026-04", "2026-05"), history.map { it.month })
@@ -73,34 +72,33 @@ class HousePriceRepositoryImplTest {
     fun refresh_skipsWhenFresh() = runTest {
         repository.nowMsOverride = 10_000_000_000L
         remote.seed("北京", listOf(pt("2026-04", 101.0)))
-        assertTrue(repository.refresh(listOf("北京")))
+        assertEquals(HouseRefreshOutcome.REFRESHED, repository.refresh(listOf("北京")))
 
         // 新鲜度窗口内再次刷新 → 跳过，不抓远端
         remote.seed("北京", listOf(pt("2026-05", 99.9)))
         repository.nowMsOverride = 10_000_000_000L + 1_000L
-        val refreshed = repository.refresh(listOf("北京"))
-        assertFalse(refreshed)
+        assertEquals(HouseRefreshOutcome.SKIPPED, repository.refresh(listOf("北京")))
         // 缓存未被覆盖
         assertEquals(listOf("2026-04"), repository.history("北京").map { it.month })
     }
 
     @Test
-    fun refresh_emptyCities_returnsFalse() = runTest {
+    fun refresh_emptyCities_returnsFailed() = runTest {
         repository.nowMsOverride = 10_000_000_000L
-        assertFalse(repository.refresh(emptyList()))
+        assertEquals(HouseRefreshOutcome.FAILED, repository.refresh(emptyList()))
         assertFalse(remote.fetchCalled)
     }
 
     @Test
-    fun refresh_emptyRemoteResult_returnsFalseAndDoesNotInvalidateCache() = runTest {
+    fun refresh_emptyRemoteResult_returnsFailedAndDoesNotInvalidateCache() = runTest {
         repository.nowMsOverride = 10_000_000_000L
         remote.seed("北京", listOf(pt("2026-04", 101.0)))
-        assertTrue(repository.refresh(listOf("北京")))
+        assertEquals(HouseRefreshOutcome.REFRESHED, repository.refresh(listOf("北京")))
 
         // 远端空返回 → 不删除已有缓存、不更新新鲜度戳
         remote.clear()
         repository.nowMsOverride = 10_000_000_000L + HousePriceRepository.FRESHNESS_MS + 1
-        assertFalse(repository.refresh(listOf("北京")))
+        assertEquals(HouseRefreshOutcome.FAILED, repository.refresh(listOf("北京")))
         assertEquals(listOf("2026-04"), repository.history("北京").map { it.month })
     }
 

@@ -16,7 +16,10 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .readTimeout(Duration.ofSeconds(15))
+            .connectTimeout(Duration.ofSeconds(8))
+            .readTimeout(Duration.ofSeconds(10))
+            // 总兜底：单个数据源（含不可达的海外源）最多占用 20s，
+            // 超时即放弃该源、继续更新其他可更新数据。
+            .callTimeout(Duration.ofSeconds(20))
             .build()
 }

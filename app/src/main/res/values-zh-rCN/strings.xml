@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 品牌 -->
-    <string name="app_name">盈景私助</string>
+    <string name="app_name">盈睿伴</string>
 
     <!-- 语言选项 -->
     <string name="lang_follow_system">跟随系统</string>
@@ -173,6 +173,12 @@
     <string name="alert_price_body">你持有的「%1$s」较上次%2$s %3$.1f%%（触发 ±%4$.1f%% 阈值）。</string>
     <string name="alert_market_title">%1$s 单日%2$s %3$s%%</string>
     <string name="alert_market_body">主要指数「%1$s」当日%2$s %3$s%%，触发 ±%4$.1f%% 阈值。</string>
+    <string name="alert_global_title">%1$s 单日%2$s %3$s%%</string>
+    <string name="alert_global_body">国际行情「%1$s」较上次%2$s %3$s%%，触发 ±%4$.1f%% 阈值。</string>
+    <string name="gi_usd_cny">美元/人民币</string>
+    <string name="gi_hkd_cny">港币/人民币</string>
+    <string name="gi_gold">伦敦金</string>
+    <string name="gi_silver">伦敦银</string>
     <string name="alert_ipo_title">今日可申购新股 %1$d 只</string>
     <string name="alert_ipo_body">今日可打新：%1$s。别忘申购。</string>
     <string name="alert_ipo_item">%1$s（申购代码 %2$s）</string>
@@ -208,6 +214,7 @@
     <string name="status_read_failed">读取文件失败</string>
     <string name="status_restore_ok">✓ 恢复成功</string>
     <string name="status_restore_failed">恢复失败：口令错误或文件无效</string>
+    <string name="status_auto_restore_failed">自动恢复失败：无备份文件或本机密钥不符</string>
     <string name="status_sync_plan_updated">✓ 行情计划已更新</string>
     <string name="status_backup_plan_updated">✓ 备份计划已更新</string>
     <string name="status_currency_updated">✓ 默认货币已更新</string>
@@ -253,9 +260,10 @@
     <string name="settings_theme_dialog_title">选择主题</string>
     <string name="settings_dark_mode">深色模式</string>
     <string name="settings_dark_mode_subtitle">跟随系统昼夜切换</string>
-    <string name="theme_morandi">莫兰迪</string>
-    <string name="theme_celadon">青瓷</string>
-    <string name="theme_ink">墨韵</string>
+    <string name="theme_violet">紫晶</string>
+    <string name="theme_blue">霁蓝</string>
+    <string name="theme_green">松石</string>
+    <string name="theme_orange">琥珀</string>
     <string name="status_theme_updated">✓ 主题已切换</string>
 
     <!-- 个人资料 -->
@@ -294,18 +302,42 @@
     <string name="sync_purge_confirm_title">删除 %1$s 之前的历史走势？</string>
     <string name="sync_purge_confirm_body">将永久删除该日期（不含）之前的净值与分类快照，走势图历史将缩短。此操作不可恢复，建议先备份。</string>
 
+    <!-- 同步结果提示 -->
+    <string name="sync_result_success_title">更新成功</string>
+    <string name="sync_result_success_body">所有行情数据已成功更新。</string>
+    <string name="sync_result_partial_title">部分数据更新失败</string>
+    <string name="sync_result_partial_body">以下数据未能更新，其余已成功：\n%1$s</string>
+    <string name="sync_result_failed_title">更新失败</string>
+    <string name="sync_result_failed_body">未能更新行情数据，请稍后重试：\n%1$s</string>
+
+    <!-- 同步数据源 -->
+    <string name="sync_src_fx">汇率</string>
+    <string name="sync_src_market_index">市场指数</string>
+    <string name="sync_src_commodity">贵金属</string>
+    <string name="sync_src_ipo">新股</string>
+    <string name="sync_src_house_price">房价指数</string>
+    <string name="sync_src_stock">股票</string>
+    <string name="sync_src_crypto">区块链</string>
+    <string name="sync_src_fund">基金</string>
+
     <!-- 备份 -->
     <string name="backup_now">立即备份</string>
     <string name="backup_restore">从文件恢复</string>
-    <string name="backup_auto_weekly">每周自动备份</string>
+    <string name="backup_auto_weekly">自动备份</string>
     <string name="backup_auto_subtitle">本机加密安全副本（便携备份请用「立即备份」自选口令）</string>
     <string name="backup_plan_subtitle">自动备份计划</string>
-    <string name="backup_plan_hint">启用上方「每周自动备份」后，按此周期 / 时间执行</string>
+    <string name="backup_plan_hint">启用上方「自动备份」后，按此周期 / 时间执行</string>
     <string name="backup_security_hint">备份采用 AES-256-GCM 加密（口令派生密钥）；导出文件建议妥善保存，口令遗失将无法恢复。</string>
     <string name="backup_set_passphrase">设置备份口令</string>
     <string name="backup_export">导出</string>
     <string name="backup_input_passphrase">输入备份口令</string>
-    <string name="backup_filename_prefix">盈景私助-backup-</string>
+    <string name="backup_filename_prefix">盈睿伴-backup-</string>
+    <string name="backup_restore_auto">从本机自动备份恢复</string>
+    <string name="backup_restore_auto_confirm">此操作将清空当前所有数据，并还原为本机自动备份的内容。确定继续？</string>
+    <string name="backup_restore_action">恢复</string>
+    <string name="backup_last_backup_at">上次备份：%1$s</string>
+    <string name="backup_backup_file_exists">存在备份文件</string>
+    <string name="backup_no_auto_backup">尚未生成自动备份</string>
 
     <!-- 表单 -->
     <string name="add_asset_title">添加资产</string>
@@ -349,6 +381,7 @@
     <string name="form_price_hint">提示：股票 / ETF / 代币的现价将在 P3（行情接口）起每日自动更新。</string>
 
     <!-- 通用 -->
+    <string name="common_ok">确定</string>
     <string name="common_cancel">取消</string>
     <string name="common_delete">删除</string>
     <string name="common_edit">编辑</string>
@@ -406,7 +439,7 @@
 
     <!-- 生物识别 -->
     <string name="biometric_title">生物识别登录</string>
-    <string name="biometric_subtitle">使用指纹或面容快速登录盈景私助</string>
+    <string name="biometric_subtitle">使用指纹或面容快速登录盈睿伴</string>
     <string name="biometric_negative">用密码登录</string>
 
     <!-- 占位 -->

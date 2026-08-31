@@ -8,9 +8,9 @@ import org.junit.Test
 class BrandColorsTest {
 
     @Test
-    fun brandColorsForMorandiDiffersByDarkTheme() {
-        val light = brandColorsFor(AppTheme.MORANDI, darkTheme = false)
-        val dark = brandColorsFor(AppTheme.MORANDI, darkTheme = true)
+    fun brandColorsForVioletDiffersByDarkTheme() {
+        val light = brandColorsFor(AppTheme.VIOLET, darkTheme = false)
+        val dark = brandColorsFor(AppTheme.VIOLET, darkTheme = true)
         // 深浅模式应给出不同的品牌色与页面底色
         assertNotEquals(light, dark)
         assertNotEquals(light.pageBackground, dark.pageBackground)
@@ -18,19 +18,23 @@ class BrandColorsTest {
 
     @Test
     fun brandColorsForDistinguishesThemes() {
-        // 三主题浅色各不相同
-        val morandi = brandColorsFor(AppTheme.MORANDI, darkTheme = false)
-        val celadon = brandColorsFor(AppTheme.CELADON, darkTheme = false)
-        val ink = brandColorsFor(AppTheme.INK, darkTheme = false)
-        assertNotEquals(morandi, celadon)
-        assertNotEquals(morandi, ink)
-        assertNotEquals(celadon, ink)
+        // 四主题浅色各不相同
+        val violet = brandColorsFor(AppTheme.VIOLET, darkTheme = false)
+        val blue = brandColorsFor(AppTheme.BLUE, darkTheme = false)
+        val green = brandColorsFor(AppTheme.GREEN, darkTheme = false)
+        val orange = brandColorsFor(AppTheme.ORANGE, darkTheme = false)
+        assertNotEquals(violet, blue)
+        assertNotEquals(violet, green)
+        assertNotEquals(violet, orange)
+        assertNotEquals(blue, green)
+        assertNotEquals(green, orange)
+        assertNotEquals(blue, orange)
     }
 
     @Test
-    fun brandColorsForMatchesExpectedMorandiLightPrimary() {
-        // 莫兰迪浅色品牌主色为灰蓝 #6E8B9B（设计稿确认色板）
-        val morandi = brandColorsFor(AppTheme.MORANDI, darkTheme = false)
-        assertEquals(Color(0xFF6E8B9B), morandi.primary)
+    fun brandColorsForMatchesExpectedVioletLightPrimary() {
+        // 紫晶浅色品牌主色为深紫罗兰 #5B4B8A（设计稿确认色板）
+        val violet = brandColorsFor(AppTheme.VIOLET, darkTheme = false)
+        assertEquals(Color(0xFF5B4B8A), violet.primary)
     }
 }

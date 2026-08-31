@@ -49,6 +49,7 @@ import com.yingjing.pfa.ui.theme.Cat8
 import com.yingjing.pfa.ui.theme.Cat9
 import com.yingjing.pfa.ui.theme.GainRed
 import com.yingjing.pfa.ui.theme.LossGreen
+import com.yingjing.pfa.ui.theme.LocalBrandColors
 
 @Composable
 fun PortfolioScreen(
@@ -57,10 +58,11 @@ fun PortfolioScreen(
     viewModel: PortfolioViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val pageBg = LocalBrandColors.current.pageBackground
 
     if (state.isEmpty) {
         Box(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier.fillMaxSize().background(pageBg).padding(24.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -79,7 +81,7 @@ fun PortfolioScreen(
 
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(pageBg),
         contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {

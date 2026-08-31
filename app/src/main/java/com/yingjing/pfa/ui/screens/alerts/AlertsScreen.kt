@@ -41,6 +41,7 @@ import com.yingjing.pfa.domain.model.AlertSeverity
 import com.yingjing.pfa.ui.theme.Cat1
 import com.yingjing.pfa.ui.theme.Cat2
 import com.yingjing.pfa.ui.theme.Cat4
+import com.yingjing.pfa.ui.theme.LocalBrandColors
 
 @Composable
 fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
@@ -48,8 +49,9 @@ fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
     var filter by remember { mutableStateOf<AlertCategory?>(null) }
     val filtered = filter?.let { c -> alerts.filter { it.category == c } } ?: alerts
     val categoryNames = AlertCategory.entries.associateWith { stringResource(it.displayRes) }
+    val pageBg = LocalBrandColors.current.pageBackground
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(pageBg).padding(horizontal = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,

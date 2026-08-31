@@ -7,8 +7,12 @@ import com.yingjing.pfa.data.remote.StockQuoteRemote
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.Holding
+import com.yingjing.pfa.domain.model.QuoteFetchResult
+import com.yingjing.pfa.domain.model.SyncSource
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.QuoteRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import javax.inject.Inject
 
 class QuoteRepositoryImpl @Inject constructor(
@@ -18,8 +22,9 @@ class QuoteRepositoryImpl @Inject constructor(
     private val fundRemote: FundQuoteRemote,
 ) : QuoteRepository {
 
-    override suspend fun fetchPrices(holdings: List<Holding>): Map<Long, Double> {
+    override suspend fun fetchPrices(holdings: List<Holding>): QuoteFetchResult = coroutineScope {
         val result = mutableMapOf<Long, Double>()
+        val failed = mutableListOf<SyncSource>()
 
         // 股票 / ETF（非加密、非实物金的行情型）：映射到新浪代码后批量抓取
         val marketHoldings = holdings.filter {
@@ -34,46 +39,81 @@ class QuoteRepositoryImpl @Inject constructor(
         val physicalGold = holdings.filter { it.type == AssetType.PHYSICAL_GOLD }
         val codes = codeToHoldings.keys.toMutableList()
             .apply { if (physicalGold.isNotEmpty()) add(SPOT_GOLD) }
+
+        // 三段并行：股票/实物金、加密、基金各自独立抓取，慢源只拖自己、不阻塞其他段。
+        val stockJob = async {
+            if (codes.isEmpty()) return@async emptyMap<String, Double>()
+            runCatching { stockRemote.fetch(codes) }
+                .onFailure { return@async null }
+                .getOrDefault(emptyMap())
+        }
+        val cryptoHoldings = holdings.filter { it.type == AssetType.CRYPTO && !it.symbol.isNullOrBlank() }
+        val ids = cryptoHoldings.mapNotNull { it.symbol?.lowercase() }.distinct()
+        val cryptoJob = async {
+            if (ids.isEmpty()) return@async emptyMap<String, Map<String, Double>>()
+            runCatching { cryptoRemote.fetch(ids) }
+                .onFailure { return@async null }
+                .getOrDefault(emptyMap())
+        }
+        val fundHoldings = holdings.filter {
+            it.type == AssetType.OTC_FUND && it.autoFetchNav == true && !it.symbol.isNullOrBlank()
+        }
+        val fundCodes = fundHoldings.mapNotNull { it.symbol }.distinct()
+        val fundJob = async {
+            if (fundCodes.isEmpty()) return@async emptyMap<String, Double>()
+            runCatching { fundRemote.fetch(fundCodes) }
+                .onFailure { return@async null }
+                .getOrDefault(emptyMap())
+        }
+
+        // 股票 / 实物金段
+        val stockPrices = stockJob.await()
         if (codes.isNotEmpty()) {
-            val prices = stockRemote.fetch(codes)
-            codeToHoldings.forEach { (code, list) ->
-                prices[code]?.let { price -> list.forEach { result[it.id] = price } }
-            }
-            val spotUsdPerOunce = prices[SPOT_GOLD]
-            if (spotUsdPerOunce != null && spotUsdPerOunce > 0 && physicalGold.isNotEmpty()) {
-                val rates = fxRepository.current()
-                physicalGold.forEach { holding ->
-                    val usdPerGram = spotUsdPerOunce / OUNCE_TO_GRAM
-                    result[holding.id] = rates.convert(usdPerGram, Currency.USD, holding.currency)
+            if (stockPrices == null || stockPrices.isEmpty()) {
+                failed += SyncSource.STOCK
+            } else {
+                codeToHoldings.forEach { (code, list) ->
+                    stockPrices[code]?.let { price -> list.forEach { result[it.id] = price } }
+                }
+                val spotUsdPerOunce = stockPrices[SPOT_GOLD]
+                if (spotUsdPerOunce != null && spotUsdPerOunce > 0 && physicalGold.isNotEmpty()) {
+                    val rates = fxRepository.current()
+                    physicalGold.forEach { holding ->
+                        val usdPerGram = spotUsdPerOunce / OUNCE_TO_GRAM
+                        result[holding.id] = rates.convert(usdPerGram, Currency.USD, holding.currency)
+                    }
                 }
             }
         }
 
         // 加密货币：按 CoinGecko id 批量抓取，取该持仓币种价格
-        val cryptoHoldings = holdings.filter { it.type == AssetType.CRYPTO && !it.symbol.isNullOrBlank() }
-        val ids = cryptoHoldings.mapNotNull { it.symbol?.lowercase() }.distinct()
+        val cryptoPrices = cryptoJob.await()
         if (ids.isNotEmpty()) {
-            val prices = cryptoRemote.fetch(ids)
-            cryptoHoldings.forEach { holding ->
-                val byCurrency = prices[holding.symbol!!.lowercase()] ?: return@forEach
-                byCurrency[holding.currency.code.lowercase()]?.let { result[holding.id] = it }
+            if (cryptoPrices == null || cryptoPrices.isEmpty()) {
+                failed += SyncSource.CRYPTO
+            } else {
+                cryptoHoldings.forEach { holding ->
+                    val byCurrency = cryptoPrices[holding.symbol!!.lowercase()] ?: return@forEach
+                    byCurrency[holding.currency.code.lowercase()]?.let { result[holding.id] = it }
+                }
             }
         }
 
         // 场外基金（中国大陆，autoFetchNav=true）：按基金代码抓取单位净值写回。
         // 仅 autoFetchNav=true 的持仓走在线抓取；「其他」子分类（null/false）保持手录，不在此处理。
         // 净值以基金自身币种计（中国大陆基金通常 CNY），与持仓币种一致，直接写回无需换算。
-        val fundHoldings = holdings.filter {
-            it.type == AssetType.OTC_FUND && it.autoFetchNav == true && !it.symbol.isNullOrBlank()
-        }
-        val fundCodes = fundHoldings.mapNotNull { it.symbol }.distinct()
+        val fundNavs = fundJob.await()
         if (fundCodes.isNotEmpty()) {
-            val navs = fundRemote.fetch(fundCodes)
-            fundHoldings.forEach { holding ->
-                navs[holding.symbol]?.let { result[holding.id] = it }
+            if (fundNavs == null || fundNavs.isEmpty()) {
+                failed += SyncSource.FUND
+            } else {
+                fundHoldings.forEach { holding ->
+                    fundNavs[holding.symbol]?.let { result[holding.id] = it }
+                }
             }
         }
-        return result
+
+        QuoteFetchResult(result.toMap(), failed.toList())
     }
 
     private companion object {

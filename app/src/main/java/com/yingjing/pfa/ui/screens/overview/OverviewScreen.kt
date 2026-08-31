@@ -57,10 +57,13 @@ fun OverviewScreen(
     val state by viewModel.uiState.collectAsState()
     val summary = state.summary
     val categoryNames = AssetCategory.entries.associateWith { stringResource(it.displayRes) }
+    // 页面底色取品牌色 pageBackground（随主题显著变化），白色卡片在其上更凸显。
+    val pageBg = LocalBrandColors.current.pageBackground
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(pageBg)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {

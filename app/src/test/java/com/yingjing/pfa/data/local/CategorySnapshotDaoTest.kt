@@ -55,4 +55,22 @@ class CategorySnapshotDaoTest {
         dao.upsertAll(listOf(row(100, "STOCK", 1000.0), row(101, "STOCK", 1100.0)))
         assertEquals(2, dao.observeByUser(1).first().size)
     }
+
+    @Test
+    fun deleteByUserAndDay_clearsOnlyThatDay() = runTest {
+        dao.upsertAll(listOf(row(100, "STOCK", 1000.0), row(100, "REAL_ESTATE", 5000.0), row(101, "STOCK", 1100.0)))
+        dao.deleteByUserAndDay(1, 100)
+        val list = dao.observeByUser(1).first()
+        assertEquals(1, list.size)
+        assertEquals(101, list[0].dayEpochDay)
+    }
+
+    @Test
+    fun deleteByUserAndDay_scopedToUser() = runTest {
+        dao.upsertAll(listOf(row(100, "STOCK", 1000.0), row(100, "REAL_ESTATE", 5000.0)))
+        // userId=2 删除当天不应影响 userId=1 的行
+        dao.upsertAll(listOf(CategorySnapshotEntity(userId = 2, dayEpochDay = 100, category = "STOCK", amount = 999.0)))
+        dao.deleteByUserAndDay(2, 100)
+        assertEquals(2, dao.observeByUser(1).first().size)
+    }
 }

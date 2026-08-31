@@ -8,7 +8,7 @@ class BackupCryptoTest {
 
     @Test
     fun encryptThenDecrypt_roundTrips() {
-        val plain = "盈景私助 backup 数据 123".toByteArray()
+        val plain = "RICHWIN backup 数据 123".toByteArray()
         val blob = BackupCrypto.encrypt(plain, "correct horse".toCharArray())
         val out = BackupCrypto.decrypt(blob, "correct horse".toCharArray())
         assertArrayEquals(plain, out)

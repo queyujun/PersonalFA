@@ -48,6 +48,9 @@ class SnapshotRepositoryImpl @Inject constructor(
                 createdAt = nowMs,
             ),
         )
+        // 当日分类快照是"当日实际状态"的全量快照：先清空当天所有类别行，再写入当前存在的类别。
+        // 这样持仓被全部删除的类别当天行会被清除，不再残留旧的非零值（见走势图/详情页分类 tab 不归零 bug）。
+        categoryDao.deleteByUserAndDay(userId, day)
         if (categoryAmounts.isNotEmpty()) {
             categoryDao.upsertAll(
                 categoryAmounts.map { (category, amount) ->

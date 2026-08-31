@@ -70,7 +70,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
                 .background(LocalBrandColors.current.primary, RoundedCornerShape(20.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Text("盈", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+            Text("R", color = Color.White, style = MaterialTheme.typography.headlineMedium)
         }
         Spacer(Modifier.height(12.dp))
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)

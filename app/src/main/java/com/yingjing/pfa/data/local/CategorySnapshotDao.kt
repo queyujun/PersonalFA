@@ -26,4 +26,8 @@ interface CategorySnapshotDao {
     /** 删除某用户指定日期（不含当天）之前的所有分类快照。 */
     @Query("DELETE FROM category_snapshots WHERE userId = :userId AND dayEpochDay < :dayEpochDay")
     suspend fun deleteOlderThan(userId: Long, dayEpochDay: Long)
+
+    /** 删除某用户指定日期当天的全部分类快照行（重写当日分类快照前先清理）。 */
+    @Query("DELETE FROM category_snapshots WHERE userId = :userId AND dayEpochDay = :dayEpochDay")
+    suspend fun deleteByUserAndDay(userId: Long, dayEpochDay: Long)
 }

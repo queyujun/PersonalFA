@@ -1,26 +1,43 @@
 package com.yingjing.pfa.ui.theme
 
-import androidx.annotation.StringRes
-import com.yingjing.pfa.R
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
 
 /**
- * 应用可选主题配色。每套主题提供浅/深两套 ColorScheme + 品牌渐变，
- * 深浅模式由系统决定（[com.yingjing.pfa.ui.theme.PersonalFaTheme] 默认 isSystemInDarkTheme）。
+ * 应用主题入口。
  *
- * - [MORANDI] 莫兰迪：灰蓝 / 藕粉 / 灰绿，低饱和度、灰调，柔和雅致。
- * - [CELADON] 青瓷：青绿 / 墨青 / 米白，宋瓷釉色，清润古典。
- * - [INK] 墨韵：黛 / 烟灰 / 赭，水墨黛青，沉静内敛。
+ * - 深浅模式默认跟随系统（[isSystemInDarkTheme]），可由调用方覆盖。
+ * - [themeId] 选择四套配色之一（紫晶 / 霁蓝 / 松石 / 琥珀），见 [AppTheme]；
+ *   未知值回退默认紫晶，旧 id（morandi/celadon/ink）经别名映射，已存偏好不丢回默认。
+ * - 暴露 [LocalBrandColors]：自绘场景取用品牌主色 / 渐变 / 页面底色，替代硬编码的旧品牌蓝。
  *
- * [labelRes] 供设置页渲染选项名称。
+ * 数据语义色（涨跌 / 分类 / 自定义组合）不随主题变化，直接复用 [Color.kt] 顶层常量。
  */
-enum class AppTheme(val id: String, @StringRes val labelRes: Int) {
-    MORANDI("morandi", R.string.theme_morandi),
-    CELADON("celadon", R.string.theme_celadon),
-    INK("ink", R.string.theme_ink);
+@Composable
+fun PersonalFaTheme(
+    themeId: String?,
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    val theme = AppTheme.fromId(themeId)
+    val colorScheme = colorSchemeFor(theme, darkTheme)
+    val brand = brandColorsFor(theme, darkTheme)
 
-    companion object {
-        /** 按已保存的 id 查找；null 或未知 → 默认莫兰迪。 */
-        fun fromId(id: String?): AppTheme =
-            entries.firstOrNull { it.id == id } ?: MORANDI
+    CompositionLocalProvider(LocalBrandColors provides brand) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content,
+        )
     }
 }
+
+/** 兼容旧调用（无主题参数，按默认紫晶渲染）；新代码应改用带 themeId 的重载。 */
+@Composable
+fun PersonalFaTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) = PersonalFaTheme(themeId = AppTheme.VIOLET.id, darkTheme = darkTheme, content = content)

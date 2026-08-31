@@ -12,11 +12,14 @@ import kotlin.math.abs
 /** 某持仓一次价格变化（用于判断大幅波动）。 */
 data class PriceChange(val holding: Holding, val oldPrice: Double, val newPrice: Double)
 
-/** 提醒阈值（可配置；先用默认值）。 */
+/** 提醒阈值（可配置；先用默认值）。市场/国际均为分档：警戒档(WARNING) 与 严重档(SERIOUS)。 */
 data class AlertThresholds(
     val depositMaturityDays: List<Int> = listOf(30, 7),
     val holdingMovePercent: Double = 7.0,
-    val marketMovePercent: Double = 3.0,
+    val marketWarnPercent: Double = 1.5,
+    val marketSeriousPercent: Double = 3.0,
+    val globalWarnPercent: Double = 0.8,
+    val globalSeriousPercent: Double = 2.0,
 )
 
 /**
@@ -103,18 +106,52 @@ object AlertRules {
     ): List<Alert> {
         val today = nowMs / MS_PER_DAY
         return changes.mapNotNull { (code, pct) ->
-            if (abs(pct) < thresholds.marketMovePercent) return@mapNotNull null
+            val absPct = abs(pct)
+            if (absPct < thresholds.marketWarnPercent) return@mapNotNull null
             val name = names[code] ?: code
             val directionRes = if (pct >= 0) R.string.alert_price_up else R.string.alert_price_down
             val direction = resolver.get(directionRes)
-            val pctText = "%.2f".format(abs(pct))
+            val pctText = "%.2f".format(absPct)
+            val isSerious = absPct >= thresholds.marketSeriousPercent
+            val firedThreshold = if (isSerious) thresholds.marketSeriousPercent else thresholds.marketWarnPercent
             Alert(
                 userId = userId,
                 category = AlertCategory.MARKET,
-                severity = AlertSeverity.SERIOUS,
+                severity = if (isSerious) AlertSeverity.SERIOUS else AlertSeverity.WARNING,
                 title = resolver.get(R.string.alert_market_title, name, direction, pctText),
-                body = resolver.get(R.string.alert_market_body, name, direction, pctText, thresholds.marketMovePercent),
+                body = resolver.get(R.string.alert_market_body, name, direction, pctText, firedThreshold),
                 dedupKey = "market_${code}_$today",
+                createdAtEpochMs = nowMs,
+            )
+        }
+    }
+
+    /** 国际行情（汇率 / 伦敦金 / 伦敦银）显著波动。changes: 代码 → 涨跌%；names: 代码 → 展示名。 */
+    fun globalMoves(
+        userId: Long,
+        changes: Map<String, Double>,
+        names: Map<String, String>,
+        nowMs: Long,
+        resolver: StringResolver,
+        thresholds: AlertThresholds = AlertThresholds(),
+    ): List<Alert> {
+        val today = nowMs / MS_PER_DAY
+        return changes.mapNotNull { (code, pct) ->
+            val absPct = abs(pct)
+            if (absPct < thresholds.globalWarnPercent) return@mapNotNull null
+            val name = names[code] ?: code
+            val directionRes = if (pct >= 0) R.string.alert_price_up else R.string.alert_price_down
+            val direction = resolver.get(directionRes)
+            val pctText = "%.2f".format(absPct)
+            val isSerious = absPct >= thresholds.globalSeriousPercent
+            val firedThreshold = if (isSerious) thresholds.globalSeriousPercent else thresholds.globalWarnPercent
+            Alert(
+                userId = userId,
+                category = AlertCategory.GLOBAL,
+                severity = if (isSerious) AlertSeverity.SERIOUS else AlertSeverity.WARNING,
+                title = resolver.get(R.string.alert_global_title, name, direction, pctText),
+                body = resolver.get(R.string.alert_global_body, name, direction, pctText, firedThreshold),
+                dedupKey = "global_${code}_$today",
                 createdAtEpochMs = nowMs,
             )
         }

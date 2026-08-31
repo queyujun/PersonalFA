@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yingjing.pfa.R
 import com.yingjing.pfa.data.backup.BackupManager
+import com.yingjing.pfa.data.backup.AutoBackupStore
 import com.yingjing.pfa.data.backup.BackupScheduler
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.data.sync.LanguageStore
@@ -43,8 +44,10 @@ data class SettingsUiState(
     val syncHour: Int = 9,
     val backupIntervalDays: Int = 7,
     val backupHour: Int = 3,
+    val lastBackupMs: Long? = null,
+    val autoBackupFileExists: Boolean = false,
     val currentLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
-    val currentTheme: AppTheme = AppTheme.MORANDI,
+    val currentTheme: AppTheme = AppTheme.VIOLET,
     val statusMessage: String? = null,
     val purgeMessage: String? = null,
 )
@@ -58,6 +61,7 @@ class SettingsViewModel @Inject constructor(
     private val syncStateStore: SyncStateStore,
     private val backupManager: BackupManager,
     private val backupScheduler: BackupScheduler,
+    private val autoBackupStore: AutoBackupStore,
     private val snapshotRepository: SnapshotRepository,
     private val fxRepository: FxRepository,
     private val languageStore: LanguageStore,
@@ -92,6 +96,9 @@ class SettingsViewModel @Inject constructor(
             syncStateStore.backupHour.collect { v -> _uiState.update { it.copy(backupHour = v) } }
         }
         viewModelScope.launch {
+            syncStateStore.lastBackupAt.collect { ms -> _uiState.update { it.copy(lastBackupMs = ms) } }
+        }
+        viewModelScope.launch {
             languageStore.languageTag.collect { tag ->
                 _uiState.update { it.copy(currentLanguage = AppLanguage.fromTag(tag)) }
             }
@@ -111,6 +118,7 @@ class SettingsViewModel @Inject constructor(
                 it.copy(
                     currentUser = currentId?.let { id -> users.firstOrNull { u -> u.id == id } },
                     users = users,
+                    autoBackupFileExists = autoBackupStore.exists(),
                 )
             }
         }
@@ -166,6 +174,24 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 从本机自动备份恢复（无需口令——口令由设备 Keystore 派生，与生成时同一把）。
+     * 恢复会清空现有数据并按原 ID 还原。
+     */
+    fun restoreFromAutoBackup() = viewModelScope.launch {
+        val ok = runCatching { autoBackupStore.restore() }.getOrDefault(false)
+        _uiState.update {
+            it.copy(
+                statusMessage = if (ok) context.getString(R.string.status_restore_ok)
+                else context.getString(R.string.status_auto_restore_failed),
+            )
+        }
+        if (ok) {
+            refresh()
+            viewModelScope.launch { runCatching { fxRepository.refresh() } }
+        }
+    }
+
     fun setAutoBackup(enabled: Boolean) = viewModelScope.launch {
         syncStateStore.setAutoBackup(enabled)
         backupScheduler.schedule(
@@ -174,6 +200,8 @@ class SettingsViewModel @Inject constructor(
             hour = syncStateStore.backupHour.first(),
             forceReplace = true,
         )
+        // 开启后立即检查一次本机备份文件是否存在，让备份页恢复按钮尽快反映状态。
+        _uiState.update { it.copy(autoBackupFileExists = autoBackupStore.exists()) }
     }
 
     fun setBiometric(enabled: Boolean) = viewModelScope.launch {

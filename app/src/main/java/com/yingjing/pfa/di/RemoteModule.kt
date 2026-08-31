@@ -1,6 +1,7 @@
 package com.yingjing.pfa.di
 
 import com.yingjing.pfa.data.remote.CoinGeckoRemote
+import com.yingjing.pfa.data.remote.CommodityRemote
 import com.yingjing.pfa.data.remote.CryptoQuoteRemote
 import com.yingjing.pfa.data.remote.EastmoneyFundNavRemote
 import com.yingjing.pfa.data.remote.EastmoneyHousePriceRemote
@@ -11,6 +12,7 @@ import com.yingjing.pfa.data.remote.HousePriceRemote
 import com.yingjing.pfa.data.remote.IpoRemote
 import com.yingjing.pfa.data.remote.MarketIndexRemote
 import com.yingjing.pfa.data.remote.SinaFxRemote
+import com.yingjing.pfa.data.remote.SinaCommodityRemote
 import com.yingjing.pfa.data.remote.SinaMarketIndexRemote
 import com.yingjing.pfa.data.remote.SinaStockRemote
 import com.yingjing.pfa.data.remote.StockQuoteRemote
@@ -38,6 +40,10 @@ abstract class RemoteModule {
     @Binds
     @Singleton
     abstract fun bindMarketIndexRemote(impl: SinaMarketIndexRemote): MarketIndexRemote
+
+    @Binds
+    @Singleton
+    abstract fun bindCommodityRemote(impl: SinaCommodityRemote): CommodityRemote
 
     @Binds
     @Singleton

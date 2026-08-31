@@ -38,6 +38,6 @@ class BackupScheduler @Inject constructor(
     }
 
     private companion object {
-        const val WORK = "weekly_backup"
+        const val WORK = "auto_backup"
     }
 }

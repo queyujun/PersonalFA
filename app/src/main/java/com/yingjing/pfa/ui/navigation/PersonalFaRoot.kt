@@ -10,23 +10,28 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -38,6 +43,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.yingjing.pfa.R
+import com.yingjing.pfa.domain.model.SyncSource
 import com.yingjing.pfa.ui.screens.alerts.AlertsScreen
 import com.yingjing.pfa.ui.screens.overview.OverviewScreen
 import com.yingjing.pfa.ui.screens.overview.TrendDetailScreen
@@ -72,6 +78,15 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val snackbarQuoteRefreshed = stringResource(R.string.snackbar_quote_refreshed)
+
+    // 同步完成结果上报：用户手动「立即刷新」后，由 SyncStateStore 持久化的最近结果驱动弹窗，
+    // 提示更新是否成功；若失败，逐项列出未能更新的数据源（用 SyncSource.labelRes 映射展示名）。
+    val pendingResult by rootViewModel.pendingResult.collectAsState()
+    val context = LocalContext.current
+    val failedList = remember(pendingResult) {
+        pendingResult?.failedSources?.joinToString("\n") { src -> context.getString(src.labelRes) }
+            .orEmpty()
+    }
 
     // 资产页列表状态：提升到根，使 FAB 能感知滚动——停留在顶部时显示 ＋，向下滚动浏览明细时
     // 隐藏，避免遮挡正好位于右下角的资产价值。
@@ -115,7 +130,7 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (isTabRoute) {
-                NavigationBar {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                     TopDestination.entries.forEach { dest ->
                         val selected =
                             backStackEntry?.destination?.hierarchy?.any { it.route == dest.route } == true
@@ -225,5 +240,35 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
                 )
             }
         }
+    }
+
+    pendingResult?.let { result ->
+        val isTotal = result.failedSources.size >= SyncSource.entries.size
+        AlertDialog(
+            onDismissRequest = { rootViewModel.dismissResult() },
+            title = {
+                Text(
+                    when {
+                        !result.hasFailure -> stringResource(R.string.sync_result_success_title)
+                        isTotal -> stringResource(R.string.sync_result_failed_title)
+                        else -> stringResource(R.string.sync_result_partial_title)
+                    }
+                )
+            },
+            text = {
+                Text(
+                    when {
+                        !result.hasFailure -> stringResource(R.string.sync_result_success_body)
+                        isTotal -> stringResource(R.string.sync_result_failed_body, failedList)
+                        else -> stringResource(R.string.sync_result_partial_body, failedList)
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { rootViewModel.dismissResult() }) {
+                    Text(stringResource(R.string.common_ok))
+                }
+            },
+        )
     }
 }

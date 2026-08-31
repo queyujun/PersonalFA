@@ -22,58 +22,73 @@ data class BrandColors(
 /** 当前主题品牌色；由 [PersonalFaTheme] 按 [AppTheme] + 系统深浅解析后提供。 */
 val LocalBrandColors = staticCompositionLocalOf {
     BrandColors(
-        primary = Color(0xFF6E8B9B),
-        gradientStart = Color(0xFF6E8B9B),
-        gradientEnd = Color(0xFFA3B5A0),
-        pageBackground = Color(0xFFE9E9E3),
+        primary = Color(0xFF5B4B8A),
+        gradientStart = Color(0xFF5B4B8A),
+        gradientEnd = Color(0xFF9C8FB8),
+        pageBackground = Color(0xFFEEEAF6),
     )
 }
 
-// ── 莫兰迪：灰蓝 / 藕粉 / 灰绿 ──────────────────────────────────────────────
-private val MorandiLight = BrandColors(
-    primary = Color(0xFF6E8B9B),
-    gradientStart = Color(0xFF6E8B9B),
-    gradientEnd = Color(0xFFA3B5A0),
-    pageBackground = Color(0xFFE9E9E3),
+// ── 紫晶：深紫罗兰 / 薰衣草 ─────────────────────────────────────────────────
+private val VioletLight = BrandColors(
+    primary = Color(0xFF5B4B8A),
+    gradientStart = Color(0xFF5B4B8A),
+    gradientEnd = Color(0xFF9C8FB8),
+    pageBackground = Color(0xFFEEEAF6),
 )
-private val MorandiDark = BrandColors(
-    primary = Color(0xFF8FA8B6),
-    gradientStart = Color(0xFF5E7B8B),
-    gradientEnd = Color(0xFF93A592),
-    pageBackground = Color(0xFF080807),
-)
-
-// ── 青瓷：青绿 / 墨青 / 米白 ────────────────────────────────────────────────
-private val CeladonLight = BrandColors(
-    primary = Color(0xFF4A6B66),
-    gradientStart = Color(0xFF4A6B66),
-    gradientEnd = Color(0xFF7FA9A3),
-    pageBackground = Color(0xFFE9ECE8),
-)
-private val CeladonDark = BrandColors(
-    primary = Color(0xFF7FA9A3),
-    gradientStart = Color(0xFF3C5A55),
-    gradientEnd = Color(0xFF6E948E),
-    pageBackground = Color(0xFF070908),
+private val VioletDark = BrandColors(
+    primary = Color(0xFFCDBAFF),
+    gradientStart = Color(0xFF4A3878),
+    gradientEnd = Color(0xFF7A68A8),
+    pageBackground = Color(0xFF0F0E18),
 )
 
-// ── 墨韵：黛 / 烟灰 / 赭 ────────────────────────────────────────────────────
-private val InkLight = BrandColors(
-    primary = Color(0xFF3A4A4A),
-    gradientStart = Color(0xFF3A4A4A),
-    gradientEnd = Color(0xFF6B6F70),
-    pageBackground = Color(0xFFE8E9EA),
+// ── 霁蓝：霁青蓝 / 天青 ─────────────────────────────────────────────────────
+private val BlueLight = BrandColors(
+    primary = Color(0xFF1F5C8B),
+    gradientStart = Color(0xFF1F5C8B),
+    gradientEnd = Color(0xFF86A6C2),
+    pageBackground = Color(0xFFEAEFF5),
 )
-private val InkDark = BrandColors(
-    primary = Color(0xFF7C8081),
-    gradientStart = Color(0xFF445353),
-    gradientEnd = Color(0xFF7B7F80),
-    pageBackground = Color(0xFF070808),
+private val BlueDark = BrandColors(
+    primary = Color(0xFF8FCBFB),
+    gradientStart = Color(0xFF1E4E73),
+    gradientEnd = Color(0xFF3A6E91),
+    pageBackground = Color(0xFF0E1216),
+)
+
+// ── 松石：松石绿 / 浅艾 ─────────────────────────────────────────────────────
+private val GreenLight = BrandColors(
+    primary = Color(0xFF1F6E5D),
+    gradientStart = Color(0xFF1F6E5D),
+    gradientEnd = Color(0xFF7CA89A),
+    pageBackground = Color(0xFFEAF2EE),
+)
+private val GreenDark = BrandColors(
+    primary = Color(0xFF8FD8C4),
+    gradientStart = Color(0xFF1E5B4D),
+    gradientEnd = Color(0xFF3D7A6A),
+    pageBackground = Color(0xFF0E1411),
+)
+
+// ── 琥珀：琥珀橙 / 浅驼 ─────────────────────────────────────────────────────
+private val OrangeLight = BrandColors(
+    primary = Color(0xFF9A5520),
+    gradientStart = Color(0xFF9A5520),
+    gradientEnd = Color(0xFFB98E6E),
+    pageBackground = Color(0xFFF4EDE6),
+)
+private val OrangeDark = BrandColors(
+    primary = Color(0xFFF2B97A),
+    gradientStart = Color(0xFF7A4515),
+    gradientEnd = Color(0xFFA06F3E),
+    pageBackground = Color(0xFF14100C),
 )
 
 /** 按主题 + 系统深浅解析品牌色。 */
 fun brandColorsFor(theme: AppTheme, darkTheme: Boolean): BrandColors = when (theme) {
-    AppTheme.MORANDI -> if (darkTheme) MorandiDark else MorandiLight
-    AppTheme.CELADON -> if (darkTheme) CeladonDark else CeladonLight
-    AppTheme.INK -> if (darkTheme) InkDark else InkLight
+    AppTheme.VIOLET -> if (darkTheme) VioletDark else VioletLight
+    AppTheme.BLUE -> if (darkTheme) BlueDark else BlueLight
+    AppTheme.GREEN -> if (darkTheme) GreenDark else GreenLight
+    AppTheme.ORANGE -> if (darkTheme) OrangeDark else OrangeLight
 }

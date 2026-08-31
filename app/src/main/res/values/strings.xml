@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Brand -->
-    <string name="app_name">盈景私助</string>
+    <string name="app_name">RICHWIN</string>
 
     <!-- Language options -->
     <string name="lang_follow_system">Follow System</string>
@@ -173,6 +173,12 @@
     <string name="alert_price_body">\"%1$s\" %2$s %3$.1f%% vs last (±%4$.1f%% threshold).</string>
     <string name="alert_market_title">%1$s %2$s %3$s%% in a day</string>
     <string name="alert_market_body">Major index \"%1$s\" %2$s %3$s%% (±%4$.1f%% threshold).</string>
+    <string name="alert_global_title">%1$s %2$s %3$s%% in a day</string>
+    <string name="alert_global_body">Global rate \"%1$s\" %2$s %3$s%% vs last (±%4$.1f%% threshold).</string>
+    <string name="gi_usd_cny">USD/CNY</string>
+    <string name="gi_hkd_cny">HKD/CNY</string>
+    <string name="gi_gold">London Gold</string>
+    <string name="gi_silver">London Silver</string>
     <string name="alert_ipo_title">%1$d new IPOs today</string>
     <string name="alert_ipo_body">New IPOs today: %1$s. Don\'t forget to apply.</string>
     <string name="alert_ipo_item">%1$s (code %2$s)</string>
@@ -208,6 +214,7 @@
     <string name="status_read_failed">Read file failed</string>
     <string name="status_restore_ok">✓ Restore succeeded</string>
     <string name="status_restore_failed">Restore failed: wrong passphrase or invalid file</string>
+    <string name="status_auto_restore_failed">Auto restore failed: no backup file or wrong device key</string>
     <string name="status_sync_plan_updated">✓ Sync plan updated</string>
     <string name="status_backup_plan_updated">✓ Backup plan updated</string>
     <string name="status_currency_updated">✓ Default currency updated</string>
@@ -253,9 +260,10 @@
     <string name="settings_theme_dialog_title">Select theme</string>
     <string name="settings_dark_mode">Dark mode</string>
     <string name="settings_dark_mode_subtitle">Follows system day/night</string>
-    <string name="theme_morandi">Morandi</string>
-    <string name="theme_celadon">Celadon</string>
-    <string name="theme_ink">Ink</string>
+    <string name="theme_violet">Violet</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_green">Green</string>
+    <string name="theme_orange">Amber</string>
     <string name="status_theme_updated">✓ Theme switched</string>
 
     <!-- Profile -->
@@ -294,18 +302,42 @@
     <string name="sync_purge_confirm_title">Delete trends before %1$s?</string>
     <string name="sync_purge_confirm_body">Permanently deletes net-worth &amp; category snapshots before this date (exclusive). Trend history will shorten. Irreversible — back up first.</string>
 
+    <!-- Sync result -->
+    <string name="sync_result_success_title">Update successful</string>
+    <string name="sync_result_success_body">All market data updated successfully.</string>
+    <string name="sync_result_partial_title">Some data failed to update</string>
+    <string name="sync_result_partial_body">The following failed; the rest updated:\n%1$s</string>
+    <string name="sync_result_failed_title">Update failed</string>
+    <string name="sync_result_failed_body">Market data update failed. Please retry later:\n%1$s</string>
+
+    <!-- Sync sources -->
+    <string name="sync_src_fx">FX Rates</string>
+    <string name="sync_src_market_index">Market Indexes</string>
+    <string name="sync_src_commodity">Precious Metals</string>
+    <string name="sync_src_ipo">IPO</string>
+    <string name="sync_src_house_price">House Price Index</string>
+    <string name="sync_src_stock">Stocks</string>
+    <string name="sync_src_crypto">Crypto</string>
+    <string name="sync_src_fund">Funds</string>
+
     <!-- Backup -->
     <string name="backup_now">Back up now</string>
     <string name="backup_restore">Restore from file</string>
-    <string name="backup_auto_weekly">Weekly auto backup</string>
+    <string name="backup_auto_weekly">Auto backup</string>
     <string name="backup_auto_subtitle">On-device encrypted copy (use \"Back up now\" with a passphrase for portable backup)</string>
     <string name="backup_plan_subtitle">Auto backup schedule</string>
-    <string name="backup_plan_hint">Runs on this period / time when \"Weekly auto backup\" is on</string>
+    <string name="backup_plan_hint">Runs on this period / time when \"Auto backup\" is on</string>
     <string name="backup_security_hint">Backups use AES-256-GCM (passphrase-derived key). Keep the exported file safe — a lost passphrase is unrecoverable.</string>
     <string name="backup_set_passphrase">Set backup passphrase</string>
     <string name="backup_export">Export</string>
     <string name="backup_input_passphrase">Enter backup passphrase</string>
-    <string name="backup_filename_prefix">盈景私助-backup-</string>
+    <string name="backup_filename_prefix">RICHWIN-backup-</string>
+    <string name="backup_restore_auto">Restore from auto backup</string>
+    <string name="backup_restore_auto_confirm">This will erase all current data and restore from the on-device auto backup. Continue?</string>
+    <string name="backup_restore_action">Restore</string>
+    <string name="backup_last_backup_at">Last backup: %1$s</string>
+    <string name="backup_backup_file_exists">Backup file exists</string>
+    <string name="backup_no_auto_backup">No on-device auto backup yet</string>
 
     <!-- Form -->
     <string name="add_asset_title">Add Asset</string>
@@ -349,6 +381,7 @@
     <string name="form_price_hint">Note: stock / ETF / token prices auto-update daily from P3.</string>
 
     <!-- Common -->
+    <string name="common_ok">OK</string>
     <string name="common_cancel">Cancel</string>
     <string name="common_delete">Delete</string>
     <string name="common_edit">Edit</string>
@@ -406,7 +439,7 @@
 
     <!-- Biometric -->
     <string name="biometric_title">Biometric login</string>
-    <string name="biometric_subtitle">Quickly log in to 盈景私助 with fingerprint or face</string>
+    <string name="biometric_subtitle">Quickly log in to RICHWIN with fingerprint or face</string>
     <string name="biometric_negative">Use password</string>
 
     <!-- Placeholder -->

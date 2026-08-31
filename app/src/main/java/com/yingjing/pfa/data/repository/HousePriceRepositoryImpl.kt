@@ -7,6 +7,7 @@ import com.yingjing.pfa.data.local.HousePriceIndexEntity
 import com.yingjing.pfa.data.remote.HousePricePoint
 import com.yingjing.pfa.data.remote.HousePriceRemote
 import com.yingjing.pfa.domain.repository.HousePriceRepository
+import com.yingjing.pfa.domain.repository.HouseRefreshOutcome
 import javax.inject.Inject
 
 class HousePriceRepositoryImpl @Inject constructor(
@@ -15,16 +16,18 @@ class HousePriceRepositoryImpl @Inject constructor(
     private val appMetaDao: AppMetaDao,
 ) : HousePriceRepository {
 
-    override suspend fun refresh(cities: List<String>): Boolean {
-        if (cities.isEmpty()) return false
-        if (!isStale()) return false
-        val points = remote.fetch(cities)
-        if (points.isEmpty()) return false
+    override suspend fun refresh(cities: List<String>): HouseRefreshOutcome {
+        if (cities.isEmpty()) return HouseRefreshOutcome.FAILED
+        if (!isStale()) return HouseRefreshOutcome.SKIPPED
+        val points = runCatching { remote.fetch(cities) }
+            .onFailure { return HouseRefreshOutcome.FAILED }
+            .getOrDefault(emptyList())
+        if (points.isEmpty()) return HouseRefreshOutcome.FAILED
         // 仅刷新本次涉及城市，避免误删他城缓存
         cities.forEach { dao.deleteByCity(it) }
         dao.upsertAll(points.map { it.toEntity() })
         appMetaDao.put(AppMetaEntity(HousePriceRepository.LAST_FETCH_KEY, nowMs().toString()))
-        return true
+        return HouseRefreshOutcome.REFRESHED
     }
 
     override suspend fun history(city: String): List<HousePricePoint> =

@@ -8,10 +8,14 @@ import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.FxRates
 import com.yingjing.pfa.domain.model.Holding
+import com.yingjing.pfa.domain.model.QuoteFetchResult
+import com.yingjing.pfa.domain.model.SyncSource
 import com.yingjing.pfa.domain.model.User
 import com.yingjing.pfa.domain.alert.AlertNotifier
 import com.yingjing.pfa.domain.model.Alert
+import com.yingjing.pfa.domain.model.AlertCategory
 import com.yingjing.pfa.data.remote.HousePricePoint
+import com.yingjing.pfa.data.remote.CommodityRemote
 import com.yingjing.pfa.data.remote.MarketIndexRemote
 import com.yingjing.pfa.data.remote.IpoRemote
 import com.yingjing.pfa.domain.repository.AlertRepository
@@ -25,9 +29,9 @@ import com.yingjing.pfa.fakes.FakeHousePriceRepository
 import com.yingjing.pfa.fakes.FakeStringResolver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -40,6 +44,11 @@ class SyncManagerTest {
     private val holdingRepo = FakeHoldingRepository()
     private val housePriceRepo = FakeHousePriceRepository()
     private lateinit var syncStateStore: SyncStateStore
+    private lateinit var globalRatesStore: GlobalRatesStore
+    // 背景数据源：返回不触发任何提醒的非空小值（市场 <1.5% 警戒档、贵金属 <0.8% 警戒档），
+    // 使测试聚焦各自目标（FX/价格/房产），不被「空结果计入失败」的新语义干扰。
+    private var commodityResult: Map<String, Double> = mapOf("hf_XAU" to 0.5)
+    private val commodityRemote = CommodityRemote { commodityResult }
 
     private val userRepo = object : UserRepository {
         override suspend fun register(username: String, password: String, defaultCurrency: Currency) =
@@ -57,10 +66,11 @@ class SyncManagerTest {
     }
 
     private var fxRefreshed = false
+    private var currentRates = FxRates(7.0, 0.9)
     private val fxRepo = object : FxRepository {
-        override fun observeRates(): Flow<FxRates> = flowOf(FxRates())
-        override suspend fun current() = FxRates()
-        override suspend fun refresh(): FxRates { fxRefreshed = true; return FxRates(7.0, 0.9) }
+        override fun observeRates(): Flow<FxRates> = flowOf(currentRates)
+        override suspend fun current() = currentRates
+        override suspend fun refresh(): FxRates { fxRefreshed = true; return currentRates }
         override suspend fun save(rates: FxRates) {}
     }
 
@@ -98,12 +108,14 @@ class SyncManagerTest {
     private val notified = mutableListOf<Alert>()
     private val notifier = AlertNotifier { notified += it }
 
-    private val marketIndexRemote = MarketIndexRemote { emptyMap() }
+    private val marketIndexRemote = MarketIndexRemote { mapOf("sh000300" to 0.5) }
     private val ipoRemote = IpoRemote { emptyList() }
 
     @Before
     fun setup() {
-        syncStateStore = SyncStateStore(ApplicationProvider.getApplicationContext<Context>())
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        syncStateStore = SyncStateStore(ctx)
+        globalRatesStore = GlobalRatesStore(ctx)
     }
 
     @Test
@@ -112,13 +124,14 @@ class SyncManagerTest {
             Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 100.0, currentPrice = 1000.0),
         )
         val quoteRepo = object : QuoteRepository {
-            override suspend fun fetchPrices(holdings: List<Holding>) = mapOf(id to 1354.5)
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(mapOf(id to 1354.5), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
 
-        val ok = manager.sync()
+        val result = manager.sync()
 
-        assertTrue(ok)
+        assertTrue(result.success)
         assertTrue(fxRefreshed)
         assertEquals(1354.5, holdingRepo.getHolding(id)!!.currentPrice!!, 0.001)
         assertEquals(1, recorded.size) // 记录了一条净值快照
@@ -128,17 +141,20 @@ class SyncManagerTest {
     }
 
     @Test
-    fun sync_returnsFalse_onException() = runTest {
+    fun sync_returnsFailureResult_onException() = runTest {
         val quoteRepo = object : QuoteRepository {
-            override suspend fun fetchPrices(holdings: List<Holding>): Map<Long, Double> =
+            override suspend fun fetchPrices(holdings: List<Holding>): QuoteFetchResult =
                 throw RuntimeException("network")
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         // 加一个持仓触发抓取路径
         holdingRepo.addHolding(
             Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
         )
-        assertEquals(false, manager.sync())
+        // 整体异常 → 全 8 源失败
+        val result = manager.sync()
+        assertFalse(result.success)
+        assertEquals(SyncSource.entries.size, result.failedSources.size)
     }
 
     @Test
@@ -163,14 +179,15 @@ class SyncManagerTest {
             ),
         )
         val quoteRepo = object : QuoteRepository {
-            override suspend fun fetchPrices(holdings: List<Holding>) = emptyMap<Long, Double>()
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         manager.nowProvider = { nowMs }
 
-        val ok = manager.sync()
+        val result = manager.sync()
 
-        assertTrue(ok)
+        assertTrue(result.success)
         // 估算值写回 estimatedValue
         assertEquals(1_010_000.0, holdingRepo.getHolding(id)!!.estimatedValue!!, 0.01)
         // 批量刷新了北京（去重 + 70 城校验）
@@ -190,12 +207,13 @@ class SyncManagerTest {
             ),
         )
         val quoteRepo = object : QuoteRepository {
-            override suspend fun fetchPrices(holdings: List<Holding>) = emptyMap<Long, Double>()
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver())
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         manager.nowProvider = { msOf(2026, 7) }
 
-        assertTrue(manager.sync())
+        assertTrue(manager.sync().success)
         assertNull(housePriceRepo.refreshCalledWith) // 无开启估算的房产 → 不刷新指数
         assertNull(holdingRepo.getHolding(id)!!.estimatedValue)
         assertEquals(2_000_000.0, recorded[0], 0.01)
@@ -206,5 +224,112 @@ class SyncManagerTest {
         cal.clear()
         cal.set(year, month - 1, 1, 0, 0, 0)
         return cal.timeInMillis
+    }
+
+    @Test
+    fun sync_globalAlert_firesWhenCommodityChangeAboveThreshold() = runTest {
+        // 伦敦金 +2.5 ≥ 严重档 2.0 → 1 条 GLOBAL SERIOUS。prevFx 未 seed → 汇率不触发。
+        holdingRepo.addHolding(
+            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
+        )
+        val quoteRepo = object : QuoteRepository {
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
+        }
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        commodityResult = mapOf("hf_XAU" to 2.5)
+
+        assertTrue(manager.sync().success)
+
+        val global = insertedAlerts.filter { it.category == AlertCategory.GLOBAL }
+        assertEquals(1, global.size)
+    }
+
+    @Test
+    fun sync_globalAlert_fxFiresAfterPrevSeeded() = runTest {
+        // prev USD=7.0，当前 7.2 → +2.85% ≥ 严重档 2.0 → 1 条 GLOBAL SERIOUS（usd_cny）。
+        holdingRepo.addHolding(
+            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
+        )
+        globalRatesStore.savePrevFx(FxRates(7.0, 0.9))
+        currentRates = FxRates(7.2, 0.9)
+        val quoteRepo = object : QuoteRepository {
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
+        }
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+
+        assertTrue(manager.sync().success)
+
+        val global = insertedAlerts.filter { it.category == AlertCategory.GLOBAL }
+        assertEquals(1, global.size)
+    }
+
+    @Test
+    fun sync_marketIndexRetryOnEmpty() = runTest {
+        // marketIndexRemote 第一次返回空、第二次返回沪深300 +3.5 → 重试后产生 1 条 MARKET SERIOUS。
+        holdingRepo.addHolding(
+            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
+        )
+        val quoteRepo = object : QuoteRepository {
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
+        }
+        var callCount = 0
+        val retryRemote = MarketIndexRemote {
+            callCount++
+            if (callCount == 1) emptyMap() else mapOf("sh000300" to 3.5)
+        }
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, retryRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+
+        assertTrue(manager.sync().success)
+        assertEquals(2, callCount) // 触发了重试
+        val market = insertedAlerts.filter { it.category == AlertCategory.MARKET }
+        assertEquals(1, market.size)
+    }
+
+    // —— 失败源追踪：海外源失败只拖自己，整体仍可成功部分 —— //
+
+    @Test
+    fun sync_partialFailure_reportsFailedSourcesButSucceedsOthers() = runTest {
+        // 市场指数空 + 贵金属空（海外源模拟不可达），但 FX 正常、持仓无 → 仅部分源失败。
+        holdingRepo.addHolding(
+            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
+        )
+        // 股票抓取也返回空 → STOCK 失败
+        val quoteRepo = object : QuoteRepository {
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), listOf(SyncSource.STOCK))
+        }
+        // 局部空 remote，模拟海外源不可达（不依赖背景非空小值）
+        val emptyMarketIndex = MarketIndexRemote { emptyMap() }
+        val emptyCommodity = CommodityRemote { emptyMap() }
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, emptyMarketIndex, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), emptyCommodity, globalRatesStore)
+
+        val result = manager.sync()
+
+        assertFalse(result.success) // 有失败源 → success=false
+        assertTrue(result.failedSources.contains(SyncSource.MARKET_INDEX))
+        assertTrue(result.failedSources.contains(SyncSource.COMMODITY))
+        assertTrue(result.failedSources.contains(SyncSource.STOCK))
+        assertFalse(result.failedSources.contains(SyncSource.FX)) // FX 正常（7.0/0.9）
+    }
+
+    @Test
+    fun sync_manualFlag_propagatedToResult() = runTest {
+        holdingRepo.addHolding(
+            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
+        )
+        val quoteRepo = object : QuoteRepository {
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
+        }
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+
+        val manualResult = manager.sync(manual = true)
+        assertTrue(manualResult.manual)
+
+        val autoResult = manager.sync(manual = false)
+        assertFalse(autoResult.manual)
     }
 }
