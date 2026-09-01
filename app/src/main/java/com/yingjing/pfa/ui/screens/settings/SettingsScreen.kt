@@ -95,6 +95,16 @@ fun SettingsScreen(
                     },
                 )
             }
+            SettingRow(
+                title = stringResource(R.string.settings_app_lock),
+                subtitle = stringResource(R.string.settings_app_lock_subtitle),
+                trailing = {
+                    Switch(
+                        checked = state.appLockEnabled,
+                        onCheckedChange = { viewModel.setAppLock(it) },
+                    )
+                },
+            )
         }
 
         // 3. 账号管理（保持不变）

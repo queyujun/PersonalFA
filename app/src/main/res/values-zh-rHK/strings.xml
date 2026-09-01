@@ -235,6 +235,8 @@
     <string name="settings_change_password">修改密碼</string>
     <string name="settings_biometric">指紋 / 面容登入</string>
     <string name="settings_biometric_subtitle">開啟後可在登入頁用指紋/面容快速登入上次帳號</string>
+    <string name="settings_app_lock">應用鎖</string>
+    <string name="settings_app_lock_subtitle">切回應用時需重新驗證</string>
     <string name="settings_group_accounts">帳號管理</string>
     <string name="settings_group_sync">數據與同步</string>
     <string name="settings_sync_detail">行情刷新與走勢數據</string>
@@ -445,6 +447,14 @@
     <string name="biometric_title">生物識別登入</string>
     <string name="biometric_subtitle">使用指紋或面容快速登入盈睿伴</string>
     <string name="biometric_negative">用密碼登入</string>
+
+    <!-- 應用鎖 -->
+    <string name="lock_title">應用已鎖定</string>
+    <string name="lock_welcome_back">歡迎回來，%1$s</string>
+    <string name="lock_biometric_hint">使用指紋 / 面容解鎖</string>
+    <string name="lock_password_label">密碼</string>
+    <string name="lock_unlock">解鎖</string>
+    <string name="lock_wrong_password">密碼錯誤，請重試</string>
 
     <!-- 佔位 -->
     <string name="placeholder_subtitle">P0 腳手架占位</string>

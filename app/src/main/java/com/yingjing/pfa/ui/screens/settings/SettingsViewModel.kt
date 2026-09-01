@@ -40,6 +40,7 @@ data class SettingsUiState(
     val autoBackupEnabled: Boolean = false,
     val biometricEnabled: Boolean = true,
     val biometricAvailable: Boolean = false,
+    val appLockEnabled: Boolean = true,
     val syncIntervalDays: Int = 1,
     val syncHour: Int = 9,
     val backupIntervalDays: Int = 7,
@@ -82,6 +83,9 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             syncStateStore.biometricEnabled.collect { on -> _uiState.update { it.copy(biometricEnabled = on) } }
+        }
+        viewModelScope.launch {
+            syncStateStore.appLockEnabled.collect { on -> _uiState.update { it.copy(appLockEnabled = on) } }
         }
         viewModelScope.launch {
             syncStateStore.syncIntervalDays.collect { v -> _uiState.update { it.copy(syncIntervalDays = v) } }
@@ -206,6 +210,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setBiometric(enabled: Boolean) = viewModelScope.launch {
         syncStateStore.setBiometric(enabled)
+    }
+
+    fun setAppLock(enabled: Boolean) = viewModelScope.launch {
+        syncStateStore.setAppLock(enabled)
     }
 
     fun setSyncSchedule(intervalDays: Int, hour: Int) = viewModelScope.launch {

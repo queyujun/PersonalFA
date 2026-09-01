@@ -221,6 +221,8 @@
     <string name="settings_change_password">Change Password</string>
     <string name="settings_biometric">Biometric Login</string>
     <string name="settings_biometric_subtitle">Use fingerprint/face to quickly log in on the login page</string>
+    <string name="settings_app_lock">App Lock</string>
+    <string name="settings_app_lock_subtitle">Re-authenticate when returning to app</string>
     <string name="settings_group_accounts">Account Management</string>
     <string name="settings_group_sync">Data &amp; Sync</string>
     <string name="settings_sync_detail">Quote refresh &amp; trend data</string>
@@ -427,6 +429,14 @@
     <string name="biometric_title">Biometric login</string>
     <string name="biometric_subtitle">Quickly log in to RICHWIN with fingerprint or face</string>
     <string name="biometric_negative">Use password</string>
+
+    <!-- App Lock -->
+    <string name="lock_title">App Locked</string>
+    <string name="lock_welcome_back">Welcome back, %1$s</string>
+    <string name="lock_biometric_hint">Unlock with fingerprint / face</string>
+    <string name="lock_password_label">Password</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_wrong_password">Wrong password, try again</string>
 
     <!-- Placeholder -->
     <string name="placeholder_subtitle">P0 scaffold placeholder</string>

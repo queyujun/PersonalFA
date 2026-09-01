@@ -14,6 +14,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.yingjing.pfa.core.security.AppLockManager
 import com.yingjing.pfa.data.sync.ThemeStore
 import com.yingjing.pfa.ui.AppRoot
 import com.yingjing.pfa.ui.theme.PersonalFaTheme
@@ -28,11 +30,17 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var themeStore: ThemeStore
 
+    @Inject
+    lateinit var appLockManager: AppLockManager
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 观察进程级前后台切换：应用退到后台（ON_STOP）时由 AppLockManager 置锁，
+        // 切回前台需重新认证（密码 / 指纹）才能继续浏览。
+        ProcessLifecycleOwner.get().lifecycle.addObserver(appLockManager)
         requestNotificationPermissionIfNeeded()
         enableEdgeToEdge()
         setContent {

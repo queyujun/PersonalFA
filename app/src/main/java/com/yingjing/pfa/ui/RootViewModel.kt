@@ -2,6 +2,7 @@ package com.yingjing.pfa.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yingjing.pfa.core.security.AppLockManager
 import com.yingjing.pfa.data.session.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,8 +21,12 @@ sealed interface SessionState {
 @HiltViewModel
 class RootViewModel @Inject constructor(
     sessionManager: SessionManager,
+    appLockManager: AppLockManager,
 ) : ViewModel() {
     val sessionState: StateFlow<SessionState> = sessionManager.currentUserId
         .map { id -> if (id == null) SessionState.LoggedOut else SessionState.LoggedIn(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SessionState.Loading)
+
+    /** 应用锁状态：来自进程级 [AppLockManager]，被 [com.yingjing.pfa.ui.AppRoot] 用于挂载锁定遮罩。 */
+    val isLocked: StateFlow<Boolean> = appLockManager.isLocked
 }

@@ -37,6 +37,9 @@ class SyncStateStore @Inject constructor(
     /** 指纹/面容快速登录开关；默认启用（仅在设备支持时生效）。 */
     val biometricEnabled: Flow<Boolean> = context.syncDataStore.data.map { it[BIOMETRIC] ?: true }
 
+    /** 应用锁开关：切回应用时需重新认证（密码/指纹）；默认启用。 */
+    val appLockEnabled: Flow<Boolean> = context.syncDataStore.data.map { it[APP_LOCK] ?: true }
+
     // 行情刷新调度（提醒跟随行情，一并抓取）
     val syncIntervalDays: Flow<Int> = context.syncDataStore.data.map { it[SYNC_INTERVAL] ?: 1 }
     val syncHour: Flow<Int> = context.syncDataStore.data.map { it[SYNC_HOUR] ?: 9 }
@@ -81,6 +84,10 @@ class SyncStateStore @Inject constructor(
 
     suspend fun setBiometric(enabled: Boolean) {
         context.syncDataStore.edit { it[BIOMETRIC] = enabled }
+    }
+
+    suspend fun setAppLock(enabled: Boolean) {
+        context.syncDataStore.edit { it[APP_LOCK] = enabled }
     }
 
     suspend fun setSyncSchedule(intervalDays: Int, hour: Int) {
@@ -129,6 +136,7 @@ class SyncStateStore @Inject constructor(
         val LAST_SYNC = longPreferencesKey("last_sync_ms")
         val AUTO_BACKUP = booleanPreferencesKey("auto_backup_enabled")
         val BIOMETRIC = booleanPreferencesKey("biometric_enabled")
+        val APP_LOCK = booleanPreferencesKey("app_lock_enabled")
         val SYNC_INTERVAL = intPreferencesKey("sync_interval_days")
         val SYNC_HOUR = intPreferencesKey("sync_hour")
         val BACKUP_INTERVAL = intPreferencesKey("backup_interval_days")
