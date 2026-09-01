@@ -1,11 +1,11 @@
 package com.yingjing.pfa.di
 
-import com.yingjing.pfa.data.remote.CoinGeckoRemote
 import com.yingjing.pfa.data.remote.CommodityRemote
 import com.yingjing.pfa.data.remote.CryptoQuoteRemote
 import com.yingjing.pfa.data.remote.EastmoneyFundNavRemote
 import com.yingjing.pfa.data.remote.EastmoneyHousePriceRemote
 import com.yingjing.pfa.data.remote.EastmoneyIpoRemote
+import com.yingjing.pfa.data.remote.FallbackCryptoRemote
 import com.yingjing.pfa.data.remote.FxRemote
 import com.yingjing.pfa.data.remote.FundQuoteRemote
 import com.yingjing.pfa.data.remote.HousePriceRemote
@@ -31,7 +31,7 @@ abstract class RemoteModule {
 
     @Binds
     @Singleton
-    abstract fun bindCryptoQuoteRemote(impl: CoinGeckoRemote): CryptoQuoteRemote
+    abstract fun bindCryptoQuoteRemote(impl: FallbackCryptoRemote): CryptoQuoteRemote
 
     @Binds
     @Singleton
