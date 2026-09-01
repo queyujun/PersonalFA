@@ -13,15 +13,16 @@ val GainRed = Color(0xFFD03B3B)
 val LossGreen = Color(0xFF0CA30C)
 
 // 资产分类色（固定顺序：房产/存款/股票/黄金/国债/区块链/公司股权/场外基金/其他）
-val Cat1 = Color(0xFF2A78D6)
-val Cat2 = Color(0xFFEB6834)
-val Cat3 = Color(0xFF1BAF7A)
-val Cat4 = Color(0xFFEDA100)
-val Cat5 = Color(0xFFE87BA4)
-val Cat6 = Color(0xFF008300)
-val Cat7 = Color(0xFF4A3AA7)
-val Cat8 = Color(0xFF1F9E8F)
-val Cat9 = Color(0xFF6B7280)
+// 浅色调 + 中等饱和：鲜明易辨又不艳丽刺眼，九色色相错开保证辨识度。
+val Cat1 = Color(0xFF6FA8D8)  // 房产 — 浅天蓝
+val Cat2 = Color(0xFFE8A878)  // 存款 — 浅橙
+val Cat3 = Color(0xFF74C498)  // 股票 — 浅草绿
+val Cat4 = Color(0xFFECC56A)  // 黄金 — 浅金黄
+val Cat5 = Color(0xFFDC8CA6)  // 国债 — 浅玫粉
+val Cat6 = Color(0xFFB8C75A)  // 区块链 — 浅黄绿
+val Cat7 = Color(0xFF9183D6)  // 公司股权 — 浅紫
+val Cat8 = Color(0xFF5DC4B0)  // 场外基金 — 浅松青
+val Cat9 = Color(0xFF9DA4AE)  // 其他 — 浅灰蓝
 
-// 自定义组合走势线（用户多选资产类别合计），紫红色，区别于上述固定分类色
-val CustomCombo = Color(0xFF8E24AA)
+// 自定义组合走势线（用户多选资产类别合计），浅紫红，区别于上述固定分类色
+val CustomCombo = Color(0xFFBD60B5)
