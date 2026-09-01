@@ -320,6 +320,10 @@
     <string name="sync_src_crypto">区块链</string>
     <string name="sync_src_fund">基金</string>
 
+    <!-- 房价指数同步状态备注：在同步弹窗里明示指数已更新至何月 / 已是最新 -->
+    <string name="sync_house_refreshed">房价指数已更新至 %1$s 月</string>
+    <string name="sync_house_skipped">房价指数已是最新（%1$s 月）</string>
+
     <!-- 备份 -->
     <string name="backup_now">立即备份</string>
     <string name="backup_restore">从文件恢复</string>

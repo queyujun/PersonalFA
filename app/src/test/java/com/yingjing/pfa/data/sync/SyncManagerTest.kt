@@ -8,6 +8,7 @@ import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.FxRates
 import com.yingjing.pfa.domain.model.Holding
+import com.yingjing.pfa.domain.model.HousePriceSyncStatus
 import com.yingjing.pfa.domain.model.QuoteFetchResult
 import com.yingjing.pfa.domain.model.SyncSource
 import com.yingjing.pfa.domain.model.User
@@ -21,6 +22,7 @@ import com.yingjing.pfa.data.remote.IpoRemote
 import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HousePriceRepository
+import com.yingjing.pfa.domain.repository.HouseRefreshOutcome
 import com.yingjing.pfa.domain.repository.QuoteRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
@@ -195,6 +197,9 @@ class SyncManagerTest {
         // 净值快照反映估算值：101 万
         assertEquals(1, recorded.size)
         assertEquals(1_010_000.0, recorded[0], 0.01)
+        // 房价指数同步备注：REFRESHED + 最新月份 2026-05，反馈给 UI 弹窗
+        assertEquals(HousePriceSyncStatus.REFRESHED, result.housePriceNote?.status)
+        assertEquals("2026-05", result.housePriceNote?.latestMonth)
     }
 
     @Test
@@ -217,6 +222,54 @@ class SyncManagerTest {
         assertNull(housePriceRepo.refreshCalledWith) // 无开启估算的房产 → 不刷新指数
         assertNull(holdingRepo.getHolding(id)!!.estimatedValue)
         assertEquals(2_000_000.0, recorded[0], 0.01)
+    }
+
+    @Test
+    fun sync_housePriceNote_isNullWhenNoRealEstateHolding() = runTest {
+        // 无房产持仓 → 不触发指数刷新，note 为 null（弹窗不展示房价行）。
+        holdingRepo.addHolding(
+            Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
+        )
+        val quoteRepo = object : QuoteRepository {
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
+        }
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+
+        val result = manager.sync()
+
+        assertNull(housePriceRepo.refreshCalledWith)
+        assertNull(result.housePriceNote)
+    }
+
+    @Test
+    fun sync_housePriceNote_reportsSkippedWithCachedMonth() = runTest {
+        // 指数刷新返回 SKIPPED（新鲜度窗口内）→ note 状态 SKIPPED，仍反馈缓存里最新月份。
+        val baseMs = msOf(2026, 3)
+        val id = holdingRepo.addHolding(
+            Holding(
+                userId = 1, type = AssetType.REAL_ESTATE, name = "滨江一号",
+                currency = Currency.CNY, manualValue = 1_000_000.0,
+                city = "北京", autoEstimate = true, valueBaseDateEpochMs = baseMs,
+            ),
+        )
+        housePriceRepo.seed(
+            "北京",
+            listOf(HousePricePoint("北京", "2026-05", null, null, 100.0, null)),
+        )
+        housePriceRepo.refreshResult = HouseRefreshOutcome.SKIPPED
+        val quoteRepo = object : QuoteRepository {
+            override suspend fun fetchPrices(holdings: List<Holding>) =
+                QuoteFetchResult(emptyMap(), emptyList())
+        }
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        manager.nowProvider = { msOf(2026, 7) }
+
+        val result = manager.sync()
+
+        assertTrue(result.success)
+        assertEquals(HousePriceSyncStatus.SKIPPED, result.housePriceNote?.status)
+        assertEquals("2026-05", result.housePriceNote?.latestMonth)
     }
 
     private fun msOf(year: Int, month: Int): Long {

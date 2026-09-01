@@ -31,18 +31,34 @@ enum class SyncSource {
 }
 
 /**
+ * 房价指数同步状态备注。让用户在同步弹窗里看到房价指数「已更新至 X 月 / 已是最新（X 月）」，
+ * 而非只在失败时才得知其状态（REFRESHED/SKIPPED 都不进 failedSources，原先对用户完全静默）。
+ *
+ * @property status REFRESHED=本次拉到新数据；SKIPPED=新鲜度窗口内跳过、用缓存。
+ * @property latestMonth 最新报告月份 "yyyy-MM"（可能为 null：无持仓房产或缓存为空）。
+ */
+data class HousePriceSyncNote(
+    val status: HousePriceSyncStatus,
+    val latestMonth: String?,
+)
+
+enum class HousePriceSyncStatus { REFRESHED, SKIPPED }
+
+/**
  * 一次同步的整体结果。经 [com.yingjing.pfa.data.sync.SyncStateStore] 持久化后上报 UI。
  *
  * @property success 全部数据源均成功更新（failedSources 为空）。
  * @property failedSources 失败的数据源列表（按枚举自然序，UI 用于逐项列出）。
  * @property completedAt 完成时刻（epoch ms）。
  * @property manual 是否由用户手动触发（手动触发时即便全成功也弹窗确认，自动定时仅在失败时弹窗）。
+ * @property housePriceNote 房价指数状态备注（无持仓房产时为 null）。让用户显式看到指数变化/新鲜度。
  */
 data class SyncResult(
     val success: Boolean,
     val failedSources: List<SyncSource>,
     val completedAt: Long,
     val manual: Boolean,
+    val housePriceNote: HousePriceSyncNote? = null,
 ) {
     /** 是否有部分源失败（含全失败）。 */
     val hasFailure: Boolean get() = failedSources.isNotEmpty()

@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.yingjing.pfa.domain.model.HousePriceSyncNote
+import com.yingjing.pfa.domain.model.HousePriceSyncStatus
 import com.yingjing.pfa.domain.model.SyncResult
 import com.yingjing.pfa.domain.model.SyncSource
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -54,11 +56,15 @@ class SyncStateStore @Inject constructor(
             ?.filter { it.isNotBlank() }
             ?.mapNotNull { name -> runCatching { SyncSource.valueOf(name) }.getOrNull() }
             ?: emptyList()
+        val note = prefs[LAST_RESULT_HOUSE_STATUS]?.let { statusName ->
+            runCatching { HousePriceSyncStatus.valueOf(statusName) }.getOrNull()
+        }?.let { status -> HousePriceSyncNote(status, prefs[LAST_RESULT_HOUSE_MONTH]) }
         SyncResult(
             success = prefs[LAST_RESULT_SUCCESS] ?: false,
             failedSources = failed,
             completedAt = at,
             manual = prefs[LAST_RESULT_MANUAL] ?: false,
+            housePriceNote = note,
         )
     }
 
@@ -103,6 +109,14 @@ class SyncStateStore @Inject constructor(
             it[LAST_RESULT_FAILED] = result.failedSources.joinToString(",") { src -> src.name }
             it[LAST_RESULT_AT] = result.completedAt
             it[LAST_RESULT_MANUAL] = result.manual
+            val note = result.housePriceNote
+            if (note != null) {
+                it[LAST_RESULT_HOUSE_STATUS] = note.status.name
+                note.latestMonth?.let { month -> it[LAST_RESULT_HOUSE_MONTH] = month }
+            } else {
+                it.remove(LAST_RESULT_HOUSE_STATUS)
+                it.remove(LAST_RESULT_HOUSE_MONTH)
+            }
         }
     }
 
@@ -124,6 +138,8 @@ class SyncStateStore @Inject constructor(
         val LAST_RESULT_FAILED = stringPreferencesKey("last_result_failed")
         val LAST_RESULT_AT = longPreferencesKey("last_result_at")
         val LAST_RESULT_MANUAL = booleanPreferencesKey("last_result_manual")
+        val LAST_RESULT_HOUSE_STATUS = stringPreferencesKey("last_result_house_status")
+        val LAST_RESULT_HOUSE_MONTH = stringPreferencesKey("last_result_house_month")
         val LAST_RESULT_SHOWN_AT = longPreferencesKey("last_result_shown_at")
     }
 }

@@ -320,6 +320,10 @@
     <string name="sync_src_crypto">區塊鏈</string>
     <string name="sync_src_fund">基金</string>
 
+    <!-- 房價指數同步狀態備註：在同步彈窗裡明示指數已更新至何月 / 已是最新 -->
+    <string name="sync_house_refreshed">房價指數已更新至 %1$s 月</string>
+    <string name="sync_house_skipped">房價指數已是最新（%1$s 月）</string>
+
     <!-- 備份 -->
     <string name="backup_now">立即備份</string>
     <string name="backup_restore">從檔案恢復</string>

@@ -306,6 +306,10 @@
     <string name="sync_src_crypto">Crypto</string>
     <string name="sync_src_fund">Funds</string>
 
+    <!-- House price index sync note: surface in the sync dialog whether the index was refreshed / already current -->
+    <string name="sync_house_refreshed">House price index updated through %1$s</string>
+    <string name="sync_house_skipped">House price index already current (%1$s)</string>
+
     <!-- Backup -->
     <string name="backup_now">Back up now</string>
     <string name="backup_restore">Restore from file</string>

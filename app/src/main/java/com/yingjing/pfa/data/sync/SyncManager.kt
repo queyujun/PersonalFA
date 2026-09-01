@@ -13,6 +13,8 @@ import com.yingjing.pfa.domain.alert.PriceChange
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.FxRates
 import com.yingjing.pfa.domain.model.HousePriceCities
+import com.yingjing.pfa.domain.model.HousePriceSyncNote
+import com.yingjing.pfa.domain.model.HousePriceSyncStatus
 import com.yingjing.pfa.domain.model.SyncResult
 import com.yingjing.pfa.domain.model.SyncSource
 import com.yingjing.pfa.domain.repository.AlertRepository
@@ -20,6 +22,7 @@ import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HoldingRepository
 import com.yingjing.pfa.domain.repository.HousePriceRepository
 import com.yingjing.pfa.domain.repository.HouseRefreshOutcome
+import com.yingjing.pfa.domain.repository.HouseRefreshResult
 import com.yingjing.pfa.domain.repository.QuoteRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
@@ -66,6 +69,7 @@ class SyncManager @Inject constructor(
      */
     suspend fun sync(manual: Boolean = false): SyncResult = runCatching {
         val failedSources = mutableListOf<SyncSource>()
+        var housePriceNote: HousePriceSyncNote? = null
 
         // 顶层并行抓取：各数据源互不阻塞，海外源超时只拖自己。
         coroutineScope {
@@ -115,8 +119,17 @@ class SyncManager @Inject constructor(
             if (cities.isNotEmpty()) {
                 val outcome = runCatching { housePriceRepository.refresh(cities) }
                     .onFailure { Log.w(TAG, "house price refresh failed", it) }
-                    .getOrDefault(HouseRefreshOutcome.FAILED)
-                if (outcome == HouseRefreshOutcome.FAILED) failedSources += SyncSource.HOUSE_PRICE
+                    .getOrDefault(HouseRefreshResult(HouseRefreshOutcome.FAILED, null))
+                if (outcome.outcome == HouseRefreshOutcome.FAILED) {
+                    failedSources += SyncSource.HOUSE_PRICE
+                } else if (outcome.latestMonth != null) {
+                    // REFRESHED（拉到新数据）或 SKIPPED（用缓存）：把状态与最新月份带给 UI。
+                    housePriceNote = HousePriceSyncNote(
+                        status = if (outcome.outcome == HouseRefreshOutcome.REFRESHED)
+                            HousePriceSyncStatus.REFRESHED else HousePriceSyncStatus.SKIPPED,
+                        latestMonth = outcome.latestMonth,
+                    )
+                }
             }
 
             users.forEach { user ->
@@ -175,6 +188,7 @@ class SyncManager @Inject constructor(
             failedSources = failedSources.distinct().sorted(),
             completedAt = completedAt,
             manual = manual,
+            housePriceNote = housePriceNote,
         )
         syncStateStore.setLastResult(result)
         result
