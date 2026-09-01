@@ -21,12 +21,10 @@ captures/
 .claude/settings.local.json
 
 # 根目录密钥文件（含 ANTHROPIC_AUTH_TOKEN，严禁入库）
-settings-ds.json
-settings-glm.json
-settings-xzprj.json
+settings-*.json
 
 # 临时预览/设计转储产物
-settings-redesign-preview.html
+*-preview.html
 
 # 备份/密钥（运行期生成）
 *.bin

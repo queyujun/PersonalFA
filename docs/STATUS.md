@@ -1,9 +1,9 @@
-# 盈景私助 · 进度与续接说明（STATUS）
+# 盈睿伴 · 进度与续接说明（STATUS）
 
 > 给「下一次会话」看的交接文档。所有代码已提交进 git `main`；此文件随代码版本化。
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + **多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取** 全部完成并合并入 `main`，**252 个单元测试全绿**，最新 debug APK 已产出。**最新两批改动已本地提交、未推送**（见 git 节）。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + **多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证)** 全部完成并合并入 `main`，**316 个单元测试全绿**，最新 debug APK 已产出（根目录 `RICHWIN-应用锁-20260901.apk`）。**四批改动已本地提交、未推送**（见 git 节），待用户确认后自行 `git push`。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库内 portable 工具链）
 ```bash
@@ -40,6 +40,8 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - **资产类型扩展**：新增 `PHYSICAL_GOLD`（实物金，新浪 `hf_XAU` 现货价按盎司/克换算）、`MISC`（其他，带 `note` 备注）、`OTC_FUND`（场外基金，带子分类）。`Holding`/`HoldingEntity`/`AppDatabase`(v9→11) 同步加字段，备份导入导出贯通。✅
 - **场外基金净值在线抓取**：新增 `FundQuoteRemote` + 东方财富 `fundgz` JSONP 实现（`FundNavParser`：`gsz`/`dwjz` 字符串接收、`toDoubleOrNull` 容错，优先估算净值回退官方净值）。`QuoteRepositoryImpl` 仅对 `autoFetchNav=true` 的「中国大陆」持仓在线抓取净值写回；「其他」子分类保持手录。表单提供「中国大陆/其他」筛选标签（切换时清空手录净值）；统计页两类合并显示，仅详情页区分。✅
 - **历史快照清理 + 备份汇率**：`SnapshotRepository.deleteBefore` + DAO `deleteOlderThan` 支持清理旧快照；`FxRepository.save` + 备份导出/导入汇率；`UserRepository.observeUser` 用于恢复后币种符号刷新。✅
+- **加密主备容灾**：CoinGecko `/simple/price` 为加密货币主数据源，新增 OKX 备路（`OkxRemote` + `OkxParser` + `OkxCoinMap`），CoinGecko 失败/空时自动回退到 OKX `/api/v5/market/index-tickers`，`FallbackCryptoRemote` 串联两源取首个有效结果。✅
+- **应用锁（切回重新认证）**：应用从后台切回前台（`ProcessLifecycleOwner` 的 ON_STOP）或冷启动时，在当前页之上盖一层锁定遮罩，需密码或指纹解锁后回到之前正在看的页面，不丢失浏览位置与导航状态（类似银行/支付宝）。新增 `AppLockManager`（`@Singleton`，进程级 `isLocked` 真相源）、`AppLockViewModel`（密码解锁复用 `UserRepository.login` PBKDF2 校验，指纹解锁调 `unlockByBiometric`）、`LockScreen` Composable。设置页「账号与安全」分组加「应用锁」开关（`SyncStateStore.appLockEnabled`，默认启用）；关闭后切回不锁。新增 `lifecycle-process` 依赖 + `@ApplicationScope` CoroutineScope（`AppCoroutineModule`）。冷启动无闪烁：`isLocked` 初始 true，`AppRoot` 的 `sessionState` 初始 Loading 显示空 `Box`。✅
 
 ## 数据源关键事实（详见 design/data-sources.md）
 - 新浪行情 `hq.sinajs.cn`：需 `Referer: https://finance.sina.com.cn` + **GBK 解码**；现价字段位：A股/ETF 第3、港股第6、美股第1；汇率第8。
@@ -55,6 +57,7 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - 净值走势「自定义组合」：选中 CUSTOM 但未勾任何类别时，该序列全 null（时间轴靠 totals 提供），图上不显示线——属正常空态。
 - **多语言**：默认 `values/strings.xml` 为英文回退，未设 locale 的设备显示英文；中文落在 `values-zh-rCN`/`values-zh-rHK`。旧 OTC 持仓无 `autoFetchNav` 字段→视为手录，需手动补标为「中国大陆」才走在线抓取。
 - **场外基金净值端点**：东方财富 `https://fundgz.1234567.com.cn/js/{code}.js` 的 `gsz`/`dwjz` 字段语义、https 可达性须在设备上联网验证；项目未配 `network_security_config.xml`，已统一用 https 适配默认禁明文。
+- **应用锁**：每次从后台切回都锁（不区分停留时长，最高安全性）。锁定遮罩仅出现在 `LoggedIn` 态；未登录/冷启动无 `current_user_id` 时 `AppRoot` 走 `LoggedOut`→`AuthScreen`，遮罩 collector 把 `isLocked` 重置为 false。指纹解锁不重新校验密码——设备指纹=已登录身份凭证。关闭「应用锁」开关后，切回不锁、冷启动也不锁。
 
 ## 待办（可选，用户未定优先级）
 1. ~~房产按国家统计局 70 城房价指数自动估算涨跌~~ ✅ 已完成。
@@ -65,7 +68,11 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 ## git
 - 分支 `main` 含全部；特性分支按 `feature/*` 开发后 `--no-ff` 合并。
 - 提交信息用中文 `<type>: <desc>`，**不加署名尾注**（用户全局禁用 attribution）。
-- **最新两批改动已本地提交、未推送**（截至 2026-08-30）：
-  - `2f07be6` chore: gitignore 忽略根目录密钥文件与临时预览产物
-  - `a9ea8a3` feat: 多语言国际化 + 设置页拆分 + 资产类型扩展与场外基金净值在线抓取
-  - 用户未明确要求推送，下一次会话需确认是否 `git push`。
+- **本次四批改动已本地提交、未推送**（截至 2026-09-01，主分支 `main`）：
+  - `5c0d87d` feat: 应用锁 — 切回应用需重新认证（密码/指纹）
+  - `0c98e05` refactor: 资产分类配色调整为浅色调九色色相错开
+  - `403995d` feat: 房价指数同步反馈明示 — 同步弹窗展示「已更新至 X 月 / 已是最新」
+  - `645eddd` feat: 加密货币主备容灾 — CoinGecko 主路失败自动回退 OKX 备路
+  - 更早：`4336816`（4 套高端配色+改名 RICHWIN）/ `ffb84bb`（三主题配色）
+  - `.gitignore` 已收紧为 `settings-*.json` / `*-preview.html` 通配，覆盖所有根目录密钥文件与预览产物（均未入库）。
+- **用户未推送**：本次提交链均未 `git push`，下一次会话需确认是否推送（用户自行 push，不替用户推送）。
