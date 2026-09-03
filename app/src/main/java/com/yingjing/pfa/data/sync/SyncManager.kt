@@ -25,9 +25,11 @@ import com.yingjing.pfa.domain.repository.HouseRefreshOutcome
 import com.yingjing.pfa.domain.repository.HouseRefreshResult
 import com.yingjing.pfa.domain.repository.QuoteRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
+import com.yingjing.pfa.domain.repository.SubscriptionRepository
 import com.yingjing.pfa.domain.repository.UserRepository
 import com.yingjing.pfa.domain.usecase.LiabilityRepayment
 import com.yingjing.pfa.domain.usecase.RealEstateEstimator
+import com.yingjing.pfa.domain.usecase.SubscriptionRenewal
 import com.yingjing.pfa.domain.usecase.SummarizePortfolio
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -55,6 +57,7 @@ class SyncManager @Inject constructor(
     private val marketIndexRemote: MarketIndexRemote,
     private val ipoRemote: IpoRemote,
     private val snapshotRepository: SnapshotRepository,
+    private val subscriptionRepository: SubscriptionRepository,
     private val alertRepository: AlertRepository,
     private val alertNotifier: AlertNotifier,
     private val syncStateStore: SyncStateStore,
@@ -172,7 +175,8 @@ class SyncManager @Inject constructor(
                     AlertRules.priceMoves(priceChanges, now, stringResolver) +
                     AlertRules.marketMoves(user.id, indexChanges, MarketIndexes.displayNames(stringResolver), now, stringResolver) +
                     AlertRules.globalMoves(user.id, globalChanges, GlobalIndicators.displayNames(stringResolver), now, stringResolver) +
-                    AlertRules.ipoAlerts(user.id, ipos, todayDate, now, stringResolver)
+                    AlertRules.ipoAlerts(user.id, ipos, todayDate, now, stringResolver) +
+                    subscriptionAlerts(user.id, now)
                 alerts.forEach { alert ->
                     if (alertRepository.insertIfNew(alert)) alertNotifier.notify(alert)
                 }
@@ -258,6 +262,22 @@ class SyncManager @Inject constructor(
         holdingRepository.updateHolding(next)
         return next
     }
+
+    /**
+     * 订阅提醒：先顺延已过期的续费日（错过多次一次补齐），再生成提前提醒。
+     * 单独封装以便订阅侧失败不拖垮整次同步（保留其余提醒）。
+     */
+    private suspend fun subscriptionAlerts(userId: Long, now: Long) =
+        runCatching {
+            val subs = subscriptionRepository.getSubscriptionsSnapshot(userId)
+            subs.forEach { sub ->
+                SubscriptionRenewal.advance(sub, now)?.let { subscriptionRepository.updateSubscription(it) }
+            }
+            AlertRules.subscriptionRenewals(subs, now, stringResolver)
+        }.getOrElse {
+            Log.w(TAG, "subscription alerts failed", it)
+            emptyList()
+        }
 
     /** 便于测试覆盖的时间源。 */
     var nowProvider: () -> Long = { System.currentTimeMillis() }

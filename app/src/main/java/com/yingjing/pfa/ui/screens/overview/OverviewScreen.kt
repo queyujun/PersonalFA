@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,10 +52,15 @@ import com.yingjing.pfa.ui.theme.Cat7
 import com.yingjing.pfa.ui.theme.Cat8
 import com.yingjing.pfa.ui.theme.Cat9
 import com.yingjing.pfa.ui.theme.LocalBrandColors
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Insights
+import androidx.compose.material.icons.outlined.Psychology
 
 @Composable
 fun OverviewScreen(
     onOpenTrend: () -> Unit = {},
+    onOpenAiReport: () -> Unit = {},
+    onOpenAiInsight: () -> Unit = {},
     viewModel: OverviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -74,6 +83,31 @@ fun OverviewScreen(
 
         Spacer(Modifier.height(12.dp))
         TrendCard(state, onOpenTrend)
+
+        // AI 助手双入口：报告（可导出长文）+ 持仓分析（聚焦问题与建议）。空持仓时禁用。
+        // IntrinsicSize.Min + fillMaxHeight：两卡高度取较高者，文案换行也不会高低不齐。
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AiEntryCard(
+                title = stringResource(R.string.ai_report_title),
+                subtitle = stringResource(R.string.ai_report_entry_subtitle),
+                icon = Icons.Outlined.Psychology,
+                enabled = state.hasHoldings,
+                onClick = onOpenAiReport,
+                modifier = Modifier.weight(1f),
+            )
+            AiEntryCard(
+                title = stringResource(R.string.ai_insight_title),
+                subtitle = stringResource(R.string.ai_insight_entry_subtitle),
+                icon = Icons.Outlined.Insights,
+                enabled = state.hasHoldings,
+                onClick = onOpenAiInsight,
+                modifier = Modifier.weight(1f),
+            )
+        }
 
         if (summary != null) {
             val slices = summary.byCategory
@@ -217,6 +251,52 @@ private fun TrendCard(state: OverviewUiState, onOpenTrend: () -> Unit) {
             } else {
                 Text(
                     stringResource(R.string.trend_accumulating_short),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * AI 功能入口卡：左图标 + 标题/副标题，样式对齐 TrendCard（同圆角 Card + 16dp 内边距）。
+ * [enabled] 为 false 时整卡置灰不可点（空持仓场景）。
+ */
+@Composable
+private fun AiEntryCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier
+            .fillMaxHeight()
+            .then(if (enabled) Modifier.clickable { onClick() } else Modifier),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (enabled) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (enabled) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                )
+                Text(
+                    if (enabled) subtitle else stringResource(R.string.ai_empty_holdings_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

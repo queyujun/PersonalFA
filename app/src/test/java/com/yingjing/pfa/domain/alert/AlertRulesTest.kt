@@ -174,4 +174,90 @@ class AlertRulesTest {
         // body 第 2 参为方向串；FakeStringResolver 用空格连参，下跌方向键应落入 body。
         assertTrue(alerts[0].body.contains("res${com.yingjing.pfa.R.string.alert_price_down}"))
     }
+
+    // ---- 订阅临近续费 ----
+
+    private fun subscription(
+        id: Long,
+        renewalMs: Long,
+        reminderDaysBefore: Int = 3,
+        active: Boolean = true,
+    ) = com.yingjing.pfa.domain.model.Subscription(
+        id = id, userId = 1, name = "视频会员",
+        category = com.yingjing.pfa.domain.model.SubscriptionCategory.VIDEO,
+        currency = Currency.CNY, amount = 30.0,
+        cycle = com.yingjing.pfa.domain.model.BillingCycle.MONTHLY,
+        firstBillEpochMs = renewalMs, nextRenewalEpochMs = renewalMs,
+        reminderDaysBefore = reminderDaysBefore, active = active,
+    )
+
+    @Test
+    fun subscriptionRenewal_withinWindow_info() {
+        // 提前 7 天窗口、剩 5 天（>3）→ INFO。
+        val alerts = AlertRules.subscriptionRenewals(
+            listOf(subscription(1, renewalMs = now + 5 * day, reminderDaysBefore = 7)), now, resolver,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(com.yingjing.pfa.domain.model.AlertSeverity.INFO, alerts[0].severity)
+        // 参数（名称/金额/天数）应落入 body
+        assertTrue(alerts[0].body.contains("视频会员"))
+        assertTrue(alerts[0].body.contains("5"))
+    }
+
+    @Test
+    fun subscriptionRenewal_within3Days_warning() {
+        val alerts = AlertRules.subscriptionRenewals(
+            listOf(subscription(1, renewalMs = now + 3 * day)), now, resolver,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(com.yingjing.pfa.domain.model.AlertSeverity.WARNING, alerts[0].severity)
+    }
+
+    @Test
+    fun subscriptionRenewal_renewalToday_zeroDaysLeft_warning() {
+        val alerts = AlertRules.subscriptionRenewals(
+            listOf(subscription(1, renewalMs = now)), now, resolver,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(com.yingjing.pfa.domain.model.AlertSeverity.WARNING, alerts[0].severity)
+    }
+
+    @Test
+    fun subscriptionRenewal_beyondWindow_noAlert() {
+        // 剩 8 天 > 7 天窗口
+        assertTrue(AlertRules.subscriptionRenewals(
+            listOf(subscription(1, renewalMs = now + 8 * day, reminderDaysBefore = 7)), now, resolver,
+        ).isEmpty())
+    }
+
+    @Test
+    fun subscriptionRenewal_pastRenewal_noAlert() {
+        // 已过续费日（等同步顺延后重新计窗）→ 不产提醒
+        assertTrue(AlertRules.subscriptionRenewals(
+            listOf(subscription(1, renewalMs = now - day)), now, resolver,
+        ).isEmpty())
+    }
+
+    @Test
+    fun subscriptionRenewal_reminderOff_orInactive_noAlert() {
+        assertTrue(AlertRules.subscriptionRenewals(
+            listOf(
+                subscription(1, renewalMs = now + day, reminderDaysBefore = 0),
+                subscription(2, renewalMs = now + day, active = false),
+            ),
+            now, resolver,
+        ).isEmpty())
+    }
+
+    @Test
+    fun subscriptionRenewal_dedupKeyPerSubscriptionAndDay() {
+        val alerts = AlertRules.subscriptionRenewals(
+            listOf(subscription(3, renewalMs = now + 2 * day)), now, resolver,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(
+            "sub_renewal_3_${(now + 2 * day) / day}",
+            alerts[0].dedupKey,
+        )
+    }
 }

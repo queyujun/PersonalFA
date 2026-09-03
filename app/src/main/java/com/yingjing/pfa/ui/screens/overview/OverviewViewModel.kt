@@ -40,6 +40,8 @@ data class OverviewUiState(
     val summary: PortfolioSummary? = null,
     val trend: List<Double> = emptyList(),
     val stackedTrend: OverviewStackedTrend = OverviewStackedTrend(),
+    /** 是否已有持仓：AI 报告/分析入口在空持仓时禁用（AI 需要数据才有意义）。 */
+    val hasHoldings: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -69,6 +71,7 @@ class OverviewViewModel @Inject constructor(
                         summary = SummarizePortfolio(holdings, rates, currency, System.currentTimeMillis()),
                         trend = snapshots.map { it.netWorth },
                         stackedTrend = buildStackedTrend(snapshots.map { it.epochDay }, categoryPoints),
+                        hasHoldings = holdings.isNotEmpty(),
                     )
                 }
             }

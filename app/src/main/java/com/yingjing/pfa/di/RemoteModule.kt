@@ -2,6 +2,8 @@ package com.yingjing.pfa.di
 
 import com.yingjing.pfa.data.remote.CommodityRemote
 import com.yingjing.pfa.data.remote.CryptoQuoteRemote
+import com.yingjing.pfa.data.ai.AiRemote
+import com.yingjing.pfa.data.ai.OpenAiCompatRemote
 import com.yingjing.pfa.data.remote.EastmoneyFundNavRemote
 import com.yingjing.pfa.data.remote.EastmoneyHousePriceRemote
 import com.yingjing.pfa.data.remote.EastmoneyIpoRemote
@@ -56,4 +58,8 @@ abstract class RemoteModule {
     @Binds
     @Singleton
     abstract fun bindFundQuoteRemote(impl: EastmoneyFundNavRemote): FundQuoteRemote
+
+    @Binds
+    @Singleton
+    abstract fun bindAiRemote(impl: OpenAiCompatRemote): AiRemote
 }

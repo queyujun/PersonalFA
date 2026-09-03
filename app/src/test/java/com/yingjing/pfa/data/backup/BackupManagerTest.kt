@@ -36,7 +36,7 @@ class BackupManagerTest {
         fx = FakeFxRepo()
         manager = BackupManager(
             db.userDao(), db.holdingDao(), db.netWorthSnapshotDao(),
-            db.categorySnapshotDao(), db.alertDao(), fx,
+            db.categorySnapshotDao(), db.alertDao(), db.subscriptionDao(), fx,
         )
     }
 
@@ -108,6 +108,59 @@ class BackupManagerTest {
         )
         assertTrue(manager.import(blob, "pw123".toCharArray()))
         assertNull(fx.savedRates) // 未写汇率
+    }
+
+    @Test
+    fun export_thenImport_subscriptionsRoundTrip() = runTest {
+        db.userDao().insert(UserEntity(id = 1, username = "alex", passwordHash = "h", defaultCurrency = "CNY", createdAt = 1))
+        db.subscriptionDao().insertAll(
+            listOf(
+                com.yingjing.pfa.data.local.SubscriptionEntity(
+                    id = 5, userId = 1, name = "视频会员", category = "VIDEO", note = null,
+                    currency = "CNY", amount = 30.0, cycle = "MONTHLY",
+                    firstBillEpochMs = 1_700_000_000_000L, nextRenewalEpochMs = 1_700_100_000_000L,
+                    reminderDaysBefore = 3, paymentMethod = "支付宝", active = true,
+                    createdAt = 1L, updatedAt = 1L,
+                ),
+                com.yingjing.pfa.data.local.SubscriptionEntity(
+                    id = 6, userId = 1, name = "云存储", category = "CLOUD", note = "家庭版",
+                    currency = "USD", amount = 9.9, cycle = "YEARLY",
+                    firstBillEpochMs = 1_700_200_000_000L, nextRenewalEpochMs = 1_700_300_000_000L,
+                    reminderDaysBefore = 7, paymentMethod = null, active = false,
+                    createdAt = 2L, updatedAt = 2L,
+                ),
+            ),
+        )
+
+        val blob = manager.export("pw123".toCharArray())
+        db.subscriptionDao().deleteAll()
+        assertEquals(0, db.subscriptionDao().getByUser(1).size)
+
+        assertTrue(manager.import(blob, "pw123".toCharArray()))
+        val restored = db.subscriptionDao().getByUser(1)
+        assertEquals(2, restored.size)
+        val video = restored.first { it.id == 5L }
+        assertEquals("视频会员", video.name)
+        assertEquals("MONTHLY", video.cycle)
+        assertEquals(1_700_100_000_000L, video.nextRenewalEpochMs)
+        assertEquals("支付宝", video.paymentMethod)
+        val cloud = restored.first { it.id == 6L }
+        assertEquals("USD", cloud.currency)
+        assertFalse(cloud.active) // 停用状态一并保留
+        assertEquals("家庭版", cloud.note)
+    }
+
+    @Test
+    fun import_legacyBackupWithoutSubscriptions_restoresEmpty() = runTest {
+        // 老备份（无 subscriptions 字段）导入后订阅表为空 → 向后兼容不崩溃。
+        val legacyJson = """
+            {"version":1,"users":[],"holdings":[],"snapshots":[],"categorySnapshots":[],"alerts":[]}
+        """.trimIndent()
+        val blob = com.yingjing.pfa.core.backup.BackupCrypto.encrypt(
+            legacyJson.toByteArray(Charsets.UTF_8), "pw123".toCharArray(),
+        )
+        assertTrue(manager.import(blob, "pw123".toCharArray()))
+        assertEquals(0, db.subscriptionDao().getAllForBackup().size)
     }
 
     /** 内存 fake FxRepository：current 返回预设值，save 记录之。 */

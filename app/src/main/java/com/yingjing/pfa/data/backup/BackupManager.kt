@@ -9,6 +9,8 @@ import com.yingjing.pfa.data.local.HoldingDao
 import com.yingjing.pfa.data.local.HoldingEntity
 import com.yingjing.pfa.data.local.NetWorthSnapshotDao
 import com.yingjing.pfa.data.local.NetWorthSnapshotEntity
+import com.yingjing.pfa.data.local.SubscriptionDao
+import com.yingjing.pfa.data.local.SubscriptionEntity
 import com.yingjing.pfa.data.local.UserDao
 import com.yingjing.pfa.data.local.UserEntity
 import com.yingjing.pfa.domain.model.FxRates
@@ -26,6 +28,7 @@ class BackupManager @Inject constructor(
     private val snapshotDao: NetWorthSnapshotDao,
     private val categorySnapshotDao: CategorySnapshotDao,
     private val alertDao: AlertDao,
+    private val subscriptionDao: SubscriptionDao,
     private val fxRepository: FxRepository,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
@@ -38,6 +41,7 @@ class BackupManager @Inject constructor(
             snapshots = snapshotDao.getAllForBackup().map { it.toBackup() },
             categorySnapshots = categorySnapshotDao.getAllForBackup().map { it.toBackup() },
             alerts = alertDao.getAllForBackup().map { it.toBackup() },
+            subscriptions = subscriptionDao.getAllForBackup().map { it.toBackup() },
             fxRates = fxRepository.current().toBackup(),
         )
         return BackupCrypto.encrypt(json.encodeToString(data).toByteArray(Charsets.UTF_8), passphrase)
@@ -53,6 +57,7 @@ class BackupManager @Inject constructor(
         categorySnapshotDao.deleteAll()
         snapshotDao.deleteAll()
         holdingDao.deleteAll()
+        subscriptionDao.deleteAll()
         userDao.deleteAll()
 
         userDao.insertAll(data.users.map { it.toEntity() })
@@ -60,6 +65,7 @@ class BackupManager @Inject constructor(
         snapshotDao.insertAll(data.snapshots.map { it.toEntity() })
         categorySnapshotDao.insertAll(data.categorySnapshots.map { it.toEntity() })
         alertDao.insertAll(data.alerts.map { it.toEntity() })
+        subscriptionDao.insertAll(data.subscriptions.map { it.toEntity() })
         // 汇率写回本地缓存（老备份无此字段 → null → 不写回，靠后台刷新补救）。
         data.fxRates?.let { fxRepository.save(it.toDomain()) }
         return true
@@ -103,6 +109,16 @@ private fun AlertEntity.toBackup() =
 
 private fun BackupAlert.toEntity() =
     AlertEntity(id, userId, category, severity, title, body, refHoldingId, dedupKey, createdAt, read)
+
+private fun SubscriptionEntity.toBackup() = BackupSubscription(
+    id, userId, name, category, note, currency, amount, cycle,
+    firstBillEpochMs, nextRenewalEpochMs, reminderDaysBefore, paymentMethod, active, createdAt, updatedAt,
+)
+
+private fun BackupSubscription.toEntity() = SubscriptionEntity(
+    id, userId, name, category, note, currency, amount, cycle,
+    firstBill, nextRenewal, reminderDaysBefore, paymentMethod, active, createdAt, updatedAt,
+)
 
 private fun FxRates.toBackup() = BackupFxRates(usdToCny = usdToCny, hkdToCny = hkdToCny)
 

@@ -15,6 +15,8 @@ import com.yingjing.pfa.core.security.BiometricAuthenticator
 import com.yingjing.pfa.data.sync.SyncStateStore
 import com.yingjing.pfa.core.i18n.AppLanguage
 import com.yingjing.pfa.PersonalFaApp
+import com.yingjing.pfa.data.ai.AiSettings
+import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.sync.ThemeStore
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.User
@@ -49,6 +51,7 @@ data class SettingsUiState(
     val autoBackupFileExists: Boolean = false,
     val currentLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
     val currentTheme: AppTheme = AppTheme.VIOLET,
+    val aiSettings: AiSettings? = null,
     val statusMessage: String? = null,
     val purgeMessage: String? = null,
 )
@@ -67,6 +70,7 @@ class SettingsViewModel @Inject constructor(
     private val fxRepository: FxRepository,
     private val languageStore: LanguageStore,
     private val themeStore: ThemeStore,
+    private val aiSettingsStore: AiSettingsStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -110,6 +114,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             themeStore.themeId.collect { id ->
                 _uiState.update { it.copy(currentTheme = AppTheme.fromId(id)) }
+            }
+        }
+        // AI 配置摘要（设置页第 9 组副标题）；onOpenAi 后由独立 AiSettingsViewModel 编辑。
+        viewModelScope.launch {
+            aiSettingsStore.settings.collect { ai ->
+                _uiState.update { it.copy(aiSettings = ai) }
             }
         }
     }

@@ -10,6 +10,7 @@ import com.yingjing.pfa.data.local.CategorySnapshotDao
 import com.yingjing.pfa.data.local.HoldingDao
 import com.yingjing.pfa.data.local.HousePriceDao
 import com.yingjing.pfa.data.local.NetWorthSnapshotDao
+import com.yingjing.pfa.data.local.SubscriptionDao
 import com.yingjing.pfa.data.local.UserDao
 import dagger.Module
 import dagger.Provides
@@ -60,4 +61,7 @@ object DatabaseModule {
 
     @Provides
     fun provideHousePriceDao(database: AppDatabase): HousePriceDao = database.housePriceDao()
+
+    @Provides
+    fun provideSubscriptionDao(database: AppDatabase): SubscriptionDao = database.subscriptionDao()
 }

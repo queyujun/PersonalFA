@@ -12,6 +12,7 @@
     <!-- Navigation -->
     <string name="nav_overview">Overview</string>
     <string name="nav_portfolio">Portfolio</string>
+    <string name="nav_subscriptions">Subscriptions</string>
     <string name="nav_alerts">Alerts</string>
     <string name="nav_settings">Settings</string>
 
@@ -170,6 +171,56 @@
     <string name="alert_ipo_body">New IPOs today: %1$s. Don\'t forget to apply.</string>
     <string name="alert_ipo_item">%1$s (code %2$s)</string>
     <string name="alert_ipo_sep">", "</string>
+    <string name="alert_cat_subscription">Subscription</string>
+    <string name="alert_sub_title">Subscription renewing soon</string>
+    <string name="alert_sub_body">\"%1$s\" renews in %3$d days (%2$s per cycle).</string>
+
+    <!-- Subscriptions -->
+    <string name="sub_cat_video">Video &amp; Streaming</string>
+    <string name="sub_cat_music">Music</string>
+    <string name="sub_cat_ai">AI Services</string>
+    <string name="sub_cat_cloud">Cloud Storage</string>
+    <string name="sub_cat_software">Software &amp; Tools</string>
+    <string name="sub_cat_shopping">Shopping Membership</string>
+    <string name="sub_cat_news">News &amp; Reading</string>
+    <string name="sub_cat_game">Gaming</string>
+    <string name="sub_cat_fitness">Fitness</string>
+    <string name="sub_cat_other">Other</string>
+    <string name="sub_cycle_weekly">Weekly</string>
+    <string name="sub_cycle_monthly">Monthly</string>
+    <string name="sub_cycle_quarterly">Quarterly</string>
+    <string name="sub_cycle_yearly">Yearly</string>
+    <string name="sub_page_title">Subscriptions</string>
+    <string name="sub_filter_all">All</string>
+    <string name="sub_filter_active">Active</string>
+    <string name="sub_filter_inactive">Inactive</string>
+    <string name="sub_empty">No subscriptions yet. Tap + to add one.</string>
+    <string name="sub_summary_monthly">Monthly average</string>
+    <string name="sub_summary_yearly">Per year</string>
+    <string name="sub_upcoming_title">Upcoming renewals</string>
+    <string name="sub_list_title_all">All subscriptions</string>
+    <string name="sub_list_title_active">Active subscriptions</string>
+    <string name="sub_list_title_inactive">Inactive subscriptions</string>
+    <string name="sub_renewal_date">Renews %1$s</string>
+    <string name="sub_per_month">mo</string>
+    <string name="sub_per_year">yr</string>
+    <string name="sub_form_title_add">Add Subscription</string>
+    <string name="sub_form_title_edit">Edit Subscription</string>
+    <string name="sub_label_category">Category</string>
+    <string name="sub_label_amount">Amount per cycle</string>
+    <string name="sub_label_cycle">Billing cycle</string>
+    <string name="sub_label_first_bill">First bill date (yyyy-MM-dd)</string>
+    <string name="sub_label_reminder">Reminder</string>
+    <string name="sub_reminder_off">Off</string>
+    <string name="sub_reminder_days">%1$d days before</string>
+    <string name="sub_label_payment_method">Payment method (optional)</string>
+    <string name="sub_label_active">Active</string>
+    <string name="sub_delete">Delete subscription</string>
+    <string name="sub_form_date_hint">Renewal date advances automatically from the first bill date.</string>
+    <string name="sub_err_name_required">Enter a name</string>
+    <string name="sub_err_amount_invalid">Amount must be greater than 0</string>
+    <string name="sub_err_date_invalid">Date must be yyyy-MM-dd</string>
+    <string name="cd_add_subscription">Add subscription</string>
 
     <!-- Errors -->
     <string name="err_username_empty">Enter username</string>
@@ -253,6 +304,11 @@
     <string name="theme_green">Green</string>
     <string name="theme_orange">Amber</string>
     <string name="status_theme_updated">✓ Theme switched</string>
+
+    <!-- About -->
+    <string name="settings_group_about">About</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_about_build_time">Build time</string>
 
     <!-- Profile -->
     <string name="profile_nickname">Nickname</string>
@@ -437,6 +493,77 @@
     <string name="lock_password_label">Password</string>
     <string name="lock_unlock">Unlock</string>
     <string name="lock_wrong_password">Wrong password, try again</string>
+
+    <!-- AI Assistant -->
+    <string name="settings_group_ai">AI Assistant</string>
+    <string name="settings_ai_subtitle_configured">Configured · %1$s</string>
+    <string name="settings_ai_subtitle_not_configured">Not configured</string>
+    <string name="ai_settings_title">AI Assistant Settings</string>
+    <string name="ai_provider">Provider</string>
+    <string name="ai_provider_deepseek">DeepSeek</string>
+    <string name="ai_provider_openai">OpenAI</string>
+    <string name="ai_provider_kimi">Kimi</string>
+    <string name="ai_provider_qwen">Qwen</string>
+    <string name="ai_provider_hunyuan">Tencent Hunyuan</string>
+    <string name="ai_provider_doubao">Doubao</string>
+    <string name="ai_provider_custom">Custom</string>
+    <string name="ai_base_url">Base URL</string>
+    <string name="ai_base_url_hint">https://api.deepseek.com/v1</string>
+    <string name="ai_model">Model name</string>
+    <string name="ai_model_hint">deepseek-chat</string>
+    <string name="ai_api_key">API Key</string>
+    <string name="ai_api_key_hint">sk-…</string>
+    <string name="ai_api_key_configured_mask">Saved · ends with %1$s</string>
+    <string name="ai_api_key_show">Show</string>
+    <string name="ai_api_key_hide">Hide</string>
+    <string name="ai_api_key_clear">Clear saved key</string>
+    <string name="ai_include_details">Include holdings detail</string>
+    <string name="ai_include_details_subtitle">Off = only category summary is sent, less data shared</string>
+    <string name="ai_privacy_note">Only asset names, amounts and categories are sent to your configured provider. Notes, identity and timestamps never leave the device.</string>
+    <string name="ai_save_config">Save Configuration</string>
+    <string name="ai_test_connection">Test Connection</string>
+    <string name="ai_test_connection_testing">Testing…</string>
+    <string name="ai_test_ok">✓ Connection OK (%1$s)</string>
+    <string name="ai_base_url_must_be_https">Base URL must start with https://</string>
+    <string name="ai_key_cleared">API key cleared</string>
+    <string name="ai_config_saved">✓ Configuration saved</string>
+    <string name="ai_err_not_configured">Please complete Base URL and model in Settings first</string>
+    <string name="ai_err_no_key">Please enter your API Key in Settings first</string>
+    <string name="ai_err_no_user">Please log in first</string>
+    <string name="ai_err_network">Network error. Check connection and Base URL</string>
+    <string name="ai_err_timeout">Request timed out. Try again later</string>
+    <string name="ai_err_unauthorized">API key invalid or expired. Update it in Settings</string>
+    <string name="ai_err_rate_limited">Provider rate limit reached. Try again later</string>
+    <string name="ai_err_server">Provider server error. Try again later</string>
+    <string name="ai_err_bad_request">Request rejected: %1$s</string>
+    <string name="ai_err_bad_request_generic">Request rejected by provider. Check model name and Base URL</string>
+    <string name="ai_err_empty_response">Provider returned an empty response</string>
+    <string name="ai_report_title">AI Asset Report</string>
+    <string name="ai_report_entry_subtitle">Professional template · exportable</string>
+    <string name="ai_insight_title">AI Portfolio Insight</string>
+    <string name="ai_insight_entry_subtitle">Holding analysis &amp; suggestions</string>
+    <string name="ai_report_intro">Generate a professional asset report from your current holdings. Content is AI-generated and for reference only.</string>
+    <string name="ai_report_generate">Generate Report</string>
+    <string name="ai_report_regenerate">Regenerate</string>
+    <string name="ai_report_export">Export Markdown</string>
+    <string name="ai_report_exported">✓ Report exported</string>
+    <string name="ai_report_export_failed">Export failed: %1$s</string>
+    <string name="ai_insight_intro">Get an assessment of your current allocation with actionable suggestions. You can focus on a holding or category below.</string>
+    <string name="ai_insight_generate">Analyze Portfolio</string>
+    <string name="ai_insight_question_label">Focus (optional)</string>
+    <string name="ai_insight_question_hint">e.g. A certain holding / asset allocation</string>
+    <string name="ai_privacy_dialog_title">Before you continue</string>
+    <string name="ai_privacy_dialog_body">To use AI features, your asset names, amounts and categories will be sent to the AI provider you configured. Notes, identity and timestamps never leave this device.</string>
+    <string name="ai_privacy_dialog_agree">Agree &amp; Continue</string>
+    <string name="ai_cancel_generation">Cancel</string>
+    <string name="ai_generating">AI is analyzing…</string>
+    <string name="ai_generation_cancelled">Generation cancelled</string>
+    <string name="ai_unconfigured_hint">AI is not configured yet</string>
+    <string name="ai_go_settings">Go to Settings</string>
+    <string name="ai_retry">Retry</string>
+    <string name="ai_generated_at">Generated %1$s · %2$s</string>
+    <string name="ai_empty_holdings_hint">Add assets first to use AI features</string>
+    <string name="ai_disclaimer">AI-generated content is for reference only and does not constitute investment advice.</string>
 
     <!-- Placeholder -->
     <string name="placeholder_subtitle">P0 scaffold placeholder</string>

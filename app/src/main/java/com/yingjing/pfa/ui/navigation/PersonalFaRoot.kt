@@ -3,6 +3,7 @@ package com.yingjing.pfa.ui.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -34,7 +35,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,17 +53,22 @@ import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.HousePriceSyncStatus
 import com.yingjing.pfa.domain.model.SyncSource
 import com.yingjing.pfa.ui.screens.alerts.AlertsScreen
+import com.yingjing.pfa.ui.screens.ai.AiInsightScreen
+import com.yingjing.pfa.ui.screens.ai.AiReportScreen
 import com.yingjing.pfa.ui.screens.overview.OverviewScreen
 import com.yingjing.pfa.ui.screens.overview.TrendDetailScreen
 import com.yingjing.pfa.ui.screens.portfolio.AddTypePickerScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingDetailScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingFormScreen
 import com.yingjing.pfa.ui.screens.portfolio.PortfolioScreen
+import com.yingjing.pfa.ui.screens.settings.AiSettingsScreen
 import com.yingjing.pfa.ui.screens.settings.SettingsScreen
 import com.yingjing.pfa.ui.screens.settings.SettingsViewModel
 import com.yingjing.pfa.ui.screens.settings.ProfileEditScreen
 import com.yingjing.pfa.ui.screens.settings.SyncDetailScreen
 import com.yingjing.pfa.ui.screens.settings.BackupDetailScreen
+import com.yingjing.pfa.ui.screens.subscription.SubscriptionFormScreen
+import com.yingjing.pfa.ui.screens.subscription.SubscriptionScreen
 import kotlinx.coroutines.launch
 
 private const val ROUTE_ADD_TYPE = "add_type"
@@ -70,6 +78,10 @@ private const val ROUTE_TREND = "trend_detail"
 private const val ROUTE_PROFILE_EDIT = "settings_profile"
 private const val ROUTE_SYNC_DETAIL = "settings_sync"
 private const val ROUTE_BACKUP_DETAIL = "settings_backup"
+private const val ROUTE_AI_SETTINGS = "settings_ai"
+private const val ROUTE_AI_REPORT = "ai_report"
+private const val ROUTE_AI_INSIGHT = "ai_insight"
+private const val ROUTE_SUB_FORM = "subscription_form?subId={subId}"
 
 /** 应用根：顶栏(左上设置 · 居中标题 · 右上立即刷新) + 底部导航 + 各主区域 NavHost。 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,7 +127,15 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
         topBar = {
             if (isTabRoute) {
                 CenterAlignedTopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
+                    // 顶栏标题用图片 logo 代替文字：按系统语言自动选取英文/中文版（资源限定符）。
+                    title = {
+                        Image(
+                            painter = painterResource(R.drawable.logo_title),
+                            contentDescription = stringResource(R.string.app_name),
+                            modifier = Modifier.height(28.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { goTab(TopDestination.Settings.route) }) {
                             Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.cd_settings))
@@ -160,6 +180,11 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
                         Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_add_asset))
                     }
                 }
+            } else if (currentRoute == TopDestination.Subscriptions.route) {
+                // 订阅页固定显示 ＋：新增订阅是主操作，列表短无需滚动隐藏。
+                FloatingActionButton(onClick = { navController.navigate(ROUTE_SUB_FORM) }) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_add_subscription))
+                }
             }
         },
     ) { innerPadding ->
@@ -169,12 +194,21 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(TopDestination.Overview.route) {
-                OverviewScreen(onOpenTrend = { navController.navigate(ROUTE_TREND) })
+                OverviewScreen(
+                    onOpenTrend = { navController.navigate(ROUTE_TREND) },
+                    onOpenAiReport = { navController.navigate(ROUTE_AI_REPORT) },
+                    onOpenAiInsight = { navController.navigate(ROUTE_AI_INSIGHT) },
+                )
             }
             composable(TopDestination.Portfolio.route) {
                 PortfolioScreen(
                     onOpenHolding = { id -> navController.navigate("holding_detail/$id") },
                     listState = portfolioListState,
+                )
+            }
+            composable(TopDestination.Subscriptions.route) {
+                SubscriptionScreen(
+                    onOpenEdit = { id -> navController.navigate("subscription_form?subId=$id") },
                 )
             }
             composable(TopDestination.Alerts.route) { AlertsScreen() }
@@ -183,6 +217,7 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
                     onOpenProfile = { navController.navigate(ROUTE_PROFILE_EDIT) },
                     onOpenSync = { navController.navigate(ROUTE_SYNC_DETAIL) },
                     onOpenBackup = { navController.navigate(ROUTE_BACKUP_DETAIL) },
+                    onOpenAi = { navController.navigate(ROUTE_AI_SETTINGS) },
                 )
             }
 
@@ -203,6 +238,43 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
                 BackupDetailScreen(viewModel = vm, onBack = { navController.popBackStack() })
             }
 
+            // AI 配置：独立 ViewModel（不共享父 SettingsViewModel），返回时一级页经 aiSettingsStore 流自动刷新摘要。
+            composable(ROUTE_AI_SETTINGS) {
+                AiSettingsScreen(onBack = { navController.popBackStack() })
+            }
+
+            // AI 报告：独立 ViewModel；未配置/无 key 时可从错误态直接跳设置页。
+            composable(ROUTE_AI_REPORT) {
+                AiReportScreen(
+                    onBack = { navController.popBackStack() },
+                    onGoSettings = { navController.navigate(ROUTE_AI_SETTINGS) },
+                )
+            }
+
+            // AI 持仓分析：同报告页骨架 + 可选聚焦问题，无导出。
+            composable(ROUTE_AI_INSIGHT) {
+                AiInsightScreen(
+                    onBack = { navController.popBackStack() },
+                    onGoSettings = { navController.navigate(ROUTE_AI_SETTINGS) },
+                )
+            }
+
+            composable(
+                route = ROUTE_SUB_FORM,
+                arguments = listOf(
+                    navArgument("subId") {
+                        type = NavType.StringType
+                        defaultValue = "-1"
+                    },
+                ),
+            ) {
+                SubscriptionFormScreen(
+                    onSaved = {
+                        navController.popBackStack(TopDestination.Subscriptions.route, inclusive = false)
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
             composable(ROUTE_TREND) {
                 TrendDetailScreen(onBack = { navController.popBackStack() })
             }

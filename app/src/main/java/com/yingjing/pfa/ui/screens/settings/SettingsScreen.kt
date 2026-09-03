@@ -10,10 +10,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -31,14 +33,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.yingjing.pfa.BuildConfig
 import com.yingjing.pfa.R
 import com.yingjing.pfa.core.i18n.AppLanguage
+import com.yingjing.pfa.data.ai.AiSettings
 import com.yingjing.pfa.ui.theme.AppTheme
 import com.yingjing.pfa.ui.theme.LocalBrandColors
 
 /**
- * 设置页（一级）：6 个语义分组卡片，仅显示设置好的结果摘要 + › 进入二级界面。
- * 「个人资料」「数据与同步」「数据备份」的可编辑项下沉到各自二级界面；
+ * 设置页（一级）：9 个语义分组卡片，仅显示设置好的结果摘要 + › 进入二级界面。
+ * 「个人资料」「数据与同步」「数据备份」「AI 助手」的可编辑项下沉到各自二级界面；
  * 「账号与安全」「账号管理」「语言」保持原有点击/对话框模式（用户未要求改动）。
  */
 @Composable
@@ -46,6 +50,7 @@ fun SettingsScreen(
     onOpenProfile: () -> Unit,
     onOpenSync: () -> Unit,
     onOpenBackup: () -> Unit,
+    onOpenAi: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -164,6 +169,27 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_dark_mode_subtitle),
             )
         }
+
+        // 8. AI 助手（摘要 → 二级配置页；副标题展示「服务商 · 已配置模型 / 未配置」）
+        SettingsGroupCard(icon = Icons.Outlined.Psychology, title = stringResource(R.string.settings_group_ai)) {
+            SettingRow(
+                title = stringResource(R.string.ai_settings_title),
+                subtitle = aiSummary(state.aiSettings),
+                onClick = onOpenAi,
+            )
+        }
+
+        // 9. 关于（版本信息，供用户参考；不可点击）
+        SettingsGroupCard(icon = Icons.Outlined.Info, title = stringResource(R.string.settings_group_about)) {
+            SettingRow(
+                title = stringResource(R.string.settings_about_version),
+                subtitle = "RICHWIN ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            )
+            SettingRow(
+                title = stringResource(R.string.settings_about_build_time),
+                subtitle = BuildConfig.BUILD_TIME,
+            )
+        }
     }
 
     if (showUsernameDialog) {
@@ -204,6 +230,16 @@ fun SettingsScreen(
             onDismiss = { showThemeDialog = false },
         )
     }
+}
+
+/** AI 摘要：「DeepSeek · deepseek-chat」或「未配置」。 */
+@Composable
+private fun aiSummary(settings: AiSettings?): String {
+    if (settings == null || !settings.isConfigured) {
+        return stringResource(R.string.settings_ai_subtitle_not_configured)
+    }
+    val providerLabel = stringResource(settings.provider.labelRes())
+    return stringResource(R.string.settings_ai_subtitle_configured, "$providerLabel · ${settings.model}")
 }
 
 /** 主题选择对话框：列出 [AppTheme] 选项，当前选中打勾。 */

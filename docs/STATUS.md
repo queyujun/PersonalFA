@@ -3,7 +3,7 @@
 > 给「下一次会话」看的交接文档。所有代码已提交进 git `main`；此文件随代码版本化。
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + **多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证)** 全部完成并合并入 `main`，**316 个单元测试全绿**，最新 debug APK 已产出（根目录 `RICHWIN-应用锁-20260901.apk`）。**四批改动已本地提交、未推送**（见 git 节），待用户确认后自行 `git push`。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + **AI 助手（个人资产报告 + 持仓分析，OpenAI 兼容协议）** + **订阅管理（底部第 5 Tab）** 全部完成，**437 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-订阅管理-20260903.apk`，只保留最新一个）。**AI 功能 + 订阅管理已一并本地提交、未推送**（用户自行 push）。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库内 portable 工具链）
 ```bash
@@ -42,6 +42,18 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - **历史快照清理 + 备份汇率**：`SnapshotRepository.deleteBefore` + DAO `deleteOlderThan` 支持清理旧快照；`FxRepository.save` + 备份导出/导入汇率；`UserRepository.observeUser` 用于恢复后币种符号刷新。✅
 - **加密主备容灾**：CoinGecko `/simple/price` 为加密货币主数据源，新增 OKX 备路（`OkxRemote` + `OkxParser` + `OkxCoinMap`），CoinGecko 失败/空时自动回退到 OKX `/api/v5/market/index-tickers`，`FallbackCryptoRemote` 串联两源取首个有效结果。✅
 - **应用锁（切回重新认证）**：应用从后台切回前台（`ProcessLifecycleOwner` 的 ON_STOP）或冷启动时，在当前页之上盖一层锁定遮罩，需密码或指纹解锁后回到之前正在看的页面，不丢失浏览位置与导航状态（类似银行/支付宝）。新增 `AppLockManager`（`@Singleton`，进程级 `isLocked` 真相源）、`AppLockViewModel`（密码解锁复用 `UserRepository.login` PBKDF2 校验，指纹解锁调 `unlockByBiometric`）、`LockScreen` Composable。设置页「账号与安全」分组加「应用锁」开关（`SyncStateStore.appLockEnabled`，默认启用）；关闭后切回不锁。新增 `lifecycle-process` 依赖 + `@ApplicationScope` CoroutineScope（`AppCoroutineModule`）。冷启动无闪烁：`isLocked` 初始 true，`AppRoot` 的 `sessionState` 初始 Loading 显示空 `Box`。✅
+- **AI 助手（资产报告 + 持仓分析）**：OpenAI 兼容 chat completions 协议，服务商预设 DeepSeek/OpenAI/Kimi/Qwen/腾讯混元/豆包/自定义（选中回填默认 baseUrl/model，可手改；豆包 model 需填方舟模型 ID 或接入点 ep-xxx）。四批实现：
+  - 批1 基建：`AiSecretStore`（Keystore AES/GCM，alias `pfa_ai_key`、文件 `ai_key.bin`，仿 DatabaseKeyProvider）+ `AiSettingsStore`（DataStore "ai_settings"，key 只进 SecretStore）+ `AiChatParser`（choices[0].message.content、剥 `<think>`）+ `OpenAiCompatRemote`（`@AiClient` OkHttp，connect 15s/read 120s/callTimeout 180s；逐状态码显式映射 401/429/5xx，CancellationException rethrow）+ `PortfolioPayloadBuilder`（脱敏白名单：只发 category/type/name/currency/quantity/cost/price/value/plPct 等；**绝不外发 userId/username/note/时间戳**；20k 字符预算超限降级为分类汇总）+ `AiPromptBuilder`（报告模板 7 节 / 分析模板 6 节，双语，禁表格禁代码围栏）+ `AiAssistant`（串 session→holdings→fx→snapshot 趋势→payload→prompt→complete）。
+  - 批2 设置页：`settings_ai` 二级页（`AiSettingsViewModel` 独立，key 明文不进 state 只有尾号掩码；https 校验；测试连接）。
+  - 批3 报告页：`ai_report`（Idle/Loading/Done/Error 四态 + 隐私同意对话框 + SAF 导出 Markdown `CreateDocument("text/markdown")`）+ `AiMarkdownText` 轻量渲染（H1-H3/Bullet/Numbered/Quote/段落合并，`####`+ 降级 3 级剥净 `#`，行内 `**加粗**`）+ Overview 入口卡。
+  - 批4 分析页：`ai_insight`（同骨架 + 可选追问输入，无导出）+ Overview 双卡入口。
+  - 隐私硬约束：API Key 只进 Authorization 头不进 prompt；报告内容不落盘不进日志（无 logging interceptor）；导出走 SAF 由用户自选位置。
+- **订阅管理（底部第 5 Tab）**：三批实现（数据层 DB v12 → UI 三件套 → 测试+构建）。
+  - 数据层：`SubscriptionEntity`/`SubscriptionDao`（DB v11→12 破坏性迁移）+ `Subscription`/`SubscriptionCategory`(VIDEO/MUSIC/AI/SOFTWARE/CLOUD/NEWS/OTHER)/`BillingCycle`(WEEKLY/MONTHLY/QUARTERLY/YEARLY，`monthlyFactor` 折算) + `SubscriptionRepository`/Impl；续费顺延纯函数 `SubscriptionRenewal`（月末钳制锚定顺延结果不漂移，如 1/31→2/28 后续停在 28；跨年多周期一次顺延到第一个未来日期，不重复计费）；成本汇总纯函数 `SubscriptionCost`（inactive 剔除、按展示币种换算、byCategory 降序 0 排除）。
+  - UI 三件套：`SubscriptionScreen`（汇总卡月均+年化 + 筛选 ALL/ACTIVE/INACTIVE + 即将续费 Top3 + 全部列表）→ `SubscriptionFormScreen`（新建/编辑，周期/币种/提醒提前天数，保存前校验金额>0/日期合法；停用开关）→ 详情入口复用编辑页。
+  - 行内币种语义：**行内金额按订阅自身计费币种展示（不换汇）**；仅汇总卡换算到用户默认展示币种（修复「USD 订阅显示 ¥」错配；`SubscriptionViewModel` 经 `flatMapLatest` 对 defaultCurrency 响应式刷新）。
+  - 备份兼容：`BackupData`/`BackupManager` 增订阅表导出导入；到期提醒复用 `AlertRules`。
+  - 品牌图：`drawable/logo_title.png`（+zh-rCN/zh-rHK 语言限定变体），`PersonalFaRoot` 顶栏展示。
 
 ## 数据源关键事实（详见 design/data-sources.md）
 - 新浪行情 `hq.sinajs.cn`：需 `Referer: https://finance.sina.com.cn` + **GBK 解码**；现价字段位：A股/ETF 第3、港股第6、美股第1；汇率第8。
@@ -51,7 +63,8 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - 房产：手动估值 + **已实现按 70 城二手住宅价格指数自动估算**（东方财富 `datacenter-web`，`RPT_ECONOMY_HOUSE_PRICE`，`SECOND_HOUSE_SEQUENTIAL` 二手环比，filter 多城批量请求，pageSize=500；带 6 天新鲜度缓存到 `HousePriceIndexEntity`）。表单「所在城市」70 城可搜索下拉，开启估算后 sync 派生 `estimatedValue`。
 
 ## 注意事项
-- **DB 当前 version = 11**；开发期用 `fallbackToDestructiveMigration`，**每次升 schema 覆盖安装会重置本地数据**（需重新注册）。发布前需写正式迁移。
+- **DB 当前 version = 12**；开发期用 `fallbackToDestructiveMigration`，**每次升 schema 覆盖安装会重置本地数据**（需重新注册）。发布前需写正式迁移。
+- 订阅续费日展示走 `SubscriptionRenewal.displayRenewal`（只读顺延，不动库），真实推进在每日 sync 的 `advance`。
 - 分类走势历史从 v6 起每日累积；当天仅 1 点显示「数据积累中」。
 - 资产页「账户现金」按币种映射到股票子类目：¥→A股现金、HK$→港股现金、US$→美股现金（纯展示归类，录入仍为「账户现金」+ 选币种；组织逻辑在 `PortfolioSectionsBuilder`）。
 - 净值走势「自定义组合」：选中 CUSTOM 但未勾任何类别时，该序列全 null（时间轴靠 totals 提供），图上不显示线——属正常空态。
@@ -62,17 +75,18 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 ## 待办（可选，用户未定优先级）
 1. ~~房产按国家统计局 70 城房价指数自动估算涨跌~~ ✅ 已完成。
 2. 国际财经提醒（需自建快讯 RSS + 关键词打分，尽力而为）。
-3. P7 打磨：深色模式细化、无障碍、性能、E2E、发布签名与正式 DB 迁移（v11 已用破坏性迁移，发布前必修正式 9→11 迁移）。
+3. P7 打磨：深色模式细化、无障碍、性能、E2E、发布签名与正式 DB 迁移（v12 已用破坏性迁移，发布前必修正式 9→12 迁移）。
 4. ~~根目录 `settings.json` 含 `ANTHROPIC_AUTH_TOKEN` 等密钥，未入 `.gitignore`~~ ✅ 已补进 `.gitignore`（`settings-ds/glm/xzprj.json` + 预览 html），均未入库。
 
 ## git
 - 分支 `main` 含全部；特性分支按 `feature/*` 开发后 `--no-ff` 合并。
 - 提交信息用中文 `<type>: <desc>`，**不加署名尾注**（用户全局禁用 attribution）。
-- **本次四批改动已本地提交、未推送**（截至 2026-09-01，主分支 `main`）：
+- **上一批四项改动已本地提交**（截至 2026-09-01，主分支 `main`）：
   - `5c0d87d` feat: 应用锁 — 切回应用需重新认证（密码/指纹）
   - `0c98e05` refactor: 资产分类配色调整为浅色调九色色相错开
   - `403995d` feat: 房价指数同步反馈明示 — 同步弹窗展示「已更新至 X 月 / 已是最新」
   - `645eddd` feat: 加密货币主备容灾 — CoinGecko 主路失败自动回退 OKX 备路
   - 更早：`4336816`（4 套高端配色+改名 RICHWIN）/ `ffb84bb`（三主题配色）
   - `.gitignore` 已收紧为 `settings-*.json` / `*-preview.html` 通配，覆盖所有根目录密钥文件与预览产物（均未入库）。
-- **用户未推送**：本次提交链均未 `git push`，下一次会话需确认是否推送（用户自行 push，不替用户推送）。
+- **AI 助手 + 订阅管理已一并本地提交（2026-09-03，主分支 `main`）**，未推送。含订阅管理三批、AI 助手四批、行内币种修复、品牌 logo 资源。
+- **用户未推送**：提交链均未 `git push`，用户自行 push，不替用户推送。

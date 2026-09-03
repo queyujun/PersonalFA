@@ -7,6 +7,7 @@ import com.yingjing.pfa.domain.model.AlertCategory
 import com.yingjing.pfa.domain.model.AlertSeverity
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Holding
+import com.yingjing.pfa.domain.model.Subscription
 import kotlin.math.abs
 
 /** 某持仓一次价格变化（用于判断大幅波动）。 */
@@ -182,5 +183,31 @@ object AlertRules {
                 createdAtEpochMs = nowMs,
             ),
         )
+    }
+
+    /** 订阅临近续费（提前 [Subscription.reminderDaysBefore] 天；0=不提醒）。 */
+    fun subscriptionRenewals(
+        subscriptions: List<Subscription>,
+        nowMs: Long,
+        resolver: StringResolver,
+    ): List<Alert> {
+        val result = mutableListOf<Alert>()
+        subscriptions.filter { it.active && it.reminderDaysBefore > 0 }.forEach { sub ->
+            val renewalMs = sub.nextRenewalEpochMs
+            val daysLeft = (renewalMs / MS_PER_DAY - nowMs / MS_PER_DAY)
+            if (daysLeft !in 0..sub.reminderDaysBefore) return@forEach
+            val amountText = "%.2f".format(sub.amount)
+            val days = daysLeft.toInt()
+            result += Alert(
+                userId = sub.userId,
+                category = AlertCategory.SUBSCRIPTION,
+                severity = if (days <= 3) AlertSeverity.WARNING else AlertSeverity.INFO,
+                title = resolver.get(R.string.alert_sub_title, sub.name),
+                body = resolver.get(R.string.alert_sub_body, sub.name, amountText, days),
+                dedupKey = "sub_renewal_${sub.id}_${renewalMs / MS_PER_DAY}",
+                createdAtEpochMs = nowMs,
+            )
+        }
+        return result
     }
 }

@@ -113,6 +113,18 @@ class SyncManagerTest {
     private val marketIndexRemote = MarketIndexRemote { mapOf("sh000300" to 0.5) }
     private val ipoRemote = IpoRemote { emptyList() }
 
+    private val updatedSubs = mutableListOf<com.yingjing.pfa.domain.model.Subscription>()
+    private val subscriptionRepo = object : com.yingjing.pfa.domain.repository.SubscriptionRepository {
+        override fun observeSubscriptions(userId: Long) = flowOf(emptyList<com.yingjing.pfa.domain.model.Subscription>())
+        override suspend fun getSubscriptionsSnapshot(userId: Long) = emptyList<com.yingjing.pfa.domain.model.Subscription>()
+        override suspend fun getSubscription(id: Long) = null
+        override suspend fun addSubscription(subscription: com.yingjing.pfa.domain.model.Subscription) = 0L
+        override suspend fun updateSubscription(subscription: com.yingjing.pfa.domain.model.Subscription) {
+            updatedSubs += subscription
+        }
+        override suspend fun deleteSubscription(id: Long) {}
+    }
+
     @Before
     fun setup() {
         val ctx = ApplicationProvider.getApplicationContext<Context>()
@@ -129,7 +141,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(mapOf(id to 1354.5), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
 
         val result = manager.sync()
 
@@ -148,7 +160,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>): QuoteFetchResult =
                 throw RuntimeException("network")
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         // 加一个持仓触发抓取路径
         holdingRepo.addHolding(
             Holding(userId = 1, type = AssetType.A_SHARE, name = "茅台", currency = Currency.CNY, symbol = "600519", quantity = 1.0),
@@ -184,7 +196,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         manager.nowProvider = { nowMs }
 
         val result = manager.sync()
@@ -215,7 +227,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         manager.nowProvider = { msOf(2026, 7) }
 
         assertTrue(manager.sync().success)
@@ -234,7 +246,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
 
         val result = manager.sync()
 
@@ -262,7 +274,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         manager.nowProvider = { msOf(2026, 7) }
 
         val result = manager.sync()
@@ -289,7 +301,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
         commodityResult = mapOf("hf_XAU" to 2.5)
 
         assertTrue(manager.sync().success)
@@ -310,7 +322,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
 
         assertTrue(manager.sync().success)
 
@@ -333,7 +345,7 @@ class SyncManagerTest {
             callCount++
             if (callCount == 1) emptyMap() else mapOf("sh000300" to 3.5)
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, retryRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, retryRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
 
         assertTrue(manager.sync().success)
         assertEquals(2, callCount) // 触发了重试
@@ -357,7 +369,7 @@ class SyncManagerTest {
         // 局部空 remote，模拟海外源不可达（不依赖背景非空小值）
         val emptyMarketIndex = MarketIndexRemote { emptyMap() }
         val emptyCommodity = CommodityRemote { emptyMap() }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, emptyMarketIndex, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), emptyCommodity, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, emptyMarketIndex, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), emptyCommodity, globalRatesStore)
 
         val result = manager.sync()
 
@@ -377,7 +389,7 @@ class SyncManagerTest {
             override suspend fun fetchPrices(holdings: List<Holding>) =
                 QuoteFetchResult(emptyMap(), emptyList())
         }
-        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
+        val manager = SyncManager(userRepo, holdingRepo, quoteRepo, fxRepo, marketIndexRemote, ipoRemote, snapshotRepo, subscriptionRepo, alertRepo, notifier, syncStateStore, housePriceRepo, FakeStringResolver(), commodityRemote, globalRatesStore)
 
         val manualResult = manager.sync(manual = true)
         assertTrue(manualResult.manual)

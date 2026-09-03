@@ -11,6 +11,8 @@ data class BackupData(
     val snapshots: List<BackupSnapshot> = emptyList(),
     val categorySnapshots: List<BackupCategorySnapshot> = emptyList(),
     val alerts: List<BackupAlert> = emptyList(),
+    /** 订阅（可选）。老备份无此字段 → 空列表（向后兼容）。 */
+    val subscriptions: List<BackupSubscription> = emptyList(),
     /**
      * 导出时刻的汇率（可选）。恢复时写回 fx DataStore，避免换算退化为不换算。
      * 老备份无此字段 → null → 不写回（向后兼容，靠后台刷新补救）。
@@ -102,4 +104,23 @@ data class BackupAlert(
     val dedupKey: String,
     val createdAt: Long,
     val read: Boolean,
+)
+
+@Serializable
+data class BackupSubscription(
+    val id: Long,
+    val userId: Long,
+    val name: String,
+    val category: String,
+    val note: String? = null,
+    val currency: String,
+    val amount: Double,
+    val cycle: String,
+    val firstBill: Long,
+    val nextRenewal: Long,
+    val reminderDaysBefore: Int,
+    val paymentMethod: String? = null,
+    val active: Boolean = true,
+    val createdAt: Long,
+    val updatedAt: Long,
 )

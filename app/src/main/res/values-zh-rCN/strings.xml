@@ -12,6 +12,7 @@
     <!-- 导航 -->
     <string name="nav_overview">总览</string>
     <string name="nav_portfolio">资产</string>
+    <string name="nav_subscriptions">订阅</string>
     <string name="nav_alerts">提醒</string>
     <string name="nav_settings">我的</string>
 
@@ -183,6 +184,56 @@
     <string name="alert_ipo_body">今日可打新：%1$s。别忘申购。</string>
     <string name="alert_ipo_item">%1$s（申购代码 %2$s）</string>
     <string name="alert_ipo_sep">、</string>
+    <string name="alert_cat_subscription">订阅</string>
+    <string name="alert_sub_title">订阅即将续费</string>
+    <string name="alert_sub_body">「%1$s」将在 %3$d 天后续费（每期 %2$s）。</string>
+
+    <!-- 订阅 -->
+    <string name="sub_cat_video">视频影音</string>
+    <string name="sub_cat_music">音乐</string>
+    <string name="sub_cat_ai">AI 服务</string>
+    <string name="sub_cat_cloud">云存储</string>
+    <string name="sub_cat_software">软件工具</string>
+    <string name="sub_cat_shopping">购物会员</string>
+    <string name="sub_cat_news">新闻阅读</string>
+    <string name="sub_cat_game">游戏</string>
+    <string name="sub_cat_fitness">健身</string>
+    <string name="sub_cat_other">其他</string>
+    <string name="sub_cycle_weekly">每周</string>
+    <string name="sub_cycle_monthly">每月</string>
+    <string name="sub_cycle_quarterly">每季</string>
+    <string name="sub_cycle_yearly">每年</string>
+    <string name="sub_page_title">订阅管理</string>
+    <string name="sub_filter_all">全部</string>
+    <string name="sub_filter_active">进行中</string>
+    <string name="sub_filter_inactive">已停用</string>
+    <string name="sub_empty">还没有订阅，点右上角 ＋ 添加</string>
+    <string name="sub_summary_monthly">月均支出</string>
+    <string name="sub_summary_yearly">年化支出</string>
+    <string name="sub_upcoming_title">即将续费</string>
+    <string name="sub_list_title_all">全部订阅</string>
+    <string name="sub_list_title_active">进行中的订阅</string>
+    <string name="sub_list_title_inactive">已停用的订阅</string>
+    <string name="sub_renewal_date">%1$s 续费</string>
+    <string name="sub_per_month">月</string>
+    <string name="sub_per_year">年</string>
+    <string name="sub_form_title_add">添加订阅</string>
+    <string name="sub_form_title_edit">编辑订阅</string>
+    <string name="sub_label_category">分类</string>
+    <string name="sub_label_amount">每期金额</string>
+    <string name="sub_label_cycle">计费周期</string>
+    <string name="sub_label_first_bill">首扣日期（yyyy-MM-dd）</string>
+    <string name="sub_label_reminder">提醒</string>
+    <string name="sub_reminder_off">不提醒</string>
+    <string name="sub_reminder_days">提前 %1$d 天</string>
+    <string name="sub_label_payment_method">支付方式（选填）</string>
+    <string name="sub_label_active">进行中</string>
+    <string name="sub_delete">删除订阅</string>
+    <string name="sub_form_date_hint">续费日会从首扣日期自动顺延，无需手动维护。</string>
+    <string name="sub_err_name_required">请输入名称</string>
+    <string name="sub_err_amount_invalid">金额必须大于 0</string>
+    <string name="sub_err_date_invalid">日期格式须为 yyyy-MM-dd</string>
+    <string name="cd_add_subscription">添加订阅</string>
 
     <!-- 错误 -->
     <string name="err_username_empty">请输入用户名</string>
@@ -267,6 +318,11 @@
     <string name="theme_green">松石</string>
     <string name="theme_orange">琥珀</string>
     <string name="status_theme_updated">✓ 主题已切换</string>
+
+    <!-- 关于 -->
+    <string name="settings_group_about">关于</string>
+    <string name="settings_about_version">版本</string>
+    <string name="settings_about_build_time">构建时间</string>
 
     <!-- 个人资料 -->
     <string name="profile_nickname">昵称</string>
@@ -455,6 +511,77 @@
     <string name="lock_password_label">密码</string>
     <string name="lock_unlock">解锁</string>
     <string name="lock_wrong_password">密码错误，请重试</string>
+
+    <!-- AI 助手 -->
+    <string name="settings_group_ai">AI 助手</string>
+    <string name="settings_ai_subtitle_configured">已配置 · %1$s</string>
+    <string name="settings_ai_subtitle_not_configured">未配置</string>
+    <string name="ai_settings_title">AI 助手设置</string>
+    <string name="ai_provider">服务商</string>
+    <string name="ai_provider_deepseek">DeepSeek</string>
+    <string name="ai_provider_openai">OpenAI</string>
+    <string name="ai_provider_kimi">Kimi</string>
+    <string name="ai_provider_qwen">通义千问</string>
+    <string name="ai_provider_hunyuan">腾讯混元</string>
+    <string name="ai_provider_doubao">豆包</string>
+    <string name="ai_provider_custom">自定义</string>
+    <string name="ai_base_url">接口地址 Base URL</string>
+    <string name="ai_base_url_hint">https://api.deepseek.com/v1</string>
+    <string name="ai_model">模型名称</string>
+    <string name="ai_model_hint">deepseek-chat</string>
+    <string name="ai_api_key">API Key</string>
+    <string name="ai_api_key_hint">sk-…</string>
+    <string name="ai_api_key_configured_mask">已保存 · 尾号 %1$s</string>
+    <string name="ai_api_key_show">显示</string>
+    <string name="ai_api_key_hide">隐藏</string>
+    <string name="ai_api_key_clear">清除已保存的 Key</string>
+    <string name="ai_include_details">包含持仓明细</string>
+    <string name="ai_include_details_subtitle">关闭后仅发送分类汇总，外发数据更少</string>
+    <string name="ai_privacy_note">仅发送资产名称、金额与分类到你配置的服务商；备注、身份信息与时间戳不会离开本机。</string>
+    <string name="ai_save_config">保存配置</string>
+    <string name="ai_test_connection">测试连接</string>
+    <string name="ai_test_connection_testing">测试中…</string>
+    <string name="ai_test_ok">✓ 连接正常（%1$s）</string>
+    <string name="ai_base_url_must_be_https">接口地址必须以 https:// 开头</string>
+    <string name="ai_key_cleared">已清除 API Key</string>
+    <string name="ai_config_saved">✓ 配置已保存</string>
+    <string name="ai_err_not_configured">请先在设置中完善接口地址与模型名称</string>
+    <string name="ai_err_no_key">请先在设置中填写 API Key</string>
+    <string name="ai_err_no_user">请先登录</string>
+    <string name="ai_err_network">网络错误，请检查网络与接口地址</string>
+    <string name="ai_err_timeout">请求超时，请稍后重试</string>
+    <string name="ai_err_unauthorized">API Key 无效或已过期，请在设置中更新</string>
+    <string name="ai_err_rate_limited">服务商限流，请稍后重试</string>
+    <string name="ai_err_server">服务商服务器错误，请稍后重试</string>
+    <string name="ai_err_bad_request">请求被拒绝：%1$s</string>
+    <string name="ai_err_bad_request_generic">请求被服务商拒绝，请检查模型名称与接口地址</string>
+    <string name="ai_err_empty_response">服务商返回了空响应</string>
+    <string name="ai_report_title">AI 资产报告</string>
+    <string name="ai_report_entry_subtitle">专业模板·导出</string>
+    <string name="ai_insight_title">AI 持仓分析</string>
+    <string name="ai_insight_entry_subtitle">分析判断与建议</string>
+    <string name="ai_report_intro">基于你当前的资产持仓生成一份专业资产报告。内容由 AI 生成，仅供参考。</string>
+    <string name="ai_report_generate">生成报告</string>
+    <string name="ai_report_regenerate">重新生成</string>
+    <string name="ai_report_export">导出 Markdown</string>
+    <string name="ai_report_exported">✓ 报告已导出</string>
+    <string name="ai_report_export_failed">导出失败：%1$s</string>
+    <string name="ai_insight_intro">对当前资产配置进行专业分析并给出建议，可在下方聚焦某个持仓或某类资产。</string>
+    <string name="ai_insight_generate">开始分析</string>
+    <string name="ai_insight_question_label">聚焦（可选）</string>
+    <string name="ai_insight_question_hint">例如：某个持仓 / 资产配置比例</string>
+    <string name="ai_privacy_dialog_title">继续之前</string>
+    <string name="ai_privacy_dialog_body">使用 AI 功能时，你的资产名称、金额与分类将发送到你配置的 AI 服务商。备注、身份信息与时间戳不会离开本机。</string>
+    <string name="ai_privacy_dialog_agree">同意并继续</string>
+    <string name="ai_cancel_generation">取消</string>
+    <string name="ai_generating">AI 正在分析…</string>
+    <string name="ai_generation_cancelled">已取消生成</string>
+    <string name="ai_unconfigured_hint">尚未配置 AI</string>
+    <string name="ai_go_settings">去设置</string>
+    <string name="ai_retry">重试</string>
+    <string name="ai_generated_at">生成于 %1$s · %2$s</string>
+    <string name="ai_empty_holdings_hint">请先添加资产，再使用 AI 功能</string>
+    <string name="ai_disclaimer">AI 生成内容仅供参考，不构成投资建议。</string>
 
     <!-- 占位 -->
     <string name="placeholder_subtitle">P0 脚手架占位</string>
