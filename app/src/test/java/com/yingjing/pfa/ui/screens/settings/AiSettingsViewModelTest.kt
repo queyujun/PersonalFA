@@ -1,5 +1,6 @@
 package com.yingjing.pfa.ui.screens.settings
 
+import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiSettings
 import com.yingjing.pfa.domain.ai.AiChatResult
@@ -8,6 +9,7 @@ import com.yingjing.pfa.fakes.FakeAiRemote
 import com.yingjing.pfa.fakes.FakeAiSettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -153,9 +155,14 @@ class AiSettingsViewModelTest {
         vm.testConnection(apiKeyInput = "")
         assertEquals(AiStatus.TIMEOUT, vm.uiState.value.status)
 
+        remote.results += AiChatResult.Failure(AiFailureKind.EMPTY_RESPONSE)
+        vm.testConnection(apiKeyInput = "")
+        assertEquals(AiStatus.EMPTY_RESPONSE, vm.uiState.value.status)
+
         remote.results += AiChatResult.Failure(AiFailureKind.BAD_REQUEST, "model not found")
         vm.testConnection(apiKeyInput = "")
         assertEquals(AiStatus.BAD_REQUEST_DETAIL, vm.uiState.value.status)
+        assertEquals("model not found", vm.uiState.value.statusDetail)
     }
 
     @Test
@@ -186,5 +193,33 @@ class AiSettingsViewModelTest {
         assertEquals(AiProviderPreset.QWEN.id, vm.uiState.value.settings.providerId)
         assertTrue(vm.uiState.value.hasKey)
         assertEquals("1234", vm.uiState.value.keyTail)
+    }
+
+    @Test
+    fun setProtocol_updatesState_andPersistsThroughSave() = runTest {
+        val vm = viewModel()
+        vm.setProvider(AiProviderPreset.HUNYUAN)
+        vm.setProtocol(AiApiProtocol.RESPONSES)
+        assertEquals(AiApiProtocol.RESPONSES, vm.uiState.value.settings.protocol)
+
+        vm.save(apiKeyInput = "sk-proto-0001")
+        assertEquals(AiApiProtocol.RESPONSES, store.settings.first().protocol)
+
+        // 切回默认协议
+        vm.setProtocol(AiApiProtocol.CHAT_COMPLETIONS)
+        assertEquals(AiApiProtocol.CHAT_COMPLETIONS, vm.uiState.value.settings.protocol)
+    }
+
+    @Test
+    fun testConnection_usesSelectedProtocol() = runTest {
+        val vm = viewModel()
+        vm.setProvider(AiProviderPreset.HUNYUAN)
+        vm.setProtocol(AiApiProtocol.RESPONSES)
+        vm.save(apiKeyInput = "sk-hy3-key-8888")
+        remote.results += AiChatResult.Success("pong", "hy3", null, null)
+
+        vm.testConnection(apiKeyInput = "")
+        assertEquals(AiStatus.TEST_OK, vm.uiState.value.status)
+        assertEquals(AiApiProtocol.RESPONSES, remote.requests.single().protocol)
     }
 }

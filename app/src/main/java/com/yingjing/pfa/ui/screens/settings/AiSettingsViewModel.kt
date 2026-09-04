@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yingjing.pfa.data.ai.AiChatMessage
 import com.yingjing.pfa.data.ai.AiChatRequest
+import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiRemote
 import com.yingjing.pfa.data.ai.AiSettings
@@ -29,6 +30,8 @@ data class AiSettingsUiState(
     val keyTail: String? = null,
     /** 状态标识（非最终文案）：UI 按枚举映射多语言资源。 */
     val status: AiStatus? = null,
+    /** 服务商返回的原始错误说明（仅 BAD_REQUEST_DETAIL 有值），随状态一并展示。 */
+    val statusDetail: String? = null,
     val saving: Boolean = false,
     val testing: Boolean = false,
 )
@@ -68,15 +71,20 @@ class AiSettingsViewModel @Inject constructor(
                     model = provider.defaultModel,
                 ),
                 status = null,
+                statusDetail = null,
             )
         }
     }
 
     fun setBaseUrl(value: String) =
-        _uiState.update { it.copy(settings = it.settings.copy(baseUrl = value.trim()), status = null) }
+        _uiState.update { it.copy(settings = it.settings.copy(baseUrl = value.trim()), status = null, statusDetail = null) }
 
     fun setModel(value: String) =
-        _uiState.update { it.copy(settings = it.settings.copy(model = value.trim()), status = null) }
+        _uiState.update { it.copy(settings = it.settings.copy(model = value.trim()), status = null, statusDetail = null) }
+
+    /** 切换接口协议（Chat Completions / Responses），服务商支持的端点不同。 */
+    fun setProtocol(value: AiApiProtocol) =
+        _uiState.update { it.copy(settings = it.settings.copy(protocol = value), status = null, statusDetail = null) }
 
     fun setIncludeDetails(value: Boolean) =
         _uiState.update { it.copy(settings = it.settings.copy(includeDetails = value)) }
@@ -96,6 +104,7 @@ class AiSettingsViewModel @Inject constructor(
                     hasKey = aiSettingsStore.hasApiKey(),
                     keyTail = savedKeyTail(),
                     status = AiStatus.CONFIG_SAVED,
+                    statusDetail = null,
                 )
             }
         }
@@ -105,7 +114,7 @@ class AiSettingsViewModel @Inject constructor(
     fun clearKey() {
         viewModelScope.launch {
             aiSettingsStore.setApiKey(null)
-            _uiState.update { it.copy(hasKey = false, keyTail = null, status = AiStatus.KEY_CLEARED) }
+            _uiState.update { it.copy(hasKey = false, keyTail = null, status = AiStatus.KEY_CLEARED, statusDetail = null) }
         }
     }
 
@@ -113,11 +122,11 @@ class AiSettingsViewModel @Inject constructor(
     fun testConnection(apiKeyInput: String) {
         val state = _uiState.value
         if (!state.settings.isConfigured) {
-            _uiState.update { it.copy(status = AiStatus.NOT_CONFIGURED) }
+            _uiState.update { it.copy(status = AiStatus.NOT_CONFIGURED, statusDetail = null) }
             return
         }
         if (state.testing) return
-        _uiState.update { it.copy(testing = true, status = null) }
+        _uiState.update { it.copy(testing = true, status = null, statusDetail = null) }
         viewModelScope.launch {
             val trimmedInput = apiKeyInput.trim()
             val apiKey = if (trimmedInput.isNotEmpty()) {
@@ -128,7 +137,7 @@ class AiSettingsViewModel @Inject constructor(
                 aiSettingsStore.apiKey()
             }
             if (apiKey.isNullOrBlank()) {
-                _uiState.update { it.copy(testing = false, status = AiStatus.NO_KEY) }
+                _uiState.update { it.copy(testing = false, status = AiStatus.NO_KEY, statusDetail = null) }
                 return@launch
             }
             val result = aiRemote.complete(
@@ -137,6 +146,7 @@ class AiSettingsViewModel @Inject constructor(
                     apiKey = apiKey,
                     model = state.settings.model,
                     messages = listOf(AiChatMessage(role = "user", content = PING_MESSAGE)),
+                    protocol = state.settings.protocol,
                     maxTokens = PING_MAX_TOKENS,
                 ),
             )
@@ -148,7 +158,11 @@ class AiSettingsViewModel @Inject constructor(
                         hasKey = true,
                         keyTail = apiKey.takeLast(4),
                     )
-                    is AiChatResult.Failure -> it.copy(testing = false, status = AiStatus.fromFailure(result))
+                    is AiChatResult.Failure -> it.copy(
+                        testing = false,
+                        status = AiStatus.fromFailure(result),
+                        statusDetail = result.detail,
+                    )
                 }
             }
         }
@@ -159,7 +173,11 @@ class AiSettingsViewModel @Inject constructor(
 
     private companion object {
         const val PING_MESSAGE = "ping"
-        const val PING_MAX_TOKENS = 8
+
+        // 混合推理模型（如腾讯 hy3）的思考 token 也计入输出预算且常占 90%+：
+        // 预算太小（ Responses 协议翻倍后仍只有 16）会只产出 reasoning、正文为空，
+        // 被误判为「服务商拒绝请求」。实测 512 预算即可完成一次 ping，取 1024 留余量。
+        const val PING_MAX_TOKENS = 1024
     }
 }
 
@@ -177,6 +195,7 @@ enum class AiStatus {
     SERVER_ERROR,
     BAD_REQUEST,
     BAD_REQUEST_DETAIL,
+    EMPTY_RESPONSE,
     ;
 
     companion object {
@@ -187,6 +206,8 @@ enum class AiStatus {
             AiFailureKind.RATE_LIMITED -> RATE_LIMITED
             AiFailureKind.SERVER_ERROR -> SERVER_ERROR
             AiFailureKind.BAD_REQUEST -> BAD_REQUEST_DETAIL
+            // 200 但无正文（推理模型思考吃光预算等）：不能落进 BAD_REQUEST 的通用文案误导排查。
+            AiFailureKind.EMPTY_RESPONSE -> EMPTY_RESPONSE
             else -> BAD_REQUEST
         }
     }

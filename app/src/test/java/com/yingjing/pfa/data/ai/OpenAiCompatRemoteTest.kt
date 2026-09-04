@@ -1,5 +1,6 @@
 package com.yingjing.pfa.data.ai
 
+import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.domain.ai.AiFailureKind
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -39,7 +40,8 @@ class OpenAiCompatRemoteTest {
         remote = OpenAiCompatRemote(OkHttpClient.Builder()
             .readTimeout(2, TimeUnit.SECONDS)
             .build())
-        remote.endpointSuffix = "/chat/completions"
+        remote.chatCompletionsSuffix = "/chat/completions"
+        remote.responsesSuffix = "/responses"
     }
 
     @After
@@ -110,10 +112,123 @@ class OpenAiCompatRemoteTest {
     }
 
     @Test
+    fun badRequest_400_chineseLocale_prefersMessageZh() = runBlocking {
+        remote.preferChineseError = true
+        server.enqueue(MockResponse().setResponseCode(400).setBody(
+            """{"error":{"type":"gateway_error","code":"401006",""" +
+                """"message":"The service ID does not exist.",""" +
+                """"message_zh":"输入的服务 ID 不存在，或模型与服务不匹配。"}}""",
+        ))
+        val result = remote.complete(request.copy(baseUrl = server.url("/v1").toString()))
+        val failure = result as com.yingjing.pfa.domain.ai.AiChatResult.Failure
+        assertEquals(AiFailureKind.BAD_REQUEST, failure.kind)
+        assertEquals("输入的服务 ID 不存在，或模型与服务不匹配。", failure.detail)
+    }
+
+    @Test
+    fun badRequest_400_messageZhBlankOrMissing_fallsBackToMessage() = runBlocking {
+        remote.preferChineseError = true
+        server.enqueue(MockResponse().setResponseCode(400).setBody(
+            """{"error":{"message":"Model not exist","message_zh":""}}""",
+        ))
+        val result = remote.complete(request.copy(baseUrl = server.url("/v1").toString()))
+        val failure = result as com.yingjing.pfa.domain.ai.AiChatResult.Failure
+        assertEquals(AiFailureKind.BAD_REQUEST, failure.kind)
+        assertEquals("Model not exist", failure.detail)
+    }
+
+    @Test
     fun successButUnparseable_mapsToEmptyResponse() = runBlocking {
         server.enqueue(MockResponse().setBody("""{"choices":[]}"""))
         val result = remote.complete(request.copy(baseUrl = server.url("/v1").toString()))
         assertEquals(AiFailureKind.EMPTY_RESPONSE, (result as com.yingjing.pfa.domain.ai.AiChatResult.Failure).kind)
+    }
+
+    // ---------------------------------------------------- Responses 协议
+
+    /** Responses 协议成功响应体（OpenAI Responses API 结构）。 */
+    private fun responsesOkBody() = """
+        {"id":"resp_1","model":"hy3","status":"completed",
+         "output":[{"type":"reasoning","content":[]},
+                   {"type":"message","role":"assistant",
+                    "content":[{"type":"output_text","text":"## 分析结论","annotations":[]}]}],
+         "output_text":"## 分析结论"}
+    """.trimIndent()
+
+    @Test
+    fun responsesProtocol_postsToResponsesEndpointWithInstructionsAndInput() = runBlocking {
+        server.enqueue(MockResponse().setBody(responsesOkBody()))
+        val result = remote.complete(
+            request.copy(
+                baseUrl = server.url("/v1").toString(),
+                protocol = AiApiProtocol.RESPONSES,
+            ),
+        )
+        val success = result as com.yingjing.pfa.domain.ai.AiChatResult.Success
+        assertEquals("## 分析结论", success.text)
+        assertEquals("hy3", success.model)
+
+        val recorded = server.takeRequest()
+        assertEquals("/v1/responses", recorded.path)
+        assertEquals("Bearer sk-test-key", recorded.getHeader("Authorization"))
+        val body = recorded.body.readUtf8()
+        // 请求 model 取自 request.model（deepseek-chat）；"hy3" 是 mock 响应体里的 model
+        assertTrue(body.contains("\"model\":\"deepseek-chat\""))
+        assertTrue(body.contains("\"instructions\":\"You are a financial advisor.\""))
+        assertTrue(body.contains("\"input\":\"Generate report\""))
+        assertTrue(body.contains("\"max_output_tokens\":6144"))
+        assertTrue(body.contains("\"stream\":false"))
+        // Chat Completions 专属字段不应出现
+        assertTrue(!body.contains("max_tokens"))
+        assertTrue(!body.contains("messages"))
+    }
+
+    @Test
+    fun responsesProtocol_parsesOutputArrayWhenNoTopLevelText() = runBlocking {
+        // 部分网关不回 output_text 顶层字段，只能从 output[].content[] 里取
+        server.enqueue(MockResponse().setBody(
+            """{"model":"hy3","status":"completed",
+                "output":[{"type":"message","role":"assistant",
+                 "content":[{"type":"output_text","text":"来自 output 数组的文本"}]}]}""",
+        ))
+        val result = remote.complete(
+            request.copy(
+                baseUrl = server.url("/v1").toString(),
+                protocol = AiApiProtocol.RESPONSES,
+            ),
+        )
+        val success = result as com.yingjing.pfa.domain.ai.AiChatResult.Success
+        assertEquals("来自 output 数组的文本", success.text)
+    }
+
+    @Test
+    fun responsesProtocol_unparseableBody_mapsToEmptyResponse() = runBlocking {
+        server.enqueue(MockResponse().setBody("""{"output":[]}"""))
+        val result = remote.complete(
+            request.copy(
+                baseUrl = server.url("/v1").toString(),
+                protocol = AiApiProtocol.RESPONSES,
+            ),
+        )
+        assertEquals(AiFailureKind.EMPTY_RESPONSE, (result as com.yingjing.pfa.domain.ai.AiChatResult.Failure).kind)
+    }
+
+    @Test
+    fun responsesProtocol_badRequest_mapsToBadRequestWithDetail() = runBlocking {
+        remote.preferChineseError = true
+        server.enqueue(MockResponse().setResponseCode(400).setBody(
+            """{"error":{"code":"401006","message":"The service ID does not exist.",""" +
+                """"message_zh":"输入的服务 ID 不存在。"}}""",
+        ))
+        val result = remote.complete(
+            request.copy(
+                baseUrl = server.url("/v1").toString(),
+                protocol = AiApiProtocol.RESPONSES,
+            ),
+        )
+        val failure = result as com.yingjing.pfa.domain.ai.AiChatResult.Failure
+        assertEquals(AiFailureKind.BAD_REQUEST, failure.kind)
+        assertEquals("输入的服务 ID 不存在。", failure.detail)
     }
 
     @Test

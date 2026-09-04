@@ -1,6 +1,8 @@
 package com.yingjing.pfa.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,8 +38,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
+import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiSettings
+
+/** FlowRow 属实验性 layout API，本文件内白名单启用。 */
+@OptIn(ExperimentalLayoutApi::class)
 
 /**
  * AI 助手配置二级页：服务商预设 chips + Base URL / 模型 / API Key + 明细开关 + 保存 / 测试连接。
@@ -111,6 +117,10 @@ fun AiSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
+            ProtocolSection(
+                selected = state.settings.protocol,
+                onProtocol = viewModel::setProtocol,
+            )
             ApiKeyField(
                 hasKey = state.hasKey,
                 keyTail = state.keyTail,
@@ -147,6 +157,7 @@ fun AiSettingsScreen(
             testing = state.testing,
             status = state.status,
             statusArg = state.settings.model,
+            statusDetail = state.statusDetail,
             canSubmit = state.settings.isConfigured,
             onSave = ::submitSave,
             onTest = ::submitTest,
@@ -155,6 +166,7 @@ fun AiSettingsScreen(
 }
 
 /** 服务商预设 chips：选中即回填默认 Base URL / 模型（仍可手改）。 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProviderSection(
     selected: AiProviderPreset,
@@ -166,12 +178,14 @@ private fun ProviderSection(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         LabeledSection(stringResource(R.string.ai_provider)) {
-            Row(
+            // FlowRow 自动换行：7 个 chip 一行放不下，Row 会把后面的挤出屏幕。
+            FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 val presets = listOf(
                     AiProviderPreset.DEEPSEEK,
@@ -203,6 +217,37 @@ internal fun AiProviderPreset.labelRes(): Int = when (this) {
     AiProviderPreset.HUNYUAN -> R.string.ai_provider_hunyuan
     AiProviderPreset.DOUBAO -> R.string.ai_provider_doubao
     AiProviderPreset.CUSTOM -> R.string.ai_provider_custom
+}
+
+/**
+ * 接口协议选择：Chat Completions 为主流通用；部分服务商（如腾讯 TokenHub hy3）
+ * 只开放 Responses 端点，选错会得到「服务 ID 不存在」类 400 错误。
+ */
+@Composable
+private fun ProtocolSection(
+    selected: AiApiProtocol,
+    onProtocol: (AiApiProtocol) -> Unit,
+) {
+    LabeledSection(stringResource(R.string.ai_protocol)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = selected == AiApiProtocol.CHAT_COMPLETIONS,
+                onClick = { onProtocol(AiApiProtocol.CHAT_COMPLETIONS) },
+                label = { Text(stringResource(R.string.ai_protocol_chat_completions)) },
+            )
+            FilterChip(
+                selected = selected == AiApiProtocol.RESPONSES,
+                onClick = { onProtocol(AiApiProtocol.RESPONSES) },
+                label = { Text(stringResource(R.string.ai_protocol_responses)) },
+            )
+        }
+    }
 }
 
 /**
@@ -289,6 +334,7 @@ private fun ActionSection(
     testing: Boolean,
     status: AiStatus?,
     statusArg: String,
+    statusDetail: String?,
     canSubmit: Boolean,
     onSave: () -> Unit,
     onTest: () -> Unit,
@@ -324,7 +370,7 @@ private fun ActionSection(
         }
         status?.let {
             Text(
-                text = it.resolveText(statusArg),
+                text = it.resolveText(statusArg, statusDetail),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = if (it.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
@@ -334,7 +380,7 @@ private fun ActionSection(
 }
 
 @Composable
-private fun AiStatus.resolveText(arg: String): String = when (this) {
+private fun AiStatus.resolveText(arg: String, detail: String?): String = when (this) {
     AiStatus.CONFIG_SAVED -> stringResource(R.string.ai_config_saved)
     AiStatus.KEY_CLEARED -> stringResource(R.string.ai_key_cleared)
     AiStatus.NOT_CONFIGURED -> stringResource(R.string.ai_err_not_configured)
@@ -345,8 +391,12 @@ private fun AiStatus.resolveText(arg: String): String = when (this) {
     AiStatus.UNAUTHORIZED -> stringResource(R.string.ai_err_unauthorized)
     AiStatus.RATE_LIMITED -> stringResource(R.string.ai_err_rate_limited)
     AiStatus.SERVER_ERROR -> stringResource(R.string.ai_err_server)
+    AiStatus.EMPTY_RESPONSE -> stringResource(R.string.ai_err_empty_response)
+    // 有服务商原始说明时直接展示（如「输入的服务 ID 不存在…」），否则退回通用文案。
     AiStatus.BAD_REQUEST -> stringResource(R.string.ai_err_bad_request_generic)
-    AiStatus.BAD_REQUEST_DETAIL -> stringResource(R.string.ai_err_bad_request_generic)
+    AiStatus.BAD_REQUEST_DETAIL -> detail?.takeIf { it.isNotBlank() }
+        ?.let { stringResource(R.string.ai_err_bad_request, it) }
+        ?: stringResource(R.string.ai_err_bad_request_generic)
 }
 
 private val AiStatus.isError: Boolean

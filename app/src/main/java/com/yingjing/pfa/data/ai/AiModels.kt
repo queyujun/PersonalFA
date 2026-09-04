@@ -1,7 +1,7 @@
 package com.yingjing.pfa.data.ai
 
 /**
- * AI 功能的模型与请求参数（OpenAI 兼容 chat completions 协议）。
+ * AI 功能的模型与请求参数（OpenAI 兼容：Chat Completions / Responses 双协议）。
  */
 
 import kotlinx.serialization.Serializable
@@ -40,6 +40,23 @@ enum class AiProviderPreset(
 }
 
 /**
+ * 接口协议：同一 OpenAI 兼容 Base URL 下，服务商可能只支持其中一种。
+ * - CHAT_COMPLETIONS：POST {base}/chat/completions，请求 `messages`，主流通用；
+ * - RESPONSES：POST {base}/responses，请求 `instructions` + `input`（腾讯 TokenHub hy3 即只开此路）。
+ */
+enum class AiApiProtocol(val id: String) {
+    CHAT_COMPLETIONS("chat_completions"),
+    RESPONSES("responses"),
+    ;
+
+    companion object {
+        /** 按 id 反查（DataStore 存的是 id 字符串）；未知 id 回退 CHAT_COMPLETIONS。 */
+        fun fromId(id: String?): AiApiProtocol =
+            entries.firstOrNull { it.id == id } ?: CHAT_COMPLETIONS
+    }
+}
+
+/**
  * AI 配置。API Key 不在此存储（走 [com.yingjing.pfa.core.security.AiSecretStore]），
  * 这里只存「是否已配置」由外部单独查询。
  */
@@ -47,6 +64,7 @@ data class AiSettings(
     val providerId: String = AiProviderPreset.DEEPSEEK.id,
     val baseUrl: String = "",
     val model: String = "",
+    val protocol: AiApiProtocol = AiApiProtocol.CHAT_COMPLETIONS,
     /** payload 是否包含明细持仓（false = 仅分类汇总，进一步降低外发数据量）。 */
     val includeDetails: Boolean = true,
     /** 用户已确认隐私提示（资产数据将发送到所配置服务商）。 */
@@ -71,6 +89,7 @@ data class AiChatRequest(
     val apiKey: String,
     val model: String,
     val messages: List<AiChatMessage>,
+    val protocol: AiApiProtocol = AiApiProtocol.CHAT_COMPLETIONS,
     val maxTokens: Int = DEFAULT_MAX_TOKENS,
     val temperature: Double = DEFAULT_TEMPERATURE,
 ) {

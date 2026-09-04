@@ -4,7 +4,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-
 /**
  * OpenAI 兼容 chat completions 响应体的解析（纯函数，便于单元测试）。
  *
@@ -27,10 +26,39 @@ object AiChatParser {
         content to model
     }.getOrNull()
 
-    /** 解析错误响应体中的 `error.message`（各家通用格式）；取不到返回 null。 */
-    fun errorBody(body: String): String? = runCatching {
-        json.parseToJsonElement(body).jsonObject["error"]
-            ?.jsonObject?.get("message")?.jsonPrimitive?.content
+    /**
+     * 解析 OpenAI Responses API 成功响应：返回 (text, model)；取不到文本返回 null。
+     *
+     * 响应结构为 `output: [{type:"message", content:[{type:"output_text", text:"..."}]}]`；
+     * 兼容个别网关直接给 `output_text` 顶层字段的情况。
+     */
+    fun parseResponses(body: String): Pair<String, String?>? = runCatching {
+        val root = json.parseToJsonElement(body).jsonObject
+        val model = root["model"]?.jsonPrimitive?.takeIf { it.isString }?.content
+        val text = root["output_text"]?.jsonPrimitive?.takeIf { it.isString }?.content
+            ?: root["output"]?.jsonArray
+                ?.asSequence()
+                ?.filterIsInstance<kotlinx.serialization.json.JsonObject>()
+                ?.filter { it["type"]?.jsonPrimitive?.content != "reasoning" }
+                ?.flatMap { it["content"]?.jsonArray?.asSequence().orEmpty() }
+                ?.filterIsInstance<kotlinx.serialization.json.JsonObject>()
+                ?.firstOrNull { it["type"]?.jsonPrimitive?.content == "output_text" }
+                ?.get("text")?.jsonPrimitive?.takeIf { it.isString }?.content
+            ?: return null
+        if (text.isBlank()) return null
+        text to model
+    }.getOrNull()
+
+    /**
+     * 解析错误响应体中的服务商错误说明；取不到返回 null。
+     *
+     * 各家通用格式为 `error.message`；腾讯 TokenHub 等网关同时返回
+     * `error.message_zh`（中文说明）——中文环境优先展示它。
+     */
+    fun errorBody(body: String, preferChinese: Boolean = false): String? = runCatching {
+        val error = json.parseToJsonElement(body).jsonObject["error"]?.jsonObject ?: return null
+        val zh = if (preferChinese) error["message_zh"]?.jsonPrimitive?.takeIf { it.isString }?.content else null
+        (zh?.takeIf { it.isNotBlank() } ?: error["message"]?.jsonPrimitive?.takeIf { it.isString }?.content)
     }.getOrNull()
 
     /**

@@ -45,6 +45,7 @@ class AiSettingsStoreImpl @Inject constructor(
             providerId = prefs[PROVIDER_ID] ?: AiProviderPreset.DEEPSEEK.id,
             baseUrl = prefs[BASE_URL] ?: "",
             model = prefs[MODEL] ?: "",
+            protocol = AiApiProtocol.fromId(prefs[PROTOCOL]),
             includeDetails = prefs[INCLUDE_DETAILS] ?: true,
             consented = prefs[CONSENTED] ?: false,
         )
@@ -55,6 +56,7 @@ class AiSettingsStoreImpl @Inject constructor(
             prefs[PROVIDER_ID] = settings.providerId
             prefs[BASE_URL] = settings.baseUrl
             prefs[MODEL] = settings.model
+            prefs[PROTOCOL] = settings.protocol.id
             prefs[INCLUDE_DETAILS] = settings.includeDetails
             prefs[CONSENTED] = settings.consented
         }
@@ -78,6 +80,7 @@ class AiSettingsStoreImpl @Inject constructor(
         val PROVIDER_ID = stringPreferencesKey("provider_id")
         val BASE_URL = stringPreferencesKey("base_url")
         val MODEL = stringPreferencesKey("model")
+        val PROTOCOL = stringPreferencesKey("protocol")
         val INCLUDE_DETAILS = booleanPreferencesKey("include_details")
         val CONSENTED = booleanPreferencesKey("consented")
     }

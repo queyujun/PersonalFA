@@ -529,6 +529,9 @@
     <string name="ai_base_url_hint">https://api.deepseek.com/v1</string>
     <string name="ai_model">模型名稱</string>
     <string name="ai_model_hint">deepseek-chat</string>
+    <string name="ai_protocol">介面協議</string>
+    <string name="ai_protocol_chat_completions">Chat Completions</string>
+    <string name="ai_protocol_responses">Responses</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_hint">sk-…</string>
     <string name="ai_api_key_configured_mask">已儲存 · 尾號 %1$s</string>
@@ -581,6 +584,13 @@
     <string name="ai_retry">重試</string>
     <string name="ai_generated_at">生成於 %1$s · %2$s</string>
     <string name="ai_empty_holdings_hint">請先新增資產，再使用 AI 功能</string>
+    <string name="ai_history_section">歷史記錄</string>
+    <string name="ai_history_empty">暫無歷史記錄，生成後會自動保存到這裡</string>
+    <string name="ai_history_deleted">✓ 已刪除</string>
+    <string name="ai_history_delete_confirm_title">刪除這條記錄？</string>
+    <string name="ai_history_delete_confirm_body">刪除後無法恢復，不影響已生成的內容。</string>
+    <string name="ai_report_title_prefix">報告</string>
+    <string name="ai_insight_title_prefix">分析</string>
     <string name="ai_disclaimer">AI 生成內容僅供參考，不構成投資建議。</string>
 
     <!-- 佔位 -->

@@ -79,6 +79,7 @@ class AiAssistant @Inject constructor(
                 apiKey = apiKey,
                 model = settings.model,
                 messages = messages,
+                protocol = settings.protocol,
             ),
         )
     }

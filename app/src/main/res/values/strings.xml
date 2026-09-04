@@ -529,6 +529,9 @@
     <string name="ai_base_url_hint">https://api.deepseek.com/v1</string>
     <string name="ai_model">Model name</string>
     <string name="ai_model_hint">deepseek-chat</string>
+    <string name="ai_protocol">API protocol</string>
+    <string name="ai_protocol_chat_completions">Chat Completions</string>
+    <string name="ai_protocol_responses">Responses</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_hint">sk-…</string>
     <string name="ai_api_key_configured_mask">Saved · ends with %1$s</string>
@@ -581,6 +584,13 @@
     <string name="ai_retry">Retry</string>
     <string name="ai_generated_at">Generated %1$s · %2$s</string>
     <string name="ai_empty_holdings_hint">Add assets first to use AI features</string>
+    <string name="ai_history_section">History</string>
+    <string name="ai_history_empty">No history yet. Results are saved here automatically after generation</string>
+    <string name="ai_history_deleted">✓ Deleted</string>
+    <string name="ai_history_delete_confirm_title">Delete this record?</string>
+    <string name="ai_history_delete_confirm_body">This cannot be undone. Generated content already shown is not affected.</string>
+    <string name="ai_report_title_prefix">Report</string>
+    <string name="ai_insight_title_prefix">Insight</string>
     <string name="ai_disclaimer">AI-generated content is for reference only and does not constitute investment advice.</string>
 
     <!-- Placeholder -->
