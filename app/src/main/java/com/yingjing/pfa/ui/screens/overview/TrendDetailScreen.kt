@@ -111,7 +111,13 @@ fun TrendDetailScreen(
     val totalLabel = stringResource(R.string.trend_total)
     val customLabel = stringResource(R.string.trend_custom)
 
-    val available = remember(raw) { listOf(TREND_TOTAL_ID, TREND_CUSTOM_ID) + raw.categories.map { it.category }.distinct() }
+    // 前两项固定（总净值/自定义组合）；其余资产类别按最新一天金额从大到小排序。
+    val available = remember(raw) {
+        val latestAmount = raw.categories.groupBy { it.category }
+            .mapValues { (_, pts) -> pts.maxByOrNull { it.epochDay }?.amount ?: 0.0 }
+        listOf(TREND_TOTAL_ID, TREND_CUSTOM_ID) +
+            latestAmount.entries.sortedByDescending { it.value }.map { it.key }
+    }
     val selectedIds = available.filter { it in selected }.ifEmpty { listOf(TREND_TOTAL_ID) }
 
     // 以数据中最晚一天为「今天」锚点（不依赖系统时钟，确定性、可测）。
