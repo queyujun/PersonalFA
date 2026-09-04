@@ -3,7 +3,7 @@
 > 给「下一次会话」看的交接文档。所有代码已提交进 git `main`；此文件随代码版本化。
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + **AI 助手（个人资产报告 + 持仓分析，OpenAI 兼容协议）** + **订阅管理（底部第 5 Tab）** 全部完成，**437 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-订阅管理-20260903.apk`，只保留最新一个）。**AI 功能 + 订阅管理已一并本地提交、未推送**（用户自行 push）。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + **AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入）** + **订阅管理（底部第 5 Tab）** 全部完成，**467 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-备份含AI记录-20260904.apk`）。**本批五项改动已分 5 个 commit 本地提交、未推送**（用户自行 push）。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库内 portable 工具链）
 ```bash
@@ -42,11 +42,13 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - **历史快照清理 + 备份汇率**：`SnapshotRepository.deleteBefore` + DAO `deleteOlderThan` 支持清理旧快照；`FxRepository.save` + 备份导出/导入汇率；`UserRepository.observeUser` 用于恢复后币种符号刷新。✅
 - **加密主备容灾**：CoinGecko `/simple/price` 为加密货币主数据源，新增 OKX 备路（`OkxRemote` + `OkxParser` + `OkxCoinMap`），CoinGecko 失败/空时自动回退到 OKX `/api/v5/market/index-tickers`，`FallbackCryptoRemote` 串联两源取首个有效结果。✅
 - **应用锁（切回重新认证）**：应用从后台切回前台（`ProcessLifecycleOwner` 的 ON_STOP）或冷启动时，在当前页之上盖一层锁定遮罩，需密码或指纹解锁后回到之前正在看的页面，不丢失浏览位置与导航状态（类似银行/支付宝）。新增 `AppLockManager`（`@Singleton`，进程级 `isLocked` 真相源）、`AppLockViewModel`（密码解锁复用 `UserRepository.login` PBKDF2 校验，指纹解锁调 `unlockByBiometric`）、`LockScreen` Composable。设置页「账号与安全」分组加「应用锁」开关（`SyncStateStore.appLockEnabled`，默认启用）；关闭后切回不锁。新增 `lifecycle-process` 依赖 + `@ApplicationScope` CoroutineScope（`AppCoroutineModule`）。冷启动无闪烁：`isLocked` 初始 true，`AppRoot` 的 `sessionState` 初始 Loading 显示空 `Box`。✅
-- **AI 助手（资产报告 + 持仓分析）**：OpenAI 兼容 chat completions 协议，服务商预设 DeepSeek/OpenAI/Kimi/Qwen/腾讯混元/豆包/自定义（选中回填默认 baseUrl/model，可手改；豆包 model 需填方舟模型 ID 或接入点 ep-xxx）。四批实现：
-  - 批1 基建：`AiSecretStore`（Keystore AES/GCM，alias `pfa_ai_key`、文件 `ai_key.bin`，仿 DatabaseKeyProvider）+ `AiSettingsStore`（DataStore "ai_settings"，key 只进 SecretStore）+ `AiChatParser`（choices[0].message.content、剥 `<think>`）+ `OpenAiCompatRemote`（`@AiClient` OkHttp，connect 15s/read 120s/callTimeout 180s；逐状态码显式映射 401/429/5xx，CancellationException rethrow）+ `PortfolioPayloadBuilder`（脱敏白名单：只发 category/type/name/currency/quantity/cost/price/value/plPct 等；**绝不外发 userId/username/note/时间戳**；20k 字符预算超限降级为分类汇总）+ `AiPromptBuilder`（报告模板 7 节 / 分析模板 6 节，双语，禁表格禁代码围栏）+ `AiAssistant`（串 session→holdings→fx→snapshot 趋势→payload→prompt→complete）。
-  - 批2 设置页：`settings_ai` 二级页（`AiSettingsViewModel` 独立，key 明文不进 state 只有尾号掩码；https 校验；测试连接）。
-  - 批3 报告页：`ai_report`（Idle/Loading/Done/Error 四态 + 隐私同意对话框 + SAF 导出 Markdown `CreateDocument("text/markdown")`）+ `AiMarkdownText` 轻量渲染（H1-H3/Bullet/Numbered/Quote/段落合并，`####`+ 降级 3 级剥净 `#`，行内 `**加粗**`）+ Overview 入口卡。
-  - 批4 分析页：`ai_insight`（同骨架 + 可选追问输入，无导出）+ Overview 双卡入口。
+- **AI 助手（资产报告 + 持仓分析）**：OpenAI 兼容**双协议**（Chat Completions / Responses），服务商预设 DeepSeek/OpenAI/Kimi/Qwen/腾讯混元/豆包/自定义（选中回填默认 baseUrl/model，可手改；豆包 model 需填方舟模型 ID 或接入点 ep-xxx）。实现要点：
+  - 基建：`AiSecretStore`（Keystore AES/GCM，alias `pfa_ai_key`、文件 `ai_key.bin`，仿 DatabaseKeyProvider）+ `AiSettingsStore`（DataStore "ai_settings"，key 只进 SecretStore；protocol id 存字符串，`AiApiProtocol.fromId` 反查未知回退 CHAT_COMPLETIONS）+ `AiChatParser`（Chat Completions 解 choices[0].message.content；Responses 解 output_text/output 数组，errorBody **优先中文 message_zh**）+ `OpenAiCompatRemote`（双协议路径 `/chat/completions` vs `/responses`；`@AiClient` OkHttp，connect 15s/read 120s/callTimeout 180s；逐状态码显式映射 401/429/5xx，CancellationException rethrow）+ `PortfolioPayloadBuilder`（脱敏白名单：只发 category/type/name/currency/quantity/cost/price/value/plPct 等；**绝不外发 userId/username/note/时间戳**；20k 字符预算超限降级为分类汇总）+ `AiPromptBuilder`（报告模板 7 节 / 分析模板 6 节，双语，禁表格禁代码围栏，规则引导关键数字加粗）+ `AiAssistant`（串 session→holdings→fx→snapshot 趋势→payload→prompt→complete，按协议出请求）。
+  - 设置页：`settings_ai` 二级页（`AiSettingsViewModel` 独立，key 明文不进 state 只有尾号掩码；https 校验；**协议选择**（FlowRow 双 chip）；测试连接；**错误详情直显**服务商原始 message）。
+  - 报告页：`ai_report`（Idle/Loading/Done/Error 四态 + 隐私同意对话框 + SAF 导出 Markdown `CreateDocument("text/markdown")`）+ `AiMarkdownText` 轻量渲染（H1-H3/Bullet/Numbered/Quote/**表格**/段落合并，`####`+ 降级剥净 `#`，行内 `**加粗**`）+ Overview 入口卡。
+  - 分析页：`ai_insight`（同骨架 + 可选追问输入，无导出）+ Overview 双卡入口。
+  - **历史记录**：生成成功自动保存 `ai_report_records`（命名「报告/分析 yyyy-MM-dd」），`ai_report`/`ai_insight` 页内底部「历史」区按日期从新到旧列出，可点回看、左滑/按钮删除（带确认对话框）。DB v12→13（破坏性迁移）。VM `flatMapLatest` 订阅历史流；删除经 pendingDelete 确认 + deletedHint Snackbar。
+  - **备份纳入**：`BackupData` 增 `aiRecords`（全量导出导入）+ `aiSettings`（provider/baseUrl/model/protocol/includeDetails/consented）；**API Key 明确不进备份**（Keystore 换机恢复失效，新机重录）——测试断言备份明文不含 key。老备份无新字段→空列表/null 不覆盖本机（向后兼容）。恢复后 consented 随行免重复隐私弹窗。
   - 隐私硬约束：API Key 只进 Authorization 头不进 prompt；报告内容不落盘不进日志（无 logging interceptor）；导出走 SAF 由用户自选位置。
 - **订阅管理（底部第 5 Tab）**：三批实现（数据层 DB v12 → UI 三件套 → 测试+构建）。
   - 数据层：`SubscriptionEntity`/`SubscriptionDao`（DB v11→12 破坏性迁移）+ `Subscription`/`SubscriptionCategory`(VIDEO/MUSIC/AI/SOFTWARE/CLOUD/NEWS/OTHER)/`BillingCycle`(WEEKLY/MONTHLY/QUARTERLY/YEARLY，`monthlyFactor` 折算) + `SubscriptionRepository`/Impl；续费顺延纯函数 `SubscriptionRenewal`（月末钳制锚定顺延结果不漂移，如 1/31→2/28 后续停在 28；跨年多周期一次顺延到第一个未来日期，不重复计费）；成本汇总纯函数 `SubscriptionCost`（inactive 剔除、按展示币种换算、byCategory 降序 0 排除）。
@@ -89,4 +91,10 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
   - 更早：`4336816`（4 套高端配色+改名 RICHWIN）/ `ffb84bb`（三主题配色）
   - `.gitignore` 已收紧为 `settings-*.json` / `*-preview.html` 通配，覆盖所有根目录密钥文件与预览产物（均未入库）。
 - **AI 助手 + 订阅管理已一并本地提交（2026-09-03，主分支 `main`）**，未推送。含订阅管理三批、AI 助手四批、行内币种修复、品牌 logo 资源。
+- **2026-09-04 五项改动分 5 个 commit 本地提交（主分支 `main`，未推送）**：
+  - `b945ad1` feat: OpenAI Responses 双协议支持（TokenHub hy3）+ 设置页协议切换与错误详情直显
+  - `0999ccc` feat: AI 历史记录自动保存/列表/删除 + 备份纳入 AI 记录与设置（API Key 除外）
+  - `c81bbdd` feat: AI 报告 Markdown 渲染增强（表格/粗体/引用）+ 提示词引导关键数字加粗
+  - `4d9dc96` fix: 趋势明细页类别按最新一天金额从大到小排序
+  - `6be7fa2` chore: gitignore 增加本机探针脚本（testhunyuan.py / probe_*.py）
 - **用户未推送**：提交链均未 `git push`，用户自行 push，不替用户推送。
