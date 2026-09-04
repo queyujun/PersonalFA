@@ -3,12 +3,17 @@ package com.yingjing.pfa.data.backup
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.yingjing.pfa.data.ai.AiSettings
+import com.yingjing.pfa.data.ai.AiApiProtocol
+import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.data.local.AppDatabase
 import com.yingjing.pfa.data.local.HoldingEntity
 import com.yingjing.pfa.data.local.UserEntity
 import com.yingjing.pfa.domain.model.FxRates
 import com.yingjing.pfa.domain.repository.FxRepository
+import com.yingjing.pfa.fakes.FakeAiSettingsStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -25,6 +30,7 @@ class BackupManagerTest {
 
     private lateinit var db: AppDatabase
     private lateinit var fx: FakeFxRepo
+    private lateinit var aiSettingsStore: FakeAiSettingsStore
     private lateinit var manager: BackupManager
 
     @Before
@@ -34,9 +40,11 @@ class BackupManagerTest {
             AppDatabase::class.java,
         ).allowMainThreadQueries().build()
         fx = FakeFxRepo()
+        aiSettingsStore = FakeAiSettingsStore()
         manager = BackupManager(
             db.userDao(), db.holdingDao(), db.netWorthSnapshotDao(),
-            db.categorySnapshotDao(), db.alertDao(), db.subscriptionDao(), fx,
+            db.categorySnapshotDao(), db.alertDao(), db.subscriptionDao(),
+            db.aiReportRecordDao(), aiSettingsStore, fx,
         )
     }
 
@@ -163,6 +171,81 @@ class BackupManagerTest {
         assertEquals(0, db.subscriptionDao().getAllForBackup().size)
     }
 
+    @Test
+    fun export_thenImport_aiRecordsAndSettingsRoundTrip() = runTest {
+        db.userDao().insert(UserEntity(id = 1, username = "alex", passwordHash = "h", defaultCurrency = "CNY", createdAt = 1))
+        db.aiReportRecordDao().insertAll(
+            listOf(
+                AiReportRecordEntity(
+                    id = 0, userId = 1, kind = AiReportRecordEntity.KIND_REPORT,
+                    title = "报告 2026-09-04", model = "deepseek-chat",
+                    markdown = "## Executive Summary\n净值 **42.3%** 增长", createdAt = 1_700_000_000_000L,
+                ),
+                AiReportRecordEntity(
+                    id = 0, userId = 1, kind = AiReportRecordEntity.KIND_INSIGHT,
+                    title = "分析 2026-09-04", model = null,
+                    markdown = "## Overall Assessment\n**优**", createdAt = 1_700_100_000_000L,
+                ),
+            ),
+        )
+        aiSettingsStore.save(
+            AiSettings(
+                providerId = "deepseek", baseUrl = "https://api.deepseek.com/v1",
+                model = "deepseek-chat", protocol = AiApiProtocol.RESPONSES,
+                includeDetails = false, consented = true,
+            ),
+        )
+        // API Key 只存在本机内存/Keystore 层，绝不进备份——导出前后不动它。
+        aiSettingsStore.setApiKey("sk-local-only")
+
+        val blob = manager.export("pw123".toCharArray())
+        db.aiReportRecordDao().deleteAll()
+        aiSettingsStore.save(AiSettings()) // 模拟换机：配置被重置
+        assertEquals(0, db.aiReportRecordDao().getAllForBackup().size)
+        // 备份明文中不含 API Key（key 只在本机 Keystore 层，绝不进备份文件）
+        val backupPlain = String(
+            requireNotNull(com.yingjing.pfa.core.backup.BackupCrypto.decrypt(blob, "pw123".toCharArray())),
+            Charsets.UTF_8,
+        )
+        assertFalse(backupPlain.contains("sk-local-only"))
+
+        assertTrue(manager.import(blob, "pw123".toCharArray()))
+        val records = db.aiReportRecordDao().getAllForBackup()
+        assertEquals(2, records.size)
+        val report = records.first { it.kind == AiReportRecordEntity.KIND_REPORT }
+        assertEquals("报告 2026-09-04", report.title)
+        assertEquals("deepseek-chat", report.model)
+        assertTrue(report.markdown.contains("**42.3%**"))
+        val insight = records.first { it.kind == AiReportRecordEntity.KIND_INSIGHT }
+        assertNull(insight.model)
+
+        val restored = aiSettingsStore.settingsFlowForTest()
+        assertEquals("deepseek", restored.providerId)
+        assertEquals("https://api.deepseek.com/v1", restored.baseUrl)
+        assertEquals(AiApiProtocol.RESPONSES, restored.protocol)
+        assertFalse(restored.includeDetails)
+        assertTrue(restored.consented)
+        assertEquals("sk-local-only", aiSettingsStore.storedKey) // key 未被动过
+    }
+
+    @Test
+    fun import_legacyBackupWithoutAiData_keepsLocalSettingsAndEmptyRecords() = runTest {
+        // 老备份（无 aiRecords/aiSettings 字段）→ 不崩溃、不清本机 AI 配置、记录表为空。
+        aiSettingsStore.save(
+            AiSettings(providerId = "openai", baseUrl = "https://api.openai.com/v1", model = "gpt-4o-mini"),
+        )
+        val legacyJson = """
+            {"version":1,"users":[],"holdings":[],"snapshots":[],"categorySnapshots":[],"alerts":[]}
+        """.trimIndent()
+        val blob = com.yingjing.pfa.core.backup.BackupCrypto.encrypt(
+            legacyJson.toByteArray(Charsets.UTF_8), "pw123".toCharArray(),
+        )
+        assertTrue(manager.import(blob, "pw123".toCharArray()))
+        assertEquals(0, db.aiReportRecordDao().getAllForBackup().size)
+        val local = aiSettingsStore.settingsFlowForTest()
+        assertEquals("openai", local.providerId) // 未被 null 覆盖为默认值
+    }
+
     /** 内存 fake FxRepository：current 返回预设值，save 记录之。 */
     private class FakeFxRepo : FxRepository {
         var currentRates: FxRates = FxRates()
@@ -173,4 +256,7 @@ class BackupManagerTest {
         override suspend fun refresh(): FxRates = currentRates
         override suspend fun save(rates: FxRates) { savedRates = rates }
     }
+
+    /** 测试辅助：FakeAiSettingsStore 的 Flow 取当前值（runTest 内 first()）。 */
+    private suspend fun FakeAiSettingsStore.settingsFlowForTest(): AiSettings = settings.first()
 }

@@ -5,6 +5,7 @@ import com.yingjing.pfa.data.ai.AiChatRequest
 import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiRemote
 import com.yingjing.pfa.data.ai.AiSettings
+import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.domain.ai.AiAssistant
 import com.yingjing.pfa.domain.ai.AiChatResult
 import com.yingjing.pfa.domain.ai.AiFailureKind
@@ -17,6 +18,7 @@ import com.yingjing.pfa.domain.model.NetWorthPoint
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.fakes.FakeAiRemote
+import com.yingjing.pfa.fakes.FakeAiReportRecordRepository
 import com.yingjing.pfa.fakes.FakeAiSettingsStore
 import com.yingjing.pfa.fakes.FakeHoldingRepository
 import com.yingjing.pfa.fakes.FakeSessionManager
@@ -56,6 +58,7 @@ class AiInsightViewModelTest {
     private val session = FakeSessionManager()
     private val users = FakeUserRepository()
     private val holdingsRepo = FakeHoldingRepository()
+    private val recordsRepo = FakeAiReportRecordRepository()
 
     @Before
     fun setup() {
@@ -107,6 +110,8 @@ class AiInsightViewModelTest {
             settingsStore = store,
         ),
         settingsStore = store,
+        recordRepository = recordsRepo,
+        sessionManager = session,
     )
 
     private val fx = object : FxRepository {
@@ -152,6 +157,61 @@ class AiInsightViewModelTest {
         val done = vm.uiState.value as AiUiState.Done
         assertEquals("ok", done.markdown)
         assertEquals("deepseek-chat", done.model)
+    }
+
+    @Test
+    fun generate_success_autoSavesRecord_withDateTitle() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        val vm = viewModel()
+        vm.generate()
+        assertTrue(vm.uiState.value is AiUiState.Done)
+
+        // 自动保存：kind=insight、标题为本地日期 yyyy-MM-dd、内容与模型透传
+        val record = recordsRepo.records.single()
+        assertEquals(1L, record.userId)
+        assertEquals(AiReportRecordEntity.KIND_INSIGHT, record.kind)
+        assertTrue("标题应为 yyyy-MM-dd", record.title.matches(Regex("\\d{4}-\\d{2}-\\d{2}")))
+        assertEquals("ok", record.markdown)
+        assertEquals("deepseek-chat", record.model)
+        assertEquals(record.createdAt, (vm.uiState.value as AiUiState.Done).generatedAtMs)
+    }
+
+    @Test
+    fun generate_failure_doesNotSaveRecord() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        remote.results += AiChatResult.Failure(AiFailureKind.RATE_LIMITED)
+        val vm = viewModel()
+        vm.generate()
+        assertTrue(vm.uiState.value is AiUiState.Error)
+        assertTrue(recordsRepo.records.isEmpty())
+    }
+
+    @Test
+    fun delete_confirmRemovesRecord_andCancelKeeps() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        val vm = viewModel()
+        vm.generate()
+        val recordId = recordsRepo.records.single().id
+
+        // 取消：不删
+        vm.requestDelete(recordId)
+        assertEquals(recordId, vm.pendingDelete.value)
+        vm.cancelDelete()
+        assertEquals(null, vm.pendingDelete.value)
+        assertEquals(1, recordsRepo.records.size)
+
+        // 确认：删除并置位提示
+        vm.requestDelete(recordId)
+        vm.confirmDelete()
+        assertTrue(recordsRepo.records.isEmpty())
+        assertEquals(null, vm.pendingDelete.value)
+        assertTrue(vm.deletedHint.value)
+
+        vm.clearDeletedHint()
+        assertFalse(vm.deletedHint.value)
     }
 
     @Test

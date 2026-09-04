@@ -12,9 +12,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.ai.AiFailureKind
+import com.yingjing.pfa.domain.model.AiReportRecord
 
 /**
  * AI 持仓分析页：Idle（说明 + 可选聚焦问题）→ Loading（可取消）→ Done（Markdown 展示）/ Error（重试）。
@@ -56,14 +59,24 @@ fun AiInsightScreen(
     val state by viewModel.uiState.collectAsState()
     val consented by viewModel.consented.collectAsState()
     val cancelHint by viewModel.cancelHint.collectAsState()
+    val history by viewModel.history.collectAsState()
+    val pendingDelete by viewModel.pendingDelete.collectAsState()
+    val deletedHint by viewModel.deletedHint.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val cancelledText = stringResource(R.string.ai_generation_cancelled)
+    val deletedText = stringResource(R.string.ai_history_deleted)
 
     LaunchedEffect(cancelHint) {
         if (cancelHint == AiCancelHint.JUST_CANCELLED) {
             snackbarHostState.showSnackbar(cancelledText)
             viewModel.clearCancelHint()
+        }
+    }
+    LaunchedEffect(deletedHint) {
+        if (deletedHint) {
+            snackbarHostState.showSnackbar(deletedText)
+            viewModel.clearDeletedHint()
         }
     }
 
@@ -122,6 +135,13 @@ fun AiInsightScreen(
                     )
                 }
 
+                Spacer(Modifier.height(24.dp))
+                HistorySection(
+                    records = history,
+                    titlePrefix = stringResource(R.string.ai_insight_title_prefix),
+                    onDelete = viewModel::requestDelete,
+                )
+
                 Spacer(Modifier.height(16.dp))
                 Text(
                     stringResource(R.string.ai_disclaimer),
@@ -132,6 +152,25 @@ fun AiInsightScreen(
 
             SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
         }
+    }
+
+    // 删除确认
+    if (pendingDelete != null) {
+        AlertDialog(
+            onDismissRequest = viewModel::cancelDelete,
+            title = { Text(stringResource(R.string.ai_history_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.ai_history_delete_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmDelete) {
+                    Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::cancelDelete) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
     }
 
     if (showPrivacyDialog) {
@@ -245,7 +284,7 @@ private fun ErrorSection(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                stringResource(errorResOf(error.kind)),
+                errorTextOf(error.kind, error.detail),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
             )
@@ -266,6 +305,76 @@ private fun ErrorSection(
                     Text(stringResource(R.string.ai_go_settings))
                 }
             }
+        }
+    }
+}
+
+/**
+ * 历史记录分区：标题「历史分析」+ 从新到旧的记录列表（与报告页 HistorySection 同款，
+ * 因两个 Screen 分属不同文件且组件均为 private，此处各自持有同名实现）。
+ */
+@Composable
+private fun HistorySection(
+    records: List<AiReportRecord>,
+    titlePrefix: String,
+    onDelete: (Long) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.ai_history_section),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        if (records.isEmpty()) {
+            Text(
+                stringResource(R.string.ai_history_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            records.forEach { record ->
+                HistoryItem(
+                    record = record,
+                    titlePrefix = titlePrefix,
+                    onDelete = { onDelete(record.id) },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        }
+    }
+}
+
+/** 单条历史记录行。 */
+@Composable
+private fun HistoryItem(
+    record: AiReportRecord,
+    titlePrefix: String,
+    onDelete: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "$titlePrefix ${record.title}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = formatGeneratedAt(record.createdAt),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onDelete) {
+            Icon(
+                Icons.Filled.Delete,
+                contentDescription = stringResource(R.string.common_delete),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

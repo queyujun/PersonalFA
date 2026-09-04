@@ -7,6 +7,7 @@ import com.yingjing.pfa.core.security.KeystoreAiSecretStore
 import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.ai.AiSettingsStoreImpl
 import com.yingjing.pfa.data.notification.AndroidAlertNotifier
+import com.yingjing.pfa.data.repository.AiReportRecordRepositoryImpl
 import com.yingjing.pfa.data.repository.AlertRepositoryImpl
 import com.yingjing.pfa.data.repository.FxRepositoryImpl
 import com.yingjing.pfa.data.repository.HoldingRepositoryImpl
@@ -22,6 +23,7 @@ import com.yingjing.pfa.data.sync.LanguageStoreImpl
 import com.yingjing.pfa.data.sync.ThemeStore
 import com.yingjing.pfa.data.sync.ThemeStoreImpl
 import com.yingjing.pfa.domain.alert.AlertNotifier
+import com.yingjing.pfa.domain.repository.AiReportRecordRepository
 import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HoldingRepository
@@ -90,6 +92,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindThemeStore(impl: ThemeStoreImpl): ThemeStore
+
+    @Binds
+    @Singleton
+    abstract fun bindAiReportRecordRepository(
+        impl: AiReportRecordRepositoryImpl,
+    ): AiReportRecordRepository
 
     @Binds
     @Singleton

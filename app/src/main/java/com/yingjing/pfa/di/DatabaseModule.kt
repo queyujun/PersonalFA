@@ -3,6 +3,7 @@ package com.yingjing.pfa.di
 import android.content.Context
 import androidx.room.Room
 import com.yingjing.pfa.core.security.DatabaseKeyProvider
+import com.yingjing.pfa.data.local.AiReportRecordDao
 import com.yingjing.pfa.data.local.AlertDao
 import com.yingjing.pfa.data.local.AppDatabase
 import com.yingjing.pfa.data.local.AppMetaDao
@@ -64,4 +65,8 @@ object DatabaseModule {
 
     @Provides
     fun provideSubscriptionDao(database: AppDatabase): SubscriptionDao = database.subscriptionDao()
+
+    @Provides
+    fun provideAiReportRecordDao(database: AppDatabase): AiReportRecordDao =
+        database.aiReportRecordDao()
 }

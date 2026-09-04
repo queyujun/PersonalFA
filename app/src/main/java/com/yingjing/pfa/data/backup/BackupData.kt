@@ -18,6 +18,13 @@ data class BackupData(
      * 老备份无此字段 → null → 不写回（向后兼容，靠后台刷新补救）。
      */
     val fxRates: BackupFxRates? = null,
+    /** AI 生成结果记录（可选）。老备份无此字段 → 空列表（向后兼容）。 */
+    val aiRecords: List<BackupAiRecord> = emptyList(),
+    /**
+     * AI 配置（可选，不含 API Key——Keystore 换机恢复失效，密钥须在新机重录）。
+     * 老备份无此字段 → null → 不覆盖本机配置（向后兼容）。
+     */
+    val aiSettings: BackupAiSettings? = null,
 )
 
 /** 备份中的汇率快照（以人民币 CNY 为基准：1 单位外币 = ? 人民币）。 */
@@ -123,4 +130,30 @@ data class BackupSubscription(
     val active: Boolean = true,
     val createdAt: Long,
     val updatedAt: Long,
+)
+
+/** 备份中的 AI 生成结果记录（Markdown 原文，随库加密备份）。 */
+@Serializable
+data class BackupAiRecord(
+    val id: Long,
+    val userId: Long,
+    /** report = 资产报告；insight = 持仓分析。 */
+    val kind: String,
+    val title: String,
+    val model: String? = null,
+    val markdown: String,
+    val createdAt: Long,
+)
+
+/** 备份中的 AI 配置（不含 API Key——密钥走 Keystore，换机恢复失效，须重录）。 */
+@Serializable
+data class BackupAiSettings(
+    val providerId: String,
+    val baseUrl: String,
+    val model: String,
+    /** chat_completions / responses。 */
+    val protocol: String,
+    val includeDetails: Boolean,
+    /** 已确认过隐私提示 → 恢复后免重复弹窗。 */
+    val consented: Boolean,
 )

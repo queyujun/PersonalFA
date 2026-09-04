@@ -8,6 +8,7 @@ import com.yingjing.pfa.data.ai.AiChatRequest
 import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiRemote
 import com.yingjing.pfa.data.ai.AiSettings
+import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.domain.ai.AiAssistant
 import com.yingjing.pfa.domain.ai.AiChatResult
 import com.yingjing.pfa.domain.ai.AiFailureKind
@@ -20,6 +21,7 @@ import com.yingjing.pfa.domain.model.NetWorthPoint
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.fakes.FakeAiRemote
+import com.yingjing.pfa.fakes.FakeAiReportRecordRepository
 import com.yingjing.pfa.fakes.FakeAiSettingsStore
 import com.yingjing.pfa.fakes.FakeHoldingRepository
 import com.yingjing.pfa.fakes.FakeSessionManager
@@ -60,6 +62,7 @@ class AiReportViewModelTest {
     private val session = FakeSessionManager()
     private val users = FakeUserRepository()
     private val holdingsRepo = FakeHoldingRepository()
+    private val recordsRepo = FakeAiReportRecordRepository()
 
     @Before
     fun setup() {
@@ -112,6 +115,8 @@ class AiReportViewModelTest {
             settingsStore = store,
         ),
         settingsStore = store,
+        recordRepository = recordsRepo,
+        sessionManager = session,
     )
 
     private val fx = object : FxRepository {
@@ -159,6 +164,72 @@ class AiReportViewModelTest {
         assertEquals("deepseek-chat", done.model)
         // 模型名透传自配置（API Key 只进 Authorization 头，不进 prompt，由 Remote 层保证）
         assertEquals("deepseek-chat", remote.requests.single().model)
+    }
+
+    @Test
+    fun generate_success_autoSavesRecord_withDateTitle() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        val vm = viewModel()
+        vm.generate()
+        assertTrue(vm.uiState.value is AiUiState.Done)
+
+        // 自动保存：kind=report、标题为本地日期 yyyy-MM-dd、内容与模型透传
+        val record = recordsRepo.records.single()
+        assertEquals(1L, record.userId)
+        assertEquals(AiReportRecordEntity.KIND_REPORT, record.kind)
+        assertTrue("标题应为 yyyy-MM-dd", record.title.matches(Regex("\\d{4}-\\d{2}-\\d{2}")))
+        assertEquals("ok", record.markdown)
+        assertEquals("deepseek-chat", record.model)
+        assertEquals(record.createdAt, (vm.uiState.value as AiUiState.Done).generatedAtMs)
+    }
+
+    @Test
+    fun generate_success_withoutUser_doesNotSave() = runTest {
+        configuredStore()
+        // 不 seedUserAndHolding：未登录时 AiAssistant 直接返回 NO_USER，不应落库
+        val vm = viewModel()
+        vm.generate()
+        val error = vm.uiState.value as AiUiState.Error
+        assertEquals(AiFailureKind.NO_USER, error.kind)
+        assertTrue(recordsRepo.records.isEmpty())
+    }
+
+    @Test
+    fun generate_failure_doesNotSaveRecord() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        remote.results += AiChatResult.Failure(AiFailureKind.RATE_LIMITED)
+        val vm = viewModel()
+        vm.generate()
+        assertTrue(vm.uiState.value is AiUiState.Error)
+        assertTrue(recordsRepo.records.isEmpty())
+    }
+
+    @Test
+    fun delete_confirmRemovesRecord_andCancelKeeps() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        val vm = viewModel()
+        vm.generate()
+        val recordId = recordsRepo.records.single().id
+
+        // 取消：不删
+        vm.requestDelete(recordId)
+        assertEquals(recordId, vm.pendingDelete.value)
+        vm.cancelDelete()
+        assertEquals(null, vm.pendingDelete.value)
+        assertEquals(1, recordsRepo.records.size)
+
+        // 确认：删除并置位提示
+        vm.requestDelete(recordId)
+        vm.confirmDelete()
+        assertTrue(recordsRepo.records.isEmpty())
+        assertEquals(null, vm.pendingDelete.value)
+        assertTrue(vm.deletedHint.value)
+
+        vm.clearDeletedHint()
+        assertFalse(vm.deletedHint.value)
     }
 
     @Test
@@ -250,6 +321,22 @@ class AiReportViewModelTest {
         AiFailureKind.entries.forEach { kind ->
             assertTrue(errorResOf(kind) != 0)
         }
+    }
+
+    @Test
+    fun generate_badRequest_errorCarriesProviderDetail() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        remote.results += AiChatResult.Failure(
+            AiFailureKind.BAD_REQUEST,
+            "输入的服务 ID 不存在，或模型与服务不匹配。",
+        )
+        val vm = viewModel()
+        vm.generate()
+        val error = vm.uiState.value as AiUiState.Error
+        assertEquals(AiFailureKind.BAD_REQUEST, error.kind)
+        assertEquals("输入的服务 ID 不存在，或模型与服务不匹配。", error.detail)
+        assertTrue(error.canRetry)
     }
 
     /** complete 挂起直到 [gate] 完成，用于驱动取消路径。 */
