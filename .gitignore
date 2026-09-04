@@ -23,6 +23,10 @@ captures/
 # 根目录密钥文件（含 ANTHROPIC_AUTH_TOKEN，严禁入库）
 settings-*.json
 
+# 本机连通性探针脚本（含/曾含真实 API Key，严禁入库）
+testhunyuan.py
+probe_*.py
+
 # 临时预览/设计转储产物
 *-preview.html
 
