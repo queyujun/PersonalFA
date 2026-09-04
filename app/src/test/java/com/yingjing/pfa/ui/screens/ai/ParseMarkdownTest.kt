@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** parseMarkdown 解析规则测试：标题/列表/引用/段落合并/漏网语法降级。 */
+/** parseMarkdown 解析规则测试：标题/列表/引用/分隔线/段落合并/漏网语法降级/行内标记剥除。 */
 class ParseMarkdownTest {
 
     @Test
@@ -43,6 +43,31 @@ class ParseMarkdownTest {
                 MdBlock.Quote("quoted"),
                 MdBlock.Paragraph("plain text"),
             ),
+            blocks,
+        )
+    }
+
+    @Test
+    fun horizontal_rules_parse_as_rule_blocks() {
+        val blocks = parseMarkdown("---\ntext\n***\nmore\n___")
+        assertEquals(
+            listOf(
+                MdBlock.Rule,
+                MdBlock.Paragraph("text"),
+                MdBlock.Rule,
+                MdBlock.Paragraph("more"),
+                MdBlock.Rule,
+            ),
+            blocks,
+        )
+    }
+
+    @Test
+    fun dash_line_shorter_than_three_is_paragraph_not_rule() {
+        // `--` 不构成分隔线，且与后续行合并为同一段落（段落合并规则）
+        val blocks = parseMarkdown("- item\n--\na - b")
+        assertEquals(
+            listOf(MdBlock.Bullet("item"), MdBlock.Paragraph("-- a - b")),
             blocks,
         )
     }
@@ -109,5 +134,35 @@ class ParseMarkdownTest {
             ),
             blocks,
         )
+    }
+
+    @Test
+    fun inline_bold_italic_strikethrough_and_code_are_stripped() {
+        val blocks = parseMarkdown("**42.3%** and *risk* and ~~old~~ and `CNY`")
+        val paragraph = blocks.single() as MdBlock.Paragraph
+        val plain = inlineStyled(paragraph.text).toString()
+        assertEquals("42.3% and risk and old and CNY", plain)
+    }
+
+    @Test
+    fun inline_unclosed_marker_kept_as_literal_text() {
+        val blocks = parseMarkdown("value is **42.3 percent")
+        val paragraph = blocks.single() as MdBlock.Paragraph
+        assertEquals("value is **42.3 percent", inlineStyled(paragraph.text).toString())
+    }
+
+    @Test
+    fun inline_space_padded_marker_not_styled() {
+        // `a * b * c` 两侧带空格：不应误判为斜体
+        val blocks = parseMarkdown("a * b * c")
+        val paragraph = blocks.single() as MdBlock.Paragraph
+        assertEquals("a * b * c", inlineStyled(paragraph.text).toString())
+    }
+
+    @Test
+    fun inline_nested_bold_with_italic_inner() {
+        val blocks = parseMarkdown("**net worth *up* 5%**")
+        val paragraph = blocks.single() as MdBlock.Paragraph
+        assertEquals("net worth up 5%", inlineStyled(paragraph.text).toString())
     }
 }

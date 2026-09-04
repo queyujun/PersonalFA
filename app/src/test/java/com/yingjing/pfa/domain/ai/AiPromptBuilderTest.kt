@@ -22,6 +22,9 @@ class AiPromptBuilderTest {
         assertTrue(system.contains("## Executive Summary"))
         assertTrue(system.contains("## Data Limitations"))
         assertTrue(system.contains("Forbidden: tables"))
+        // 渲染观感：允许 --- 分隔线，并要求关键数字用 **bold** 强调
+        assertTrue(system.contains("`---`"))
+        assertTrue(system.contains("**bold**"))
 
         // 用户消息嵌入 payload
         assertTrue(messages[1].content.contains(payloadJson))

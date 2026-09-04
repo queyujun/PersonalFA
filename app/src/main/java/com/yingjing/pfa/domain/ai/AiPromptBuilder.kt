@@ -5,8 +5,8 @@ import com.yingjing.pfa.data.ai.AiChatMessage
 /**
  * AI 提示词构造：报告与分析两套专业模板（按 locale 双语）。
  *
- * 约束要点：只用给定数据、统一基准币种、显式假设、仅 Markdown `##`/`###` 标题 + 要点列表
- * （禁止表格与代码围栏，便于应用内轻量渲染）、结尾免责声明。
+ * 约束要点：只用给定数据、统一基准币种、显式假设、仅 Markdown `##`/`###` 标题 + 要点列表 +
+ * `---` 分隔线、关键数字用 `**加粗**` 强调（禁止表格与代码围栏，便于应用内轻量渲染）、结尾免责声明。
  */
 object AiPromptBuilder {
 
@@ -33,10 +33,13 @@ object AiPromptBuilder {
             1. Use ONLY the data provided in the JSON. Never invent or assume numbers that are not given.
             2. All amounts are in the base_currency stated in the JSON. State this unit explicitly when citing figures.
             3. When data is missing or ambiguous, state your assumptions explicitly.
-            4. Output plain Markdown ONLY with `##` / `###` headings and bullet lists (`-`) or numbered lists.
+            4. Output plain Markdown ONLY with `##` / `###` headings, bullet lists (`-`) or numbered lists,
+               and `---` horizontal rules to separate major sections.
                Forbidden: tables, code fences, HTML.
-            5. Be specific: cite actual figures and percentages from the data. Avoid generic advice.
-            6. End with a short disclaimer that this is AI-generated analysis, not professional investment advice.
+            5. Emphasize key figures, ratios and conclusions with `**bold**` (e.g. `**42.3%**`).
+               Use them sparingly — only for the numbers or verdicts the reader must notice.
+            6. Be specific: cite actual figures and percentages from the data. Avoid generic advice.
+            7. End with a short disclaimer that this is AI-generated analysis, not professional investment advice.
         """.trimIndent()
     }
 
@@ -52,12 +55,12 @@ object AiPromptBuilder {
             ## Data Limitations
 
             Guidance per section:
-            - Executive Summary: 3-5 bullets; net worth, overall structure, the single most important observation.
+            - Executive Summary: 3-5 bullets; bold the net worth figure and the single most important observation.
             - Asset & Liability Structure: asset/liability ratio, composition by category, liquidity observation.
             - Asset Allocation Analysis: top-3 concentration, cross-market and currency exposure, diversification quality.
             - Returns & Costs: observable P/L from the data, deposit interest rates, possible fee/cost blind spots.
             - Risk Assessment: rate market risk / concentration risk / liquidity risk / currency risk / solvency risk,
-              each rated 高·中·低 (or High·Medium·Low) with one-line justification.
+              each rated **高·中·低** (or **High·Medium·Low**) with one-line justification.
             - Improvement Suggestions: prioritized P1/P2/P3, each with a concrete action AND the reason.
             - Data Limitations: what the data does NOT tell you.
         """.trimIndent()
@@ -73,7 +76,7 @@ object AiPromptBuilder {
             ## Suggested Additional Information
 
             Guidance per section:
-            - Overall Assessment: one-sentence rating (优/良/中/差 or Excellent/Good/Fair/Poor) + justification.
+            - Overall Assessment: one-sentence rating (**优/良/中/差** or **Excellent/Good/Fair/Poor**) + justification.
             - Structure Diagnosis: category weights vs. common diversification benchmarks, concentration, currency exposure.
             - Returns & Costs: observable P/L, yield sources, cost blind spots.
             - Risk Alerts: only risks actually supported by the data, ordered by severity.
