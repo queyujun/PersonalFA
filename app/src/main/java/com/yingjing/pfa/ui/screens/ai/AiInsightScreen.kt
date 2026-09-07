@@ -1,5 +1,6 @@
 package com.yingjing.pfa.ui.screens.ai
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -139,6 +140,7 @@ fun AiInsightScreen(
                 HistorySection(
                     records = history,
                     titlePrefix = stringResource(R.string.ai_insight_title_prefix),
+                    onOpen = viewModel::openRecord,
                     onDelete = viewModel::requestDelete,
                 )
 
@@ -317,6 +319,7 @@ private fun ErrorSection(
 private fun HistorySection(
     records: List<AiReportRecord>,
     titlePrefix: String,
+    onOpen: (Long) -> Unit,
     onDelete: (Long) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -336,6 +339,7 @@ private fun HistorySection(
                 HistoryItem(
                     record = record,
                     titlePrefix = titlePrefix,
+                    onOpen = { onOpen(record.id) },
                     onDelete = { onDelete(record.id) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -344,16 +348,18 @@ private fun HistorySection(
     }
 }
 
-/** 单条历史记录行。 */
+/** 单条历史记录行：点击整行回放该次生成内容。 */
 @Composable
 private fun HistoryItem(
     record: AiReportRecord,
     titlePrefix: String,
+    onOpen: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onOpen)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

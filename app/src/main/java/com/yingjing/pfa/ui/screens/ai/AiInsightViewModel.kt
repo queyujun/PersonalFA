@@ -124,6 +124,20 @@ class AiInsightViewModel @Inject constructor(
         }
     }
 
+    /** 打开（回放）一条历史记录到 Done 态；生成进行中或记录已删除（id 无效）时忽略。 */
+    fun openRecord(recordId: Long) {
+        if (generateJob?.isActive == true) return
+        viewModelScope.launch {
+            recordRepository.getById(recordId)?.let { record ->
+                _uiState.value = AiUiState.Done(
+                    markdown = record.markdown,
+                    generatedAtMs = record.createdAt,
+                    model = record.model,
+                )
+            }
+        }
+    }
+
     /** 请求删除 [recordId]（UI 弹确认框后调 [confirmDelete]）。 */
     fun requestDelete(recordId: Long) {
         _pendingDelete.value = recordId

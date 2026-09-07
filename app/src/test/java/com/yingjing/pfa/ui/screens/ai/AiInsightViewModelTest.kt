@@ -215,6 +215,31 @@ class AiInsightViewModelTest {
     }
 
     @Test
+    fun openRecord_replaysRecord_toDone() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        val vm = viewModel()
+        vm.generate()
+        val saved = recordsRepo.records.single()
+
+        // 回到 Idle 后点击历史条目 → Done 且内容/时间/模型与记录一致
+        vm.cancel()
+        vm.clearCancelHint()
+        vm.openRecord(saved.id)
+        val done = vm.uiState.value as AiUiState.Done
+        assertEquals(saved.markdown, done.markdown)
+        assertEquals(saved.createdAt, done.generatedAtMs)
+        assertEquals(saved.model, done.model)
+    }
+
+    @Test
+    fun openRecord_unknownId_keepsCurrentState() = runTest {
+        val vm = viewModel()
+        vm.openRecord(999L)
+        assertEquals(AiUiState.Idle, vm.uiState.value)
+    }
+
+    @Test
     fun generate_question_passesThroughToPrompt() = runTest {
         configuredStore()
         seedUserAndHolding()
