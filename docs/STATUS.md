@@ -97,4 +97,8 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
   - `c81bbdd` feat: AI 报告 Markdown 渲染增强（表格/粗体/引用）+ 提示词引导关键数字加粗
   - `4d9dc96` fix: 趋势明细页类别按最新一天金额从大到小排序
   - `6be7fa2` chore: gitignore 增加本机探针脚本（testhunyuan.py / probe_*.py）
+- **2026-09-07 两项改动本地提交（主分支 `main`，未推送）**：
+  - `c7b52b1` feat: AI 历史记录条目可点击打开浏览 — 回放该次生成内容（报告页回放后可导出）
+  - `be76745` docs: 项目根新增 CLAUDE.md — 固化协作节奏/构建方式/隐私与密钥约束
+  - 471 个单元测试全绿；APK：`apk/RICHWIN-历史记录点击查看-20260904.apk`
 - **用户未推送**：提交链均未 `git push`，用户自行 push，不替用户推送。
