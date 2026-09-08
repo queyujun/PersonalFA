@@ -5,16 +5,17 @@
 ## 一句话现状
 个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + **AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出）** + **订阅管理（底部第 5 Tab）** 全部完成，**488 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI流式输出-20260907.apk`）。**AI 流式输出改动已本地提交、未推送**（用户自行 push）。
 
-## 本机构建（关键：无系统级 JDK/SDK，用仓库内 portable 工具链）
+## 本机构建（关键：无系统级 JDK/SDK，用仓库外 portable 工具链）
 ```bash
 source /c/AIProjects/Claude/PersonalFA/.toolchain/env.sh   # 载入 JDK17/AndroidSDK/Gradle
-cd /c/AIProjects/Claude/PersonalFA
+cd /c/AIProjects/Claude/PersonalFA-1
 ./gradlew :app:assembleDebug testDebugUnitTest --console=plain
 ```
 - **联网操作（下载依赖/首次构建/curl 探接口）必须关闭沙箱**（Bash `dangerouslyDisableSandbox: true`），否则网络被拦（退出码 137）。
 - `.toolchain/`、`build/`、`local.properties`、`*.apk`、`.claude/settings.local.json` 均已在 `.gitignore`。
-- APK 产物：`app/build/outputs/apk/debug/app-debug.apk`；手动复制到项目根目录 `PersonalFA-<功能>-<日期时间>.apk`（根目录只保留最新一个，旧的删掉避免装错）。
-- **长构建（assembleDebug+test 正常约 2–5 分钟）建议走后台**（Bash `run_in_background: true`，输出重定向到 log 后 tail）——前台撞上 10 分钟超时被 kill 会残留 gradle test 进程、锁住 `build/test-results/.../output.bin`，导致下次构建卡十几分钟并因文件锁 `IOException` 失败。遇此：`./gradlew --stop` + `rm -rf app/build/test-results` 后重构即恢复。
+- APK 产物：`app/build/outputs/apk/debug/app-debug.apk`；手动复制到 `apk/RICHWIN-<功能>-<yyyymmdd>.apk` 交用户真机验证。
+- **长构建（assembleDebug+test 正常约 2–5 分钟，冷启动 Daemon 约 10 分钟）建议走后台**（Bash `run_in_background: true`，轮询读输出文件）——前台撞上 10 分钟超时被 kill 会残留 gradle test 进程、锁住 `build/test-results/.../output.bin`，导致下次构建卡十几分钟并因文件锁 `IOException` 失败。遇此：`./gradlew --stop` + `rm -rf app/build/test-results` 后重构即恢复。
+- 测试结果统计：解析 `app/build/test-results/testDebugUnitTest/TEST-*.xml` 的 tests/failures/errors 属性（当前 488 个全绿）。
 
 ## 技术栈 / 结构
 Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkManager · OkHttp+kotlinx.serialization · 图表 Canvas 自绘。
@@ -78,8 +79,9 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 ## 待办（可选，用户未定优先级）
 1. ~~房产按国家统计局 70 城房价指数自动估算涨跌~~ ✅ 已完成。
 2. 国际财经提醒（需自建快讯 RSS + 关键词打分，尽力而为）。
-3. P7 打磨：深色模式细化、无障碍、性能、E2E、发布签名与正式 DB 迁移（v12 已用破坏性迁移，发布前必修正式 9→12 迁移）。
+3. P7 打磨：深色模式细化、无障碍、性能、E2E、发布签名与正式 DB 迁移（当前 v13 均用破坏性迁移，发布前必修正式 6→13 迁移）。
 4. ~~根目录 `settings.json` 含 `ANTHROPIC_AUTH_TOKEN` 等密钥，未入 `.gitignore`~~ ✅ 已补进 `.gitignore`（`settings-ds/glm/xzprj.json` + 预览 html），均未入库。
+5. **AI 流式输出已上线**（2026-09-08）；若后续再探 SSE 接口，探针脚本（`probe_*.py`，已被 gitignore）与输出 txt（**未被 gitignore**，用完即删，勿入库）放在仓库根目录，用完即删。
 
 ## git
 - 分支 `main` 含全部；特性分支按 `feature/*` 开发后 `--no-ff` 合并。
@@ -103,6 +105,6 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
   - `be76745` docs: 项目根新增 CLAUDE.md — 固化协作节奏/构建方式/隐私与密钥约束
   - 471 个单元测试全绿；APK：`apk/RICHWIN-历史记录点击查看-20260904.apk`
 - **2026-09-08 AI 流式实时输出本地提交（主分支 `main`，未推送）**：
-  - `feat: AI 报告/分析改为 SSE 流式实时输出 — 生成中逐段渲染+自动跟随滚动`
-  - 488 个单元测试全绿；APK：`apk/RICHWIN-AI流式输出-20260907.apk`
+  - `fdf356c` feat: AI 报告/分析改为 SSE 流式实时输出 — 生成中逐段渲染+自动跟随滚动
+  - 488 个单元测试全绿；APK：`apk/RICHWIN-AI流式输出-20260907.apk`（用户已真机验证通过）
 - **用户未推送**：提交链均未 `git push`，用户自行 push，不替用户推送。
