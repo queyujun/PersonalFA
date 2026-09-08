@@ -6,11 +6,12 @@ import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.domain.ai.AiAssistant
-import com.yingjing.pfa.domain.ai.AiChatResult
 import com.yingjing.pfa.domain.ai.AiFailureKind
+import com.yingjing.pfa.domain.ai.AiStreamEvent
 import com.yingjing.pfa.domain.model.AiReportRecord
 import com.yingjing.pfa.domain.repository.AiReportRecordRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +30,7 @@ import javax.inject.Inject
  * AI 持仓分析页 ViewModel：生成（可取消）/ 重新生成 / 可选追问 / 隐私同意 / 历史记录。
  *
  * 与 [AiReportViewModel] 同状态机但不做导出；[question] 透传给分析模板
- * （空白视为未填），由 [AiAssistant.insight] 走 insightMessages。
+ * （空白视为未填），由 [AiAssistant.insightStream] 走 insightMessages。
  * 生成成功后自动保存到本机记录库（SQLCipher，不外发）。
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -81,7 +82,7 @@ class AiInsightViewModel @Inject constructor(
     }
 
     /**
-     * 生成（或重新生成）分析；进行中重复点击忽略。
+     * 生成（或重新生成）分析；流式接收增量并实时更新状态；进行中重复点击忽略。
      * [question] 用户可选的聚焦问题，trim 后空白视为未填。
      */
     fun generate(question: String? = null) {
@@ -90,35 +91,64 @@ class AiInsightViewModel @Inject constructor(
         _uiState.value = AiUiState.Loading
         val trimmed = question?.trim()?.takeIf { it.isNotEmpty() }
         generateJob = viewModelScope.launch {
-            when (val result = aiAssistant.insight(trimmed)) {
-                is AiChatResult.Success -> {
-                    val generatedAtMs = System.currentTimeMillis()
-                    saveRecord(result, generatedAtMs)
-                    _uiState.value = AiUiState.Done(
-                        markdown = result.text,
-                        generatedAtMs = generatedAtMs,
-                        model = result.model,
-                    )
+            val accumulated = StringBuilder()
+            var model: String? = null
+            try {
+                aiAssistant.insightStream(trimmed).collect { event ->
+                    when (event) {
+                        is AiStreamEvent.Delta -> {
+                            accumulated.append(event.text)
+                            _uiState.value = AiUiState.Generating(accumulated.toString(), model)
+                        }
+                        is AiStreamEvent.Model -> {
+                            model = event.name
+                            val current = _uiState.value
+                            if (current is AiUiState.Generating) {
+                                _uiState.value = current.copy(model = model)
+                            }
+                        }
+                        AiStreamEvent.Completed -> completeGeneration(accumulated.toString(), model)
+                        is AiStreamEvent.Failed -> _uiState.value = AiUiState.Error(
+                            kind = event.kind,
+                            detail = event.detail,
+                            canRetry = event.kind !in NO_RETRY_KINDS,
+                        )
+                    }
                 }
-                is AiChatResult.Failure -> _uiState.value = AiUiState.Error(
-                    kind = result.kind,
-                    detail = result.detail,
-                    canRetry = result.kind !in NO_RETRY_KINDS,
-                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // remote 已把网络/超时归一为 Failed 事件；此处兜底收集过程的意外异常
+                _uiState.value = AiUiState.Error(AiFailureKind.NETWORK, e.message, canRetry = true)
             }
         }
     }
 
+    /** 流正常结束：正文为空按空响应报错；否则自动保存并进入 Done。 */
+    private suspend fun completeGeneration(accumulated: String, model: String?) {
+        if (accumulated.isBlank()) {
+            _uiState.value = AiUiState.Error(AiFailureKind.EMPTY_RESPONSE, null, canRetry = true)
+            return
+        }
+        val generatedAtMs = System.currentTimeMillis()
+        saveRecord(accumulated, model, generatedAtMs)
+        _uiState.value = AiUiState.Done(
+            markdown = accumulated,
+            generatedAtMs = generatedAtMs,
+            model = model,
+        )
+    }
+
     /** 生成成功后自动保存（标题存本地日期 yyyy-MM-dd）；失败不影响生成结果展示。 */
-    private suspend fun saveRecord(result: AiChatResult.Success, generatedAtMs: Long) {
+    private suspend fun saveRecord(markdown: String, model: String?, generatedAtMs: Long) {
         val userId = sessionManager.currentUserId.first() ?: return
         runCatching {
             recordRepository.save(
                 userId = userId,
                 kind = AiReportRecordEntity.KIND_INSIGHT,
                 title = reportDate(generatedAtMs),
-                model = result.model,
-                markdown = result.text,
+                model = model,
+                markdown = markdown,
                 createdAt = generatedAtMs,
             )
         }

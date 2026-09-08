@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -73,6 +74,8 @@ fun AiReportScreen(
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollState = rememberScrollState()
+    val followThresholdPx = with(LocalDensity.current) { FOLLOW_SCROLL_THRESHOLD.dp.toPx() }
     val cancelledText = stringResource(R.string.ai_generation_cancelled)
     val exportedText = stringResource(R.string.ai_report_exported)
     val exportFailedText = stringResource(R.string.ai_report_export_failed)
@@ -98,6 +101,16 @@ fun AiReportScreen(
         if (deletedHint) {
             snackbarHostState.showSnackbar(deletedText)
             viewModel.clearDeletedHint()
+        }
+    }
+
+    // 流式生成时自动跟随滚动到底部（用户已上滑阅读时暂停跟随）
+    LaunchedEffect(state) {
+        val s = state
+        if (s is AiUiState.Generating && s.markdown.isNotBlank() &&
+            scrollState.maxValue - scrollState.value < followThresholdPx
+        ) {
+            scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
 
@@ -132,7 +145,7 @@ fun AiReportScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(16.dp),
             ) {
                 when (val s = state) {
@@ -145,6 +158,10 @@ fun AiReportScreen(
                         },
                     )
                     AiUiState.Loading -> LoadingSection(onCancel = viewModel::cancel)
+                    is AiUiState.Generating -> GeneratingSection(
+                        generating = s,
+                        onCancel = viewModel::cancel,
+                    )
                     is AiUiState.Done -> DoneSection(
                         done = s,
                         onRegenerate = viewModel::generate,
@@ -259,6 +276,39 @@ private fun LoadingSection(onCancel: () -> Unit) {
     }
 }
 
+/**
+ * 流式生成中：已到达的增量实时以 Markdown 渲染（首段增量到达前显示「AI 正在分析…」），
+ * 底部进度条 + 取消按钮。
+ */
+@Composable
+private fun GeneratingSection(
+    generating: AiUiState.Generating,
+    onCancel: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (generating.markdown.isBlank()) {
+                    Text(stringResource(R.string.ai_generating), style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    AiMarkdownText(
+                        markdown = generating.markdown,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+        }
+        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.ai_cancel_generation))
+        }
+    }
+}
+
 @Composable
 private fun DoneSection(
     done: AiUiState.Done,
@@ -333,6 +383,9 @@ internal fun fileTimestamp(epochMs: Long): String =
     DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
         .withZone(ZoneId.systemDefault())
         .format(Instant.ofEpochMilli(epochMs))
+
+/** 流式自动跟随滚动的判定距离（px 判定用 dp 值，距底小于该值才跟随）。 */
+private const val FOLLOW_SCROLL_THRESHOLD = 200
 
 /**
  * 历史记录分区：标题「历史报告/历史分析」+ 从新到旧的记录列表。

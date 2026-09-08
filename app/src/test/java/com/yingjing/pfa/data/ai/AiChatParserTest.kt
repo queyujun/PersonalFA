@@ -128,4 +128,97 @@ class AiChatParserTest {
         assertNull(AiChatParser.parseResponses("""{"output_text":"   "}"""))
         assertNull(AiChatParser.parseResponses("not a json"))
     }
+
+    // -------------------------------------------- SSE 流式解析（parseSseData）
+
+    @Test
+    fun parseSseData_chat_deltaAndModelExtracted() {
+        val chunk = AiChatParser.parseSseData(
+            """{"model":"deepseek-chat","choices":[{"delta":{"content":"## 概览"}}]}""",
+            AiApiProtocol.CHAT_COMPLETIONS,
+        )
+        assertEquals(AiSseChunk("## 概览", "deepseek-chat", null), chunk)
+    }
+
+    @Test
+    fun parseSseData_chat_reasoningContent_skipped() {
+        // 推理模型的 reasoning_content 是思考过程，不能混入正文
+        val chunk = AiChatParser.parseSseData(
+            """{"model":"deepseek-chat","choices":[{"delta":{"reasoning_content":"思考中"}}]}""",
+            AiApiProtocol.CHAT_COMPLETIONS,
+        )
+        assertEquals(AiSseChunk(null, "deepseek-chat", null), chunk)
+    }
+
+    @Test
+    fun parseSseData_chat_emptyDelta_returnsNull() {
+        assertNull(
+            AiChatParser.parseSseData(
+                """{"choices":[{"delta":{}}]}""",
+                AiApiProtocol.CHAT_COMPLETIONS,
+            ),
+        )
+    }
+
+    @Test
+    fun parseSseData_responses_textDelta_extracted() {
+        val chunk = AiChatParser.parseSseData(
+            """{"type":"response.output_text.delta","delta":"部分正文"}""",
+            AiApiProtocol.RESPONSES,
+        )
+        assertEquals(AiSseChunk("部分正文", null, null), chunk)
+    }
+
+    @Test
+    fun parseSseData_responses_created_carriesModel() {
+        val chunk = AiChatParser.parseSseData(
+            """{"type":"response.created","response":{"id":"resp_1","model":"hy3"}}""",
+            AiApiProtocol.RESPONSES,
+        )
+        assertEquals(AiSseChunk(null, "hy3", null), chunk)
+    }
+
+    @Test
+    fun parseSseData_responses_doneEvent_ignored() {
+        // *.done 收尾事件携带全文：不得当作增量追加，否则内容翻倍
+        assertNull(
+            AiChatParser.parseSseData(
+                """{"type":"response.output_text.done","text":"全文全文"}""",
+                AiApiProtocol.RESPONSES,
+            ),
+        )
+    }
+
+    @Test
+    fun parseSseData_doneSentinelAndBadLine_ignored() {
+        assertNull(AiChatParser.parseSseData("[DONE]", AiApiProtocol.CHAT_COMPLETIONS))
+        assertNull(AiChatParser.parseSseData("", AiApiProtocol.CHAT_COMPLETIONS))
+        assertNull(AiChatParser.parseSseData("   ", AiApiProtocol.RESPONSES))
+        // TCP 分块截断的半截 JSON：静默跳过不断流
+        assertNull(
+            AiChatParser.parseSseData(
+                """{"model":"deepseek-chat","choices":[{"delta":{"content":"断""",
+                AiApiProtocol.CHAT_COMPLETIONS,
+            ),
+        )
+    }
+
+    @Test
+    fun parseSseData_inStreamError_carriesMessage() {
+        val chunk = AiChatParser.parseSseData(
+            """{"error":{"message":"Model not exist","message_zh":"模型不存在。"}}""",
+            AiApiProtocol.CHAT_COMPLETIONS,
+        )
+        assertEquals(AiSseChunk(null, null, "模型不存在。"), chunk)
+    }
+
+    @Test
+    fun parseSseData_nullDeltaFields_treatedAsMissing() {
+        // 个别网关显式回 JSON null：不得当作 "null" 文本追加
+        val chunk = AiChatParser.parseSseData(
+            """{"model":null,"choices":[{"delta":{"content":null}}]}""",
+            AiApiProtocol.CHAT_COMPLETIONS,
+        )
+        assertNull(chunk)
+    }
 }

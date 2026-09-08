@@ -12,6 +12,7 @@ import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.domain.ai.AiAssistant
 import com.yingjing.pfa.domain.ai.AiChatResult
 import com.yingjing.pfa.domain.ai.AiFailureKind
+import com.yingjing.pfa.domain.ai.AiStreamEvent
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.CategoryPoint
 import com.yingjing.pfa.domain.model.Currency
@@ -31,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -199,7 +201,7 @@ class AiReportViewModelTest {
     fun generate_failure_doesNotSaveRecord() = runTest {
         configuredStore()
         seedUserAndHolding()
-        remote.results += AiChatResult.Failure(AiFailureKind.RATE_LIMITED)
+        remote.streams += listOf(AiStreamEvent.Failed(AiFailureKind.RATE_LIMITED))
         val vm = viewModel()
         vm.generate()
         assertTrue(vm.uiState.value is AiUiState.Error)
@@ -246,7 +248,7 @@ class AiReportViewModelTest {
     fun generate_unauthorized_isRetryable() = runTest {
         configuredStore()
         seedUserAndHolding()
-        remote.results += AiChatResult.Failure(AiFailureKind.UNAUTHORIZED)
+        remote.streams += listOf(AiStreamEvent.Failed(AiFailureKind.UNAUTHORIZED))
         val vm = viewModel()
         vm.generate()
         val error = vm.uiState.value as AiUiState.Error
@@ -258,34 +260,55 @@ class AiReportViewModelTest {
     fun generate_failure_then_fixedConfig_regenerate_succeeds() = runTest {
         configuredStore()
         seedUserAndHolding()
-        remote.results += AiChatResult.Failure(AiFailureKind.RATE_LIMITED)
+        remote.streams += listOf(AiStreamEvent.Failed(AiFailureKind.RATE_LIMITED))
         val vm = viewModel()
         vm.generate()
         assertTrue(vm.uiState.value is AiUiState.Error)
 
-        // 队列耗尽后默认成功：重试直达 Done
+        // 队列耗尽后默认成功流：重试直达 Done
         vm.generate()
         assertTrue(vm.uiState.value is AiUiState.Done)
     }
 
     @Test
-    fun cancel_duringGeneration_returnsToIdle_andIgnoresLateResult() = runTest {
+    fun generate_rendersDeltas_progressivelyBeforeCompletion() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        val gated = GatedRemote()
+        val vm = viewModel(gated)
+
+        vm.generate()
+        // 首段增量已到达：实时渲染为 Generating，尚未落库
+        val generating = vm.uiState.value as AiUiState.Generating
+        assertEquals("部分", generating.markdown)
+        assertEquals("deepseek-chat", generating.model)
+        assertTrue(recordsRepo.records.isEmpty())
+
+        // 放行剩余增量 → 流完成 → Done 并自动保存全文
+        gated.gate.complete(Unit)
+        val done = vm.uiState.value as AiUiState.Done
+        assertEquals("部分后文", done.markdown)
+        assertEquals("deepseek-chat", done.model)
+        assertEquals("部分后文", recordsRepo.records.single().markdown)
+    }
+
+    @Test
+    fun cancel_duringGeneration_returnsToIdle_andIgnoresLateEvents() = runTest {
         configuredStore()
         seedUserAndHolding()
         val gated = GatedRemote()
         val vm = viewModel(gated)
         vm.generate()
-        assertTrue(vm.uiState.value is AiUiState.Loading) // 挂起在 gate 上
+        assertTrue(vm.uiState.value is AiUiState.Generating) // 首段增量已渲染，挂起在 gate 上
 
         vm.cancel()
         assertEquals(AiUiState.Idle, vm.uiState.value)
         assertEquals(AiCancelHint.JUST_CANCELLED, vm.cancelHint.value)
 
-        // 迟到的结果不覆盖取消后的状态（协程已取消）
-        gated.gate.complete(
-            AiChatResult.Success(text = "late", model = "m", promptTokens = null, completionTokens = null),
-        )
+        // 迟到的增量/完成事件不覆盖取消后的状态（协程已取消，未落库）
+        gated.gate.complete(Unit)
         assertEquals(AiUiState.Idle, vm.uiState.value)
+        assertTrue(recordsRepo.records.isEmpty())
     }
 
     @Test
@@ -352,9 +375,11 @@ class AiReportViewModelTest {
     fun generate_badRequest_errorCarriesProviderDetail() = runTest {
         configuredStore()
         seedUserAndHolding()
-        remote.results += AiChatResult.Failure(
-            AiFailureKind.BAD_REQUEST,
-            "输入的服务 ID 不存在，或模型与服务不匹配。",
+        remote.streams += listOf(
+            AiStreamEvent.Failed(
+                AiFailureKind.BAD_REQUEST,
+                "输入的服务 ID 不存在，或模型与服务不匹配。",
+            ),
         )
         val vm = viewModel()
         vm.generate()
@@ -364,14 +389,21 @@ class AiReportViewModelTest {
         assertTrue(error.canRetry)
     }
 
-    /** complete 挂起直到 [gate] 完成，用于驱动取消路径。 */
+    /** 流式替身：发出首段增量后挂起在 [gate]，用于驱动渐进渲染与取消路径。 */
     private class GatedRemote : AiRemote {
-        val gate = CompletableDeferred<AiChatResult>()
+        val gate = CompletableDeferred<Unit>()
         val requests = mutableListOf<AiChatRequest>()
 
-        override suspend fun complete(request: AiChatRequest): AiChatResult {
+        override suspend fun complete(request: AiChatRequest): AiChatResult =
+            error("生成流程应走 stream 路径")
+
+        override fun stream(request: AiChatRequest): Flow<AiStreamEvent> = flow {
             requests += request
-            return gate.await()
+            emit(AiStreamEvent.Model("deepseek-chat"))
+            emit(AiStreamEvent.Delta("部分"))
+            gate.await()
+            emit(AiStreamEvent.Delta("后文"))
+            emit(AiStreamEvent.Completed)
         }
     }
 }

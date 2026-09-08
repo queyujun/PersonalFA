@@ -8,13 +8,15 @@ import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HoldingRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.UserRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * AI 助手门面：收集当前用户数据 → 构造脱敏 payload → 组装 prompt → 调用 OpenAI 兼容接口。
+ * AI 助手门面：收集当前用户数据 → 构造脱敏 payload → 组装 prompt → 调用 OpenAI 兼容接口（流式）。
  *
  * 隐私约束（实现层保证）：
  * - payload 由 [PortfolioPayloadBuilder] 白名单构造，note/身份/时间戳不可能外发；
@@ -32,19 +34,20 @@ class AiAssistant @Inject constructor(
     private val settingsStore: AiSettingsStore,
 ) {
 
-    /** 生成个人资产报告（Markdown）。 */
-    suspend fun report(): AiChatResult = generate(withReportTemplate = true, question = null)
+    /** 生成个人资产报告（Markdown，流式增量事件）。 */
+    suspend fun reportStream(): Flow<AiStreamEvent> = generateStream(withReportTemplate = true, question = null)
 
-    /** 生成持仓分析（Markdown）；[question] 为可选的用户追问。 */
-    suspend fun insight(question: String? = null): AiChatResult = generate(withReportTemplate = false, question)
+    /** 生成持仓分析（Markdown，流式增量事件）；[question] 为可选的用户追问。 */
+    suspend fun insightStream(question: String? = null): Flow<AiStreamEvent> =
+        generateStream(withReportTemplate = false, question)
 
-    private suspend fun generate(withReportTemplate: Boolean, question: String?): AiChatResult {
+    private suspend fun generateStream(withReportTemplate: Boolean, question: String?): Flow<AiStreamEvent> {
         val settings = settingsStore.settings.first()
-        if (!settings.isConfigured) return AiChatResult.Failure(AiFailureKind.NOT_CONFIGURED)
-        val apiKey = settingsStore.apiKey() ?: return AiChatResult.Failure(AiFailureKind.NO_KEY)
+        if (!settings.isConfigured) return flowOf(AiStreamEvent.Failed(AiFailureKind.NOT_CONFIGURED))
+        val apiKey = settingsStore.apiKey() ?: return flowOf(AiStreamEvent.Failed(AiFailureKind.NO_KEY))
 
-        val userId = sessionManager.currentUserId.first() ?: return AiChatResult.Failure(AiFailureKind.NO_USER)
-        val user = userRepository.getUser(userId) ?: return AiChatResult.Failure(AiFailureKind.NO_USER)
+        val userId = sessionManager.currentUserId.first() ?: return flowOf(AiStreamEvent.Failed(AiFailureKind.NO_USER))
+        val user = userRepository.getUser(userId) ?: return flowOf(AiStreamEvent.Failed(AiFailureKind.NO_USER))
 
         val holdings = holdingRepository.observeHoldingsSnapshot(userId)
         val rates = fxRepository.current()
@@ -73,7 +76,7 @@ class AiAssistant @Inject constructor(
             AiPromptBuilder.insightMessages(payloadJson, localeTag, question)
         }
 
-        return aiRemote.complete(
+        return aiRemote.stream(
             AiChatRequest(
                 baseUrl = settings.baseUrl,
                 apiKey = apiKey,

@@ -50,3 +50,21 @@ enum class AiFailureKind {
     /** 响应 200 但解析不出内容。 */
     EMPTY_RESPONSE,
 }
+
+/**
+ * 流式补全事件：按到达顺序发出，以 [Completed]（正常结束）或 [Failed]（失败）终止，
+ * 终止事件之后 Flow 即结束。
+ */
+sealed interface AiStreamEvent {
+    /** 正文增量（推理内容已在 remote 层剔除）。 */
+    data class Delta(val text: String) : AiStreamEvent
+
+    /** 从响应获知的模型名（重复已去重）。 */
+    data class Model(val name: String) : AiStreamEvent
+
+    /** 流正常结束；正文为空时调用方应按 EMPTY_RESPONSE 处理。 */
+    data object Completed : AiStreamEvent
+
+    /** 失败终止：HTTP 状态码映射 / 流中 error 事件 / 网络异常。 */
+    data class Failed(val kind: AiFailureKind, val detail: String? = null) : AiStreamEvent
+}

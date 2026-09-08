@@ -11,12 +11,13 @@ import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.data.session.SessionManager
 import com.yingjing.pfa.domain.ai.AiAssistant
-import com.yingjing.pfa.domain.ai.AiChatResult
 import com.yingjing.pfa.domain.ai.AiFailureKind
+import com.yingjing.pfa.domain.ai.AiStreamEvent
 import com.yingjing.pfa.domain.model.AiReportRecord
 import com.yingjing.pfa.domain.repository.AiReportRecordRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,6 +40,12 @@ sealed interface AiUiState {
     data object Idle : AiUiState
 
     data object Loading : AiUiState
+
+    /** 流式生成中：[markdown] 为已到达正文增量的累积，UI 实时渲染。 */
+    data class Generating(
+        val markdown: String,
+        val model: String?,
+    ) : AiUiState
 
     /** 生成成功；[markdown] 仅内存持有，不落盘。[model] 用于「生成时间 · 模型」脚注。 */
     data class Done(
@@ -123,41 +130,70 @@ class AiReportViewModel @Inject constructor(
         }
     }
 
-    /** 生成（或重新生成）报告；进行中重复点击忽略。 */
+    /** 生成（或重新生成）报告；流式接收增量并实时更新状态；进行中重复点击忽略。 */
     fun generate() {
         if (generateJob?.isActive == true) return
         _cancelHint.value = AiCancelHint.NONE
         _uiState.value = AiUiState.Loading
         generateJob = viewModelScope.launch {
-            when (val result = aiAssistant.report()) {
-                is AiChatResult.Success -> {
-                    val generatedAtMs = System.currentTimeMillis()
-                    saveRecord(result, generatedAtMs)
-                    _uiState.value = AiUiState.Done(
-                        markdown = result.text,
-                        generatedAtMs = generatedAtMs,
-                        model = result.model,
-                    )
+            val accumulated = StringBuilder()
+            var model: String? = null
+            try {
+                aiAssistant.reportStream().collect { event ->
+                    when (event) {
+                        is AiStreamEvent.Delta -> {
+                            accumulated.append(event.text)
+                            _uiState.value = AiUiState.Generating(accumulated.toString(), model)
+                        }
+                        is AiStreamEvent.Model -> {
+                            model = event.name
+                            val current = _uiState.value
+                            if (current is AiUiState.Generating) {
+                                _uiState.value = current.copy(model = model)
+                            }
+                        }
+                        AiStreamEvent.Completed -> completeGeneration(accumulated.toString(), model)
+                        is AiStreamEvent.Failed -> _uiState.value = AiUiState.Error(
+                            kind = event.kind,
+                            detail = event.detail,
+                            canRetry = event.kind !in NO_RETRY_KINDS,
+                        )
+                    }
                 }
-                is AiChatResult.Failure -> _uiState.value = AiUiState.Error(
-                    kind = result.kind,
-                    detail = result.detail,
-                    canRetry = result.kind !in NO_RETRY_KINDS,
-                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // remote 已把网络/超时归一为 Failed 事件；此处兜底收集过程的意外异常
+                _uiState.value = AiUiState.Error(AiFailureKind.NETWORK, e.message, canRetry = true)
             }
         }
     }
 
+    /** 流正常结束：正文为空按空响应报错；否则自动保存并进入 Done。 */
+    private suspend fun completeGeneration(accumulated: String, model: String?) {
+        if (accumulated.isBlank()) {
+            _uiState.value = AiUiState.Error(AiFailureKind.EMPTY_RESPONSE, null, canRetry = true)
+            return
+        }
+        val generatedAtMs = System.currentTimeMillis()
+        saveRecord(accumulated, model, generatedAtMs)
+        _uiState.value = AiUiState.Done(
+            markdown = accumulated,
+            generatedAtMs = generatedAtMs,
+            model = model,
+        )
+    }
+
     /** 生成成功后自动保存（标题存本地日期 yyyy-MM-dd，前缀由 UI 按语言拼接）；失败不影响结果展示。 */
-    private suspend fun saveRecord(result: AiChatResult.Success, generatedAtMs: Long) {
+    private suspend fun saveRecord(markdown: String, model: String?, generatedAtMs: Long) {
         val userId = sessionManager.currentUserId.first() ?: return
         runCatching {
             recordRepository.save(
                 userId = userId,
                 kind = AiReportRecordEntity.KIND_REPORT,
                 title = reportDate(generatedAtMs),
-                model = result.model,
-                markdown = result.text,
+                model = model,
+                markdown = markdown,
                 createdAt = generatedAtMs,
             )
         }

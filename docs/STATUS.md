@@ -3,7 +3,7 @@
 > 给「下一次会话」看的交接文档。所有代码已提交进 git `main`；此文件随代码版本化。
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + **AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入）** + **订阅管理（底部第 5 Tab）** 全部完成，**467 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-备份含AI记录-20260904.apk`）。**本批五项改动已分 5 个 commit 本地提交、未推送**（用户自行 push）。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + **AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出）** + **订阅管理（底部第 5 Tab）** 全部完成，**488 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI流式输出-20260907.apk`）。**AI 流式输出改动已本地提交、未推送**（用户自行 push）。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库内 portable 工具链）
 ```bash
@@ -48,6 +48,7 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
   - 报告页：`ai_report`（Idle/Loading/Done/Error 四态 + 隐私同意对话框 + SAF 导出 Markdown `CreateDocument("text/markdown")`）+ `AiMarkdownText` 轻量渲染（H1-H3/Bullet/Numbered/Quote/**表格**/段落合并，`####`+ 降级剥净 `#`，行内 `**加粗**`）+ Overview 入口卡。
   - 分析页：`ai_insight`（同骨架 + 可选追问输入，无导出）+ Overview 双卡入口。
   - **历史记录**：生成成功自动保存 `ai_report_records`（命名「报告/分析 yyyy-MM-dd」），`ai_report`/`ai_insight` 页内底部「历史」区按日期从新到旧列出，可点回看、左滑/按钮删除（带确认对话框）。DB v12→13（破坏性迁移）。VM `flatMapLatest` 订阅历史流；删除经 pendingDelete 确认 + deletedHint Snackbar。
+  - **SSE 流式实时输出（2026-09-08）**：报告/分析生成改为边到边渲染，不再等全文。`AiRemote.stream()`（SSE 逐行 `readUtf8Line`，`invokeOnCompletion{call.cancel()}` 支持取消中止阻塞读，`flowOn(IO)`）→ `AiStreamEvent`（Delta/Model/Completed/Failed）→ `AiAssistant.reportStream()/insightStream()` → VM `Generating` 渐进更新 markdown → `AiMarkdownText` 实时渲染 + **自动跟随滚动**（距底 <200dp 才跟随，手动上滑回看不抢滚动）。`AiChatParser.parseSseData`：Chat 协议取 `delta.content`（**过滤 `reasoning_content` 思考过程**），Responses 协议按 `type` 分派（`*.done` 收尾事件带全文**不重复追加**），流内 error 事件转 BAD_REQUEST 中文提示；单条 data 行 TCP 截断→JSON 容错跳过；`[DONE]` 哨兵忽略；空正文流→EMPTY_RESPONSE。错误映射与一次性补全一致（401/429/5xx/超时/网络断）。AI 设置页「测试连接」仍走 complete() 不变。
   - **备份纳入**：`BackupData` 增 `aiRecords`（全量导出导入）+ `aiSettings`（provider/baseUrl/model/protocol/includeDetails/consented）；**API Key 明确不进备份**（Keystore 换机恢复失效，新机重录）——测试断言备份明文不含 key。老备份无新字段→空列表/null 不覆盖本机（向后兼容）。恢复后 consented 随行免重复隐私弹窗。
   - 隐私硬约束：API Key 只进 Authorization 头不进 prompt；报告内容不落盘不进日志（无 logging interceptor）；导出走 SAF 由用户自选位置。
 - **订阅管理（底部第 5 Tab）**：三批实现（数据层 DB v12 → UI 三件套 → 测试+构建）。
@@ -65,7 +66,7 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - 房产：手动估值 + **已实现按 70 城二手住宅价格指数自动估算**（东方财富 `datacenter-web`，`RPT_ECONOMY_HOUSE_PRICE`，`SECOND_HOUSE_SEQUENTIAL` 二手环比，filter 多城批量请求，pageSize=500；带 6 天新鲜度缓存到 `HousePriceIndexEntity`）。表单「所在城市」70 城可搜索下拉，开启估算后 sync 派生 `estimatedValue`。
 
 ## 注意事项
-- **DB 当前 version = 12**；开发期用 `fallbackToDestructiveMigration`，**每次升 schema 覆盖安装会重置本地数据**（需重新注册）。发布前需写正式迁移。
+- **DB 当前 version = 13**（v12 订阅表，v13 AI 历史记录表）；开发期用 `fallbackToDestructiveMigration`，**每次升 schema 覆盖安装会重置本地数据**（需重新注册）。发布前需写正式迁移。
 - 订阅续费日展示走 `SubscriptionRenewal.displayRenewal`（只读顺延，不动库），真实推进在每日 sync 的 `advance`。
 - 分类走势历史从 v6 起每日累积；当天仅 1 点显示「数据积累中」。
 - 资产页「账户现金」按币种映射到股票子类目：¥→A股现金、HK$→港股现金、US$→美股现金（纯展示归类，录入仍为「账户现金」+ 选币种；组织逻辑在 `PortfolioSectionsBuilder`）。
@@ -101,4 +102,7 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
   - `c7b52b1` feat: AI 历史记录条目可点击打开浏览 — 回放该次生成内容（报告页回放后可导出）
   - `be76745` docs: 项目根新增 CLAUDE.md — 固化协作节奏/构建方式/隐私与密钥约束
   - 471 个单元测试全绿；APK：`apk/RICHWIN-历史记录点击查看-20260904.apk`
+- **2026-09-08 AI 流式实时输出本地提交（主分支 `main`，未推送）**：
+  - `feat: AI 报告/分析改为 SSE 流式实时输出 — 生成中逐段渲染+自动跟随滚动`
+  - 488 个单元测试全绿；APK：`apk/RICHWIN-AI流式输出-20260907.apk`
 - **用户未推送**：提交链均未 `git push`，用户自行 push，不替用户推送。

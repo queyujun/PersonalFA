@@ -2,9 +2,11 @@ package com.yingjing.pfa.data.ai
 
 import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.domain.ai.AiFailureKind
+import com.yingjing.pfa.domain.ai.AiStreamEvent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -261,5 +263,133 @@ class OpenAiCompatRemoteTest {
             // 取消必须原样上抛（用户点停止 ≠ 网络错误）
             assertTrue(true)
         }
+    }
+
+    // ---------------------------------------------------- 流式（SSE）
+
+    /** Chat Completions SSE 响应体：两段正文增量夹一段推理增量，结尾含 [DONE] 哨兵（解析层应忽略）。 */
+    private fun chatSseBody() = """
+        data: {"model":"deepseek-chat","choices":[{"delta":{"content":"## 概览"}}]}
+
+        data: {"model":"deepseek-chat","choices":[{"delta":{"reasoning_content":"思考中"}}]}
+
+        data: {"model":"deepseek-chat","choices":[{"delta":{"content":"\n- 要点"}}]}
+
+        data: [DONE]
+
+    """.trimIndent()
+
+    @Test
+    fun stream_chat_emitsDeltasThenCompleted() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(chatSseBody()),
+        )
+        val events = remote.stream(request.copy(baseUrl = server.url("/v1").toString())).toList()
+
+        // 推理增量被剔除；正文两段按到达顺序发出；[DONE] 哨兵被忽略，以 Completed 收尾
+        assertEquals(
+            listOf(
+                AiStreamEvent.Model("deepseek-chat"),
+                AiStreamEvent.Delta("## 概览"),
+                AiStreamEvent.Delta("\n- 要点"),
+                AiStreamEvent.Completed,
+            ),
+            events,
+        )
+
+        // 流式请求体：stream=true、端点与鉴权头与一次性补全一致
+        val recorded = server.takeRequest()
+        assertEquals("/v1/chat/completions", recorded.path)
+        assertEquals("Bearer sk-test-key", recorded.getHeader("Authorization"))
+        val body = recorded.body.readUtf8()
+        assertTrue(body.contains("\"stream\":true"))
+    }
+
+    @Test
+    fun stream_responses_emitsModelThenDeltas_ignoresDoneEvents() = runBlocking {
+        val body = """
+            event: response.created
+            data: {"type":"response.created","response":{"id":"resp_1","model":"hy3"}}
+
+            event: response.output_text.delta
+            data: {"type":"response.output_text.delta","delta":"## 结论"}
+
+            event: response.output_text.done
+            data: {"type":"response.output_text.done","text":"## 结论"}
+
+            event: response.completed
+            data: {"type":"response.completed","response":{"id":"resp_1","model":"hy3"}}
+
+        """.trimIndent()
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(body),
+        )
+        val events = remote.stream(
+            request.copy(baseUrl = server.url("/v1").toString(), protocol = AiApiProtocol.RESPONSES),
+        ).toList()
+
+        // done 事件携带全文，不得重复追加；model 只在首块发出
+        assertEquals(
+            listOf(
+                AiStreamEvent.Model("hy3"),
+                AiStreamEvent.Delta("## 结论"),
+                AiStreamEvent.Completed,
+            ),
+            events,
+        )
+        val recorded = server.takeRequest()
+        assertEquals("/v1/responses", recorded.path)
+        assertTrue(recorded.body.readUtf8().contains("\"stream\":true"))
+    }
+
+    @Test
+    fun stream_httpError_emitsFailedWithKind() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":{"message":"Invalid API key"}}"""))
+        val events = remote.stream(request.copy(baseUrl = server.url("/v1").toString())).toList()
+        assertEquals(1, events.size)
+        val failed = events.single() as AiStreamEvent.Failed
+        assertEquals(AiFailureKind.UNAUTHORIZED, failed.kind)
+        assertEquals("Invalid API key", failed.detail)
+    }
+
+    @Test
+    fun stream_inStreamErrorEvent_emitsFailedAndStops() = runBlocking {
+        val body = """
+            data: {"model":"deepseek-chat","choices":[{"delta":{"content":"前半"}}]}
+
+            data: {"error":{"message":"Model not exist","message_zh":"模型不存在。"}}
+
+        """.trimIndent()
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(body),
+        )
+        val events = remote.stream(request.copy(baseUrl = server.url("/v1").toString())).toList()
+        assertEquals(3, events.size) // Model + Delta + Failed
+        val failed = events.last() as AiStreamEvent.Failed
+        assertEquals(AiFailureKind.BAD_REQUEST, failed.kind)
+        // preferChineseError 默认按系统 locale；CI 可能非中文，两种说明均可
+        assertTrue(failed.detail == "模型不存在。" || failed.detail == "Model not exist")
+    }
+
+    @Test
+    fun stream_timeout_mapsToTimeout() = runBlocking {
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+        val events = remote.stream(request.copy(baseUrl = server.url("/v1").toString())).toList()
+        assertEquals(1, events.size)
+        assertEquals(AiFailureKind.TIMEOUT, (events.single() as AiStreamEvent.Failed).kind)
+    }
+
+    @Test
+    fun stream_serverShutdown_mapsToNetwork() = runBlocking {
+        server.shutdown()
+        val events = remote.stream(request.copy(baseUrl = "http://127.0.0.1:1/v1")).toList()
+        assertEquals(1, events.size)
+        assertEquals(AiFailureKind.NETWORK, (events.single() as AiStreamEvent.Failed).kind)
     }
 }

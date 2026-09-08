@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.ai.AiFailureKind
 import com.yingjing.pfa.domain.model.AiReportRecord
+
+/** 流式自动跟随滚动的判定距离（px 判定用 dp 值，距底小于该值才跟随）。 */
+private const val FOLLOW_SCROLL_THRESHOLD = 200
 
 /**
  * AI 持仓分析页：Idle（说明 + 可选聚焦问题）→ Loading（可取消）→ Done（Markdown 展示）/ Error（重试）。
@@ -65,6 +69,8 @@ fun AiInsightScreen(
     val deletedHint by viewModel.deletedHint.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollState = rememberScrollState()
+    val followThresholdPx = with(LocalDensity.current) { FOLLOW_SCROLL_THRESHOLD.dp.toPx() }
     val cancelledText = stringResource(R.string.ai_generation_cancelled)
     val deletedText = stringResource(R.string.ai_history_deleted)
 
@@ -78,6 +84,16 @@ fun AiInsightScreen(
         if (deletedHint) {
             snackbarHostState.showSnackbar(deletedText)
             viewModel.clearDeletedHint()
+        }
+    }
+
+    // 流式生成时自动跟随滚动到底部（用户已上滑阅读时暂停跟随）
+    LaunchedEffect(state) {
+        val s = state
+        if (s is AiUiState.Generating && s.markdown.isNotBlank() &&
+            scrollState.maxValue - scrollState.value < followThresholdPx
+        ) {
+            scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
 
@@ -115,7 +131,7 @@ fun AiInsightScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(16.dp),
             ) {
                 when (val s = state) {
@@ -125,6 +141,10 @@ fun AiInsightScreen(
                         onGenerate = ::startGenerate,
                     )
                     AiUiState.Loading -> LoadingSection(onCancel = viewModel::cancel)
+                    is AiUiState.Generating -> GeneratingSection(
+                        generating = s,
+                        onCancel = viewModel::cancel,
+                    )
                     is AiUiState.Done -> DoneSection(
                         done = s,
                         onRegenerate = ::startGenerate,
@@ -244,6 +264,39 @@ private fun LoadingSection(onCancel: () -> Unit) {
             OutlinedButton(onClick = onCancel) {
                 Text(stringResource(R.string.ai_cancel_generation))
             }
+        }
+    }
+}
+
+/**
+ * 流式生成中：已到达的增量实时以 Markdown 渲染（首段增量到达前显示「AI 正在分析…」），
+ * 底部进度条 + 取消按钮（与报告页同款，两文件组件均 private 各自持有）。
+ */
+@Composable
+private fun GeneratingSection(
+    generating: AiUiState.Generating,
+    onCancel: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (generating.markdown.isBlank()) {
+                    Text(stringResource(R.string.ai_generating), style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    AiMarkdownText(
+                        markdown = generating.markdown,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+        }
+        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.ai_cancel_generation))
         }
     }
 }
