@@ -16,7 +16,7 @@ import androidx.room.RoomDatabase
         AiReportRecordEntity::class,
     ],
     version = 13,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun appMetaDao(): AppMetaDao

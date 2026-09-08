@@ -8,6 +8,7 @@ import com.yingjing.pfa.data.local.AlertDao
 import com.yingjing.pfa.data.local.AppDatabase
 import com.yingjing.pfa.data.local.AppMetaDao
 import com.yingjing.pfa.data.local.CategorySnapshotDao
+import com.yingjing.pfa.data.local.DatabaseMigrations
 import com.yingjing.pfa.data.local.HoldingDao
 import com.yingjing.pfa.data.local.HousePriceDao
 import com.yingjing.pfa.data.local.NetWorthSnapshotDao
@@ -35,8 +36,7 @@ object DatabaseModule {
         val factory = SupportOpenHelperFactory(keyProvider.getOrCreatePassphrase())
         return Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
             .openHelperFactory(factory)
-            // 开发期：schema 变更时销毁重建；发布前替换为正式迁移。
-            .fallbackToDestructiveMigration()
+            .addMigrations(DatabaseMigrations.MIGRATION_12_13)
             .build()
     }
 
