@@ -595,4 +595,5 @@
 
     <!-- Placeholder -->
     <string name="placeholder_subtitle">P0 scaffold placeholder</string>
+    <string name="database_open_preserved">Unable to open your local data. No data has been cleared. Please keep the app and its data, and contact support for a compatible update. Do not uninstall the app or clear its storage.</string>
 </resources>

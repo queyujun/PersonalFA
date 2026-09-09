@@ -595,4 +595,5 @@
 
     <!-- 佔位 -->
     <string name="placeholder_subtitle">P0 腳手架占位</string>
+    <string name="database_open_preserved">暫時無法開啟本機資料，應用程式未清除任何資料。請保留應用程式及其資料，聯絡支援取得相容的更新。請勿解除安裝或清除應用程式儲存空間。</string>
 </resources>

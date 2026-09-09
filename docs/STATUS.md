@@ -1,6 +1,61 @@
 # 盈睿伴 · 进度与续接说明（STATUS）
 
-> 给「下一次会话」看的交接文档。所有代码已提交进 git `main`；此文件随代码版本化。
+> 给「下一次会话」看的交接文档。2026-09-08 数据库无损迁移已获用户真机验收并本地提交。优先阅读下面的续接入口；后文排查过程中的旧状态不代表当前状态。
+
+## 下次会话续接入口（2026-09-08）
+
+- 项目目录：`C:/AIProjects/Claude/PersonalFA-1`。
+- 当前分支：`feature/database-migration-12-13`；实现提交：`fdc2c10`（`feat: 增加数据库12到13无损迁移并保留原启动时序`）。**尚未合并到 main，未推送**；不要切到 main 后误认为迁移代码丢失。
+- 保存本次交接前工作区干净；本次仅更新本文件，交接文档更新留在工作区，尚未另行提交。
+- 本批已完成：正式 12→13 迁移、当前/历史 schema、合成历史 fixture、数据保留测试；移除 destructive fallback，保留原启动时序。用户确认登录、主要页面、重启及旧数据迁移验证通过。
+- 已验收 APK：`apk/RICHWIN-启动时序排查-20260908.apk`。虽然文件名含「排查」，这是用户最终验证通过的包；不要重新交付之前两个闪退包。SHA-256：`7bdfca552d7aa01949be8aa56f0d545e0e0309d2522873712dfd35c3fda281ee`。APK 被 gitignore 排除，仅在本地保存。
+- 验证：完整构建成功，492 tests / 0 failures / 0 errors / 0 skipped；代码审查与提交前安全审查无阻断。SQLCipher instrumentation 仅编译、未运行，不把用户验收等同于自动化设备测试。
+- 重要经验：新增启动数据库预打开及 UI 门禁的版本在用户手机闪退，恢复原 `RootViewModel` / `AppRoot` 启动顺序后正常。未取得崩溃堆栈，不能声称已确定具体底层异常；**不要未经重新验证恢复预打开逻辑**。
+- 支持范围仍仅为有可靠历史证据的 12→13；用户没有提供旧库版本号，不扩大支持声明。未知版本不自动清库，但当前没有根页面打开失败提示，仍可能退出。
+- 用户电脑无法 USB 调试；本地无 emulator/system-images/AVD。不要把提供 USB 日志作为继续工作的前提，不要求重复卸载或清数据。
+- 下次先读本文件并检查 `git status` / 当前分支。迁移批次无需重做；下一项功能尚未指定。若用户要求合并，再处理本地分支合并；继续遵守分批交付、真机认可后提交、只 commit 不 push。
+- 本机构建仍使用下文 portable 工具链；不读取真实密钥、财务数据库或忽略的探针配置文件。
+
+## 最新验收（2026-09-08）
+
+- 用户确认 `apk/RICHWIN-启动时序排查-20260908.apk` 可正常进入登录界面，随后明确反馈「验证都通过了，旧数据可以迁徙成功」。该 APK 作为本批已验收版本。
+- 保留旧版启动时序，不重新引入数据库预打开及对应 UI 门禁；保留正式 12→13 无损迁移和禁止 destructive fallback。
+- 本地完整构建通过，492 项测试全部通过；用户实际升级和功能验证通过。用户未提供旧库版本号，因此不据此扩大已证明的迁移支持范围；SQLCipher instrumentation 仍仅编译、未执行。
+- 撤去新增启动流程后真机恢复正常，但未取得原闪退堆栈，具体底层异常仍未确定。以下排查记录中的「待验证」为当时状态，以本节最新验收为准。
+
+## 本批实现与排查记录：数据库 12→13 无损迁移（2026-09-08）
+
+### 启动时序排查包（2026-09-08，尚未定位真机根因）
+
+- 用户反馈迁移包及 Provider 启动保护修复包均闪退，卸载后全新安装仍闪退；此前 AI 流式 APK 正常。此前故障注入仅证明保护边界漏洞，不能当作用户闪退根因。
+- 本次单变量诊断：`RootViewModel.kt` 与 `AppRoot.kt` 恢复 HEAD 原启动时序，撤去数据库预打开和不可用状态 UI 门禁；保留 `DatabaseModule.addMigrations(12→13)`、禁止 destructive fallback 和 schema 基线。未知版本仍拒绝打开并保留文件，但本诊断包不再有根页面失败提示保护，可能闪退。
+- 移除随门禁废弃的 helper/故障注入测试；保留并调整真实 DataStore + 实际生成 Factory 会话测试，验证 Loading→LoggedOut→LoggedIn→LoggedOut。迁移文件库测试及 SQLCipher instrumentation 保留。
+- 排查证据：预打开版本真实 Room+DataStore+Factory 空库成功路径已通过；编译 lambda 返回值正常转换为 Unit；新旧 APK 的 12 个 native 库全部逐字节一致，DEX 无重复类。未得到设备异常堆栈，未确认根因，无真实回归 RED→修复 GREEN 证据。
+- 曾运行真实 PersonalFaApp/MainActivity 的 Robolectric 挂载 smoke 测试并通过，但未断言最终页面状态，可能停留 Loading 或 DatabaseUnavailable，不能证明登录 UI 或真实 SQLCipher 正常；该弱断言临时测试已移除。
+- 本次完整离线构建 `:app:assembleDebug testDebugUnitTest :app:assembleDebugAndroidTest` 成功（2m36s），**492 tests / 0 failures / 0 errors / 0 skipped**；未测覆盖率。code-reviewer 只读审查无 CRITICAL/HIGH 问题，仍需设备验证。
+- 诊断 APK 已另存 `apk/RICHWIN-启动时序排查-20260908.apk`，不覆盖之前两个 APK；SHA-256：`7bdfca552d7aa01949be8aa56f0d545e0e0309d2522873712dfd35c3fda281ee`。无设备、无模拟器，不下载镜像，不读真实 DB/密钥，不提交、不推送。以下启动保护及测试计数为历史批次记录，不代表当前诊断代码。
+
+### 历史排查：启动保护修复（已被上述诊断改动替换）
+
+- 已复现保护边界漏洞：原 `RootViewModel` 直接注入 `AppDatabase`，实际 KSP 生成 Factory 在 ViewModel 构造前调用数据库 provider；合成 `IllegalStateException` 因而逃逸，无法显示保留数据提示。同一 Factory 回归测试修复前 1 项失败，改为 `Provider<AppDatabase>` 后通过；数据库构造及打开均位于 IO 和启动异常保护范围内。
+- 另以 `UnsatisfiedLinkError` 复现原 `catch(Exception)` 未覆盖的原生链接失败（5 项中 1 项失败），限定补充 `catch(LinkageError)`；取消仍重抛，新增测试确认 `OutOfMemoryError` 不被吞掉。没有使用 `catch(Throwable)`。
+- 本地完整构建 `:app:assembleDebug testDebugUnitTest :app:assembleDebugAndroidTest --offline` 成功，**497 tests / 0 failures / 0 errors / 0 skipped**。主工作区实际 diff 经 code-reviewer 只读复审，无 CRITICAL/HIGH 问题；未测量覆盖率。
+- 核对本地 SQLCipher 4.6.1 runtime 字节码，未发现 factory 口令置零或预打开后 helper 二次访问失效的证据。启动直接依赖未发现 SyncManager 提前构造数据库路径。
+- portable SDK 未安装 emulator/system-images，也无本地 AVD；未下载系统镜像。**上述故障注入证明保护漏洞，尚未证明用户手机闪退的实际异常；真实 SQLCipher 仪器测试、旧 APK 覆盖升级及提示 UI 仍待设备验证。**
+- 修复 APK 使用新文件名 `apk/RICHWIN-数据库启动保护修复-20260908.apk`，保留原迁移 APK。未清用户数据、未读取真实密钥、未恢复 destructive fallback、未提交或推送。
+
+
+- 仅支持有可靠历史来源的 **12→13**；移除 destructive fallback，未知升级/降级拒绝打开并保留数据库。未实现或宣称完整 6→13，不伪造 v10。
+- `DatabaseMigrations.MIGRATION_12_13` 仅新增 AI 历史表及其复合索引；不改密钥及既有业务 schema。KSP schema 参数已移到顶层 `ksp { arg(...) }`，当前 v13 开启导出。
+- 历史 v12 fixture 从 git `395072d` 的实际 8 张实体表及 AppDatabase 重建；已核对该目录与 `0999ccc^` 相同。测试源位于 `app/src/test/java/com/yingjing/pfa/data/local/historical/`，仅改包名、数据库类名、移除 DAO accessor、开启 schema 导出。不是从当前库删 AI 表冒充历史，也不是原发布 APK 中提取的数据库。
+- 版本化 schema：`app/schemas/com.yingjing.pfa.data.local.AppDatabase/13.json` 和 `app/schemas/com.yingjing.pfa.data.local.historical.HistoricalV12Database/12.json`。两者由当前 Room 编译器生成；历史 JSON 的来源是上述历史实体重建，非当年已导出文件。`.gitignore` 仅对这两份文件开放。
+- 新增 3 项 Robolectric 文件库测试：8 张表各 2 行合成数据逐列保留、旧索引与新 AI 索引、AI DAO 写入及再次打开；合成未知版本 11/14 拒绝升级/降级且保留原文件版本和哨兵数据（不是对 v11 历史 schema 的证明）。另新增 3 项启动门禁测试，覆盖预打开顺序、失败不订阅会话、取消重抛。
+- RootViewModel 在 IO 线程预打开数据库，失败显示中/英/繁保留数据提示，不挂载登录/业务页 DAO collector，不显示原始异常，不提供清库操作。Application / AppLockManager 启动只读 DataStore；后台 SyncManager 和 BackupWorker 维持既有失败结果/retry 处理，未扩展密钥恢复。
+- 实际验证：portable 工具链后台执行 `:app:assembleDebug testDebugUnitTest :app:assembleDebugAndroidTest` 成功；JUnit XML 合计 **494 tests / 0 failures / 0 errors / 0 skipped**。未配置/测量覆盖率百分比。
+- 新增 SQLCipher instrumentation 测试：从历史 schema 建加密 v12 合成库，同一测试口令迁移及再次打开、验证哨兵和 AI 表写入。测试 APK 已编译，ZIP 确认含历史 12.json 与当前 13.json；历史资产随版本化文件交付，不要求先跑 kspTest。
+- `adb devices -l` 无设备，因此 **SQLCipher instrumentation 未运行，真实旧 APK 覆盖升级及失败提示真机 UI 未验证**。测试不读取真实数据库或 secrets。
+- 交付 APK：`apk/RICHWIN-数据库无损迁移-20260908.apk`。用户真机验证认可后才提交；本批不提交、不推送。
+
 
 ## 一句话现状
 个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + **AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出）** + **订阅管理（底部第 5 Tab）** 全部完成，**488 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI流式输出-20260907.apk`）。**AI 流式输出改动已本地提交、未推送**（用户自行 push）。
@@ -67,7 +122,7 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 - 房产：手动估值 + **已实现按 70 城二手住宅价格指数自动估算**（东方财富 `datacenter-web`，`RPT_ECONOMY_HOUSE_PRICE`，`SECOND_HOUSE_SEQUENTIAL` 二手环比，filter 多城批量请求，pageSize=500；带 6 天新鲜度缓存到 `HousePriceIndexEntity`）。表单「所在城市」70 城可搜索下拉，开启估算后 sync 派生 `estimatedValue`。
 
 ## 注意事项
-- **DB 当前 version = 13**（v12 订阅表，v13 AI 历史记录表）；开发期用 `fallbackToDestructiveMigration`，**每次升 schema 覆盖安装会重置本地数据**（需重新注册）。发布前需写正式迁移。
+- **DB 当前 version = 13**（v12 订阅表，v13 AI 历史记录表）；本批移除 `fallbackToDestructiveMigration`，仅注册已验证基线 12→13；不支持的版本拒绝打开并保留数据，详见顶部未提交批次。
 - 订阅续费日展示走 `SubscriptionRenewal.displayRenewal`（只读顺延，不动库），真实推进在每日 sync 的 `advance`。
 - 分类走势历史从 v6 起每日累积；当天仅 1 点显示「数据积累中」。
 - 资产页「账户现金」按币种映射到股票子类目：¥→A股现金、HK$→港股现金、US$→美股现金（纯展示归类，录入仍为「账户现金」+ 选币种；组织逻辑在 `PortfolioSectionsBuilder`）。
@@ -79,7 +134,7 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
 ## 待办（可选，用户未定优先级）
 1. ~~房产按国家统计局 70 城房价指数自动估算涨跌~~ ✅ 已完成。
 2. 国际财经提醒（需自建快讯 RSS + 关键词打分，尽力而为）。
-3. P7 打磨：深色模式细化、无障碍、性能、E2E、发布签名与正式 DB 迁移（当前 v13 均用破坏性迁移，发布前必修正式 6→13 迁移）。
+3. P7 打磨：深色模式细化、无障碍、性能、E2E、发布签名；数据库本批仅支持 12→13，更早版本须先取得可靠历史证据再评估支持范围。
 4. ~~根目录 `settings.json` 含 `ANTHROPIC_AUTH_TOKEN` 等密钥，未入 `.gitignore`~~ ✅ 已补进 `.gitignore`（`settings-ds/glm/xzprj.json` + 预览 html），均未入库。
 5. **AI 流式输出已上线**（2026-09-08）；若后续再探 SSE 接口，探针脚本（`probe_*.py`，已被 gitignore）与输出 txt（**未被 gitignore**，用完即删，勿入库）放在仓库根目录，用完即删。
 

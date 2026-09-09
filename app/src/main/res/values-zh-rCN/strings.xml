@@ -595,4 +595,5 @@
 
     <!-- 占位 -->
     <string name="placeholder_subtitle">P0 脚手架占位</string>
+    <string name="database_open_preserved">暂时无法打开本地数据，应用未清除任何数据。请保留应用及其数据，联系支持获取兼容的更新。请勿卸载应用或清除应用存储。</string>
 </resources>

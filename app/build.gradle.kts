@@ -15,6 +15,10 @@ plugins {
 val buildTime: String = providers.gradleProperty("build.timestamp").orNull
     ?: ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'"))
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 android {
     namespace = "com.yingjing.pfa"
     compileSdk = 35
@@ -60,6 +64,9 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    sourceSets {
+        getByName("androidTest").assets.srcDir("schemas")
+    }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -90,6 +97,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    kspTest(libs.androidx.room.compiler)
 
     implementation(libs.sqlcipher.android)
     implementation(libs.androidx.sqlite)
