@@ -9,6 +9,7 @@ enum class AlertCategory(@StringRes val displayRes: Int) {
     IPO(R.string.alert_cat_ipo),
     MARKET(R.string.alert_cat_market),
     GLOBAL(R.string.alert_cat_global),
+    NEWS(R.string.alert_cat_news),
     SUBSCRIPTION(R.string.alert_cat_subscription),
 }
 

@@ -24,6 +24,15 @@ interface AlertDao {
     @Query("UPDATE alerts SET read = 1 WHERE userId = :userId")
     suspend fun markAllRead(userId: Long)
 
+    @Query("DELETE FROM alerts WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM alerts WHERE userId = :userId AND id IN (:ids)")
+    suspend fun deleteByIds(userId: Long, ids: List<Long>)
+
+    @Query("DELETE FROM alerts WHERE userId = :userId")
+    suspend fun deleteAllByUser(userId: Long)
+
     @Query("SELECT * FROM alerts")
     suspend fun getAllForBackup(): List<AlertEntity>
 

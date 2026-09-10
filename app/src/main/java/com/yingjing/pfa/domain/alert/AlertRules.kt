@@ -33,6 +33,9 @@ object AlertRules {
 
     private const val MS_PER_DAY = 86_400_000L
 
+    /** 快讯提醒 body 截断长度（正文原文，防超长通知）。 */
+    private const val BODY_MAX_LEN = 120
+
     /** 存款临近到期。 */
     fun depositMaturity(
         holdings: List<Holding>,
@@ -183,6 +186,30 @@ object AlertRules {
                 createdAtEpochMs = nowMs,
             ),
         )
+    }
+
+    /** 国际财经快讯（关键词打分筛选，逐条去重）。 */
+    fun newsAlerts(
+        userId: Long,
+        news: List<NewsItem>,
+        nowMs: Long,
+        resolver: StringResolver,
+    ): List<Alert> {
+        val selected = NewsScorer.select(news, nowMs)
+        if (selected.isEmpty()) return emptyList()
+        val title = resolver.get(R.string.alert_news_title)
+        return selected.map { item ->
+            Alert(
+                userId = userId,
+                category = AlertCategory.NEWS,
+                severity = if (NewsScorer.score(item) >= NewsScorer.SERIOUS_SCORE) AlertSeverity.SERIOUS
+                else AlertSeverity.WARNING,
+                title = title,
+                body = item.contentText.take(BODY_MAX_LEN),
+                dedupKey = "news_${item.id}",
+                createdAtEpochMs = nowMs,
+            )
+        }
     }
 
     /** 订阅临近续费（提前 [Subscription.reminderDaysBefore] 天；0=不提醒）。 */

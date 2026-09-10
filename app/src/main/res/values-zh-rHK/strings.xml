@@ -164,6 +164,7 @@
     <string name="alert_cat_ipo">新股</string>
     <string name="alert_cat_market">市場</string>
     <string name="alert_cat_global">國際</string>
+    <string name="alert_cat_news">快訊</string>
     <string name="alert_channel_name">資產提醒</string>
     <string name="alert_channel_desc">持倉 / 新股 / 市場 / 國際 提醒</string>
     <string name="alert_deposit_title">存款即將到期</string>
@@ -185,6 +186,7 @@
     <string name="alert_ipo_item">%1$s（申購代碼 %2$s）</string>
     <string name="alert_ipo_sep">、</string>
     <string name="alert_cat_subscription">訂閱</string>
+    <string name="alert_news_title">國際財經快訊</string>
     <string name="alert_sub_title">訂閱即將續費</string>
     <string name="alert_sub_body">「%1$s」將於 %3$d 天後續費（每期 %2$s）。</string>
 
@@ -377,6 +379,7 @@
     <string name="sync_src_stock">股票</string>
     <string name="sync_src_crypto">區塊鏈</string>
     <string name="sync_src_fund">基金</string>
+    <string name="sync_src_news">財經快訊</string>
 
     <!-- 房價指數同步狀態備註：在同步彈窗裡明示指數已更新至何月 / 已是最新 -->
     <string name="sync_house_refreshed">房價指數已更新至 %1$s 月</string>
@@ -485,6 +488,11 @@
     <string name="alerts_mark_all_read">全部已讀</string>
     <string name="alerts_filter_all">全部</string>
     <string name="alerts_empty">暫無提醒</string>
+    <string name="alerts_delete_all">全部刪除</string>
+    <string name="alerts_selected_count">已選 %1$d 條</string>
+    <string name="alerts_delete_confirm_title">刪除提醒</string>
+    <string name="alerts_delete_all_confirm_body">將刪除全部提醒，刪除後不可恢復。</string>
+    <string name="alerts_delete_selected_confirm_body">將刪除 %1$d 條提醒，刪除後不可恢復。</string>
 
     <!-- 無障礙描述 -->
     <string name="cd_back">返回</string>
@@ -592,6 +600,20 @@
     <string name="ai_report_title_prefix">報告</string>
     <string name="ai_insight_title_prefix">分析</string>
     <string name="ai_disclaimer">AI 生成內容僅供參考，不構成投資建議。</string>
+
+    <!-- AI 助手：檔案列表與編輯 -->
+    <string name="ai_profile_group_preset">預設服務商</string>
+    <string name="ai_profile_group_custom">自訂配置</string>
+    <string name="ai_profile_custom_empty">還沒有自訂配置</string>
+    <string name="ai_profile_add_custom">新增自訂配置</string>
+    <string name="ai_profile_add_custom_subtitle">OpenAI 相容介面，自填地址與模型</string>
+    <string name="ai_profile_active_hint">點按單選鈕切換目前生效的配置；編輯或儲存某個配置不會改變生效項。</string>
+    <string name="ai_profile_edit_title">自訂配置</string>
+    <string name="ai_profile_name">配置名稱</string>
+    <string name="ai_profile_name_hint">例如：備用服務商</string>
+    <string name="ai_profile_delete">刪除配置</string>
+    <string name="ai_profile_delete_confirm_title">刪除這個配置？</string>
+    <string name="ai_profile_delete_confirm_body">將刪除「%1$s」及其已儲存的 API Key，刪除後無法復原。</string>
 
     <!-- 佔位 -->
     <string name="placeholder_subtitle">P0 腳手架占位</string>

@@ -151,6 +151,7 @@
     <string name="alert_cat_ipo">IPO</string>
     <string name="alert_cat_market">Market</string>
     <string name="alert_cat_global">Global</string>
+    <string name="alert_cat_news">News Flash</string>
     <string name="alert_channel_name">Asset Alerts</string>
     <string name="alert_channel_desc">Holding / IPO / Market / Global alerts</string>
     <string name="alert_deposit_title">Deposit maturing soon</string>
@@ -172,6 +173,7 @@
     <string name="alert_ipo_item">%1$s (code %2$s)</string>
     <string name="alert_ipo_sep">", "</string>
     <string name="alert_cat_subscription">Subscription</string>
+    <string name="alert_news_title">Global Financial News</string>
     <string name="alert_sub_title">Subscription renewing soon</string>
     <string name="alert_sub_body">\"%1$s\" renews in %3$d days (%2$s per cycle).</string>
 
@@ -363,6 +365,7 @@
     <string name="sync_src_stock">Stocks</string>
     <string name="sync_src_crypto">Crypto</string>
     <string name="sync_src_fund">Funds</string>
+    <string name="sync_src_news">Financial News</string>
 
     <!-- House price index sync note: surface in the sync dialog whether the index was refreshed / already current -->
     <string name="sync_house_refreshed">House price index updated through %1$s</string>
@@ -467,6 +470,11 @@
     <string name="alerts_mark_all_read">Mark all read</string>
     <string name="alerts_filter_all">All</string>
     <string name="alerts_empty">No alerts</string>
+    <string name="alerts_delete_all">Delete all</string>
+    <string name="alerts_selected_count">%1$d selected</string>
+    <string name="alerts_delete_confirm_title">Delete alerts</string>
+    <string name="alerts_delete_all_confirm_body">All alerts will be deleted. This cannot be undone.</string>
+    <string name="alerts_delete_selected_confirm_body">%1$d alerts will be deleted. This cannot be undone.</string>
 
     <!-- Content descriptions -->
     <string name="cd_back">Back</string>
@@ -574,6 +582,20 @@
     <string name="ai_report_title_prefix">Report</string>
     <string name="ai_insight_title_prefix">Insight</string>
     <string name="ai_disclaimer">AI-generated content is for reference only and does not constitute investment advice.</string>
+
+    <!-- AI Assistant: profile list &amp; edit -->
+    <string name="ai_profile_group_preset">Preset providers</string>
+    <string name="ai_profile_group_custom">Custom profiles</string>
+    <string name="ai_profile_custom_empty">No custom profiles yet</string>
+    <string name="ai_profile_add_custom">Add custom profile</string>
+    <string name="ai_profile_add_custom_subtitle">OpenAI-compatible endpoint with your own URL / model</string>
+    <string name="ai_profile_active_hint">Tap the radio button to switch the active profile. Editing or saving a profile does not change the active one.</string>
+    <string name="ai_profile_edit_title">Custom profile</string>
+    <string name="ai_profile_name">Profile name</string>
+    <string name="ai_profile_name_hint">e.g. My backup provider</string>
+    <string name="ai_profile_delete">Delete profile</string>
+    <string name="ai_profile_delete_confirm_title">Delete this profile?</string>
+    <string name="ai_profile_delete_confirm_body">%1$s will be removed together with its saved API key. This cannot be undone.</string>
 
     <!-- Placeholder -->
     <string name="placeholder_subtitle">P0 scaffold placeholder</string>

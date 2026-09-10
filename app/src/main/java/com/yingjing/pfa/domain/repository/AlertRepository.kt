@@ -12,4 +12,13 @@ interface AlertRepository {
     suspend fun insertIfNew(alert: Alert): Boolean
     suspend fun markRead(id: Long)
     suspend fun markAllRead(userId: Long)
+
+    /** 删除单条（滑动删除）。 */
+    suspend fun delete(userId: Long, id: Long)
+
+    /** 批量删除（多选）。 */
+    suspend fun delete(userId: Long, ids: List<Long>)
+
+    /** 全部删除（当前用户）。 */
+    suspend fun deleteAll(userId: Long)
 }

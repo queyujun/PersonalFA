@@ -27,6 +27,6 @@ class SyncWorker @AssistedInject constructor(
     private companion object {
         const val KEY_MANUAL = "manual_refresh"
         // SyncSource 枚举总数：失败源达到全部即视为整体失败需重试。
-        const val ALL_FAILED_THRESHOLD = 8
+        const val ALL_FAILED_THRESHOLD = 9
     }
 }

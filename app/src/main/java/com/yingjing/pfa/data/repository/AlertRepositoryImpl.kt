@@ -24,6 +24,12 @@ class AlertRepositoryImpl @Inject constructor(
     override suspend fun markRead(id: Long) = dao.markRead(id)
 
     override suspend fun markAllRead(userId: Long) = dao.markAllRead(userId)
+
+    override suspend fun delete(userId: Long, id: Long) = dao.deleteById(id)
+
+    override suspend fun delete(userId: Long, ids: List<Long>) = dao.deleteByIds(userId, ids)
+
+    override suspend fun deleteAll(userId: Long) = dao.deleteAllByUser(userId)
 }
 
 private fun AlertEntity.toDomain() = Alert(

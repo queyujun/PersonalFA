@@ -36,4 +36,26 @@ class AlertsViewModel @Inject constructor(
             sessionManager.currentUserId.first()?.let { alertRepository.markAllRead(it) }
         }
     }
+
+    /** 滑动删除单条。 */
+    fun delete(id: Long) {
+        viewModelScope.launch {
+            sessionManager.currentUserId.first()?.let { alertRepository.delete(it, id) }
+        }
+    }
+
+    /** 批量删除所选（多选模式）。 */
+    fun deleteSelected(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            sessionManager.currentUserId.first()?.let { alertRepository.delete(it, ids) }
+        }
+    }
+
+    /** 全部删除（当前用户）。 */
+    fun deleteAll() {
+        viewModelScope.launch {
+            sessionManager.currentUserId.first()?.let { alertRepository.deleteAll(it) }
+        }
+    }
 }

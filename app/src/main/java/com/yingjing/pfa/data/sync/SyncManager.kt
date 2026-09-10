@@ -7,8 +7,10 @@ import com.yingjing.pfa.data.remote.GlobalIndicators
 import com.yingjing.pfa.data.remote.IpoRemote
 import com.yingjing.pfa.data.remote.MarketIndexes
 import com.yingjing.pfa.data.remote.MarketIndexRemote
+import com.yingjing.pfa.data.remote.NewsRemote
 import com.yingjing.pfa.domain.alert.AlertNotifier
 import com.yingjing.pfa.domain.alert.AlertRules
+import com.yingjing.pfa.domain.alert.NewsItem
 import com.yingjing.pfa.domain.alert.PriceChange
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.FxRates
@@ -65,6 +67,7 @@ class SyncManager @Inject constructor(
     private val stringResolver: StringResolver,
     private val commodityRemote: CommodityRemote,
     private val globalRatesStore: GlobalRatesStore,
+    private val newsRemote: NewsRemote,
 ) {
     /**
      * 执行一次同步。[manual] 标记是否由用户手动触发（手动触发时即便全成功也弹窗确认）。
@@ -92,6 +95,11 @@ class SyncManager @Inject constructor(
                     .onFailure { Log.w(TAG, "ipo fetch failed", it) }
                     .getOrDefault(emptyList())
             }
+            val newsJob = async {
+                runCatching { newsRemote.fetch() }
+                    .onFailure { Log.w(TAG, "news fetch failed", it) }
+                    .getOrDefault(emptyList())
+            }
 
             val rates = fxJob.await() ?: fxRepository.current()
             // FX 失败判定：刷新后仍为默认 1.0/1.0（未取到有效汇率）
@@ -107,6 +115,10 @@ class SyncManager @Inject constructor(
 
             val ipos = ipoJob.await()
             // IPO 无失败判定：每日可申购数本来就常为 0，空列表属正常，不计失败。
+
+            val news = newsJob.await()
+            // 快讯失败判定：正常情况下快讯源必有数据，空=主备双源均失败。
+            if (news.isEmpty()) failedSources += SyncSource.NEWS
 
             val globalChanges = buildGlobalChanges(rates, commodityChanges)
             val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -176,6 +188,7 @@ class SyncManager @Inject constructor(
                     AlertRules.marketMoves(user.id, indexChanges, MarketIndexes.displayNames(stringResolver), now, stringResolver) +
                     AlertRules.globalMoves(user.id, globalChanges, GlobalIndicators.displayNames(stringResolver), now, stringResolver) +
                     AlertRules.ipoAlerts(user.id, ipos, todayDate, now, stringResolver) +
+                    AlertRules.newsAlerts(user.id, news, now, stringResolver) +
                     subscriptionAlerts(user.id, now)
                 alerts.forEach { alert ->
                     if (alertRepository.insertIfNew(alert)) alertNotifier.notify(alert)
@@ -201,7 +214,7 @@ class SyncManager @Inject constructor(
         val completedAt = nowProvider()
         val result = SyncResult(
             success = false,
-            failedSources = listOf(SyncSource.FX, SyncSource.MARKET_INDEX, SyncSource.COMMODITY, SyncSource.IPO, SyncSource.HOUSE_PRICE, SyncSource.STOCK, SyncSource.CRYPTO, SyncSource.FUND).sorted(),
+            failedSources = listOf(SyncSource.FX, SyncSource.MARKET_INDEX, SyncSource.COMMODITY, SyncSource.IPO, SyncSource.HOUSE_PRICE, SyncSource.STOCK, SyncSource.CRYPTO, SyncSource.FUND, SyncSource.NEWS).sorted(),
             completedAt = completedAt,
             manual = manual,
         )

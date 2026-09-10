@@ -14,7 +14,8 @@ enum class SyncSource {
     HOUSE_PRICE,
     STOCK,
     CRYPTO,
-    FUND;
+    FUND,
+    NEWS;
 
     /** UI 展示名 resId；用 exhaustive when，新增源必须显式补文案。 */
     val labelRes: Int
@@ -27,6 +28,7 @@ enum class SyncSource {
             STOCK -> com.yingjing.pfa.R.string.sync_src_stock
             CRYPTO -> com.yingjing.pfa.R.string.sync_src_crypto
             FUND -> com.yingjing.pfa.R.string.sync_src_fund
+            NEWS -> com.yingjing.pfa.R.string.sync_src_news
         }
 }
 

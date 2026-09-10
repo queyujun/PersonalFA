@@ -175,6 +175,67 @@ class AlertRulesTest {
         assertTrue(alerts[0].body.contains("res${com.yingjing.pfa.R.string.alert_price_down}"))
     }
 
+    // ---- 国际财经快讯 ----
+
+    @Test
+    fun newsAlerts_highScore_serious() {
+        // 「美联储降息」= 严重词×2 = 6 分 ≥ SERIOUS 档 → 1 条 NEWS SERIOUS，dedupKey 逐条。
+        val alerts = AlertRules.newsAlerts(
+            userId = 1,
+            news = listOf(NewsItem("wscn_1", "美联储降息", "美联储宣布降息 25 个基点。", now - 3_600_000L, false)),
+            nowMs = now,
+            resolver = resolver,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(com.yingjing.pfa.domain.model.AlertSeverity.SERIOUS, alerts[0].severity)
+        assertEquals(com.yingjing.pfa.domain.model.AlertCategory.NEWS, alerts[0].category)
+        assertEquals("news_wscn_1", alerts[0].dedupKey)
+        // body 为正文原文
+        assertTrue(alerts[0].body.contains("降息 25 个基点"))
+    }
+
+    @Test
+    fun newsAlerts_middleScore_warning() {
+        // 「CPI 公布」（严重词×1）+ important 加分 2 → 5 分 ≥ WARNING 档。
+        val alerts = AlertRules.newsAlerts(
+            userId = 1,
+            news = listOf(NewsItem("wscn_2", "美国 CPI", "美国公布 9 月 CPI 数据。", now - 3_600_000L, true)),
+            nowMs = now,
+            resolver = resolver,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(com.yingjing.pfa.domain.model.AlertSeverity.WARNING, alerts[0].severity)
+    }
+
+    @Test
+    fun newsAlerts_lowScoreOutsideWindow_noAlert() {
+        val alerts = AlertRules.newsAlerts(
+            userId = 1,
+            news = listOf(
+                // 低分：仅 1 个关注词 → 1 分 < 3
+                NewsItem("wscn_3", "美股收盘", "美股周三收盘涨跌互现。", now - 3_600_000L, false),
+                // 高分但窗口外（2 天前发布）
+                NewsItem("wscn_4", "美联储议息", "美联储议息会议结果公布。", now - 2 * day, false),
+            ),
+            nowMs = now,
+            resolver = resolver,
+        )
+        assertTrue(alerts.isEmpty())
+    }
+
+    @Test
+    fun newsAlerts_bodyTruncatedTo120Chars() {
+        val longText = "美联储降息 ".repeat(40) // 200 字 > 120 截断
+        val alerts = AlertRules.newsAlerts(
+            userId = 1,
+            news = listOf(NewsItem("wscn_5", "美联储降息", longText, now - 3_600_000L, false)),
+            nowMs = now,
+            resolver = resolver,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(120, alerts[0].body.length)
+    }
+
     // ---- 订阅临近续费 ----
 
     private fun subscription(

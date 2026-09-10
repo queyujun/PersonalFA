@@ -8,11 +8,13 @@ import com.yingjing.pfa.data.remote.EastmoneyFundNavRemote
 import com.yingjing.pfa.data.remote.EastmoneyHousePriceRemote
 import com.yingjing.pfa.data.remote.EastmoneyIpoRemote
 import com.yingjing.pfa.data.remote.FallbackCryptoRemote
+import com.yingjing.pfa.data.remote.FallbackNewsRemote
 import com.yingjing.pfa.data.remote.FxRemote
 import com.yingjing.pfa.data.remote.FundQuoteRemote
 import com.yingjing.pfa.data.remote.HousePriceRemote
 import com.yingjing.pfa.data.remote.IpoRemote
 import com.yingjing.pfa.data.remote.MarketIndexRemote
+import com.yingjing.pfa.data.remote.NewsRemote
 import com.yingjing.pfa.data.remote.SinaFxRemote
 import com.yingjing.pfa.data.remote.SinaCommodityRemote
 import com.yingjing.pfa.data.remote.SinaMarketIndexRemote
@@ -50,6 +52,10 @@ abstract class RemoteModule {
     @Binds
     @Singleton
     abstract fun bindIpoRemote(impl: EastmoneyIpoRemote): IpoRemote
+
+    @Binds
+    @Singleton
+    abstract fun bindNewsRemote(impl: FallbackNewsRemote): NewsRemote
 
     @Binds
     @Singleton
