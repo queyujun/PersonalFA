@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProfile
 import com.yingjing.pfa.data.ai.AiProviderPreset
+import com.yingjing.pfa.data.ai.AiReportTone
 import com.yingjing.pfa.domain.ai.AiChatResult
 import com.yingjing.pfa.domain.ai.AiFailureKind
 import com.yingjing.pfa.fakes.FakeAiRemote
@@ -267,6 +268,23 @@ class AiSettingsViewModelTest {
         // 切回默认协议
         vm.setProtocol(AiApiProtocol.CHAT_COMPLETIONS)
         assertEquals(AiApiProtocol.CHAT_COMPLETIONS, vm.uiState.value.profile.protocol)
+    }
+
+    @Test
+    fun setTone_updatesState_andPersistsThroughSave() = runTest {
+        val id = seededPreset(AiProviderPreset.HUNYUAN)
+        val vm = viewModel(id)
+        assertEquals(AiReportTone.ANALYST, vm.uiState.value.profile.tone) // 默认分析师
+
+        vm.setTone(AiReportTone.COMPANION)
+        assertEquals(AiReportTone.COMPANION, vm.uiState.value.profile.tone)
+
+        vm.save(apiKeyInput = "sk-tone-0001")
+        assertEquals(AiReportTone.COMPANION, store.profiles.first().first { it.id == id }.tone)
+
+        // 切回分析师
+        vm.setTone(AiReportTone.ANALYST)
+        assertEquals(AiReportTone.ANALYST, vm.uiState.value.profile.tone)
     }
 
     @Test

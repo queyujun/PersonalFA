@@ -328,6 +328,8 @@
     <string name="settings_group_about">關於</string>
     <string name="settings_about_version">版本</string>
     <string name="settings_about_build_time">構建時間</string>
+    <string name="settings_privacy_title">你的數據從未離開這台手機</string>
+    <string name="settings_privacy_body">所有記錄均加密存儲在本機數據庫；備份為口令加密文件；AI 分析只在你明確同意後外發白名單內的資產字段（不含姓名、備註等個人信息）；API Key 只加密保存在本機，永不進入備份。</string>
 
     <!-- 個人資料 -->
     <string name="profile_nickname">暱稱</string>
@@ -543,6 +545,10 @@
     <string name="ai_protocol">介面協議</string>
     <string name="ai_protocol_chat_completions">Chat Completions</string>
     <string name="ai_protocol_responses">Responses</string>
+    <string name="ai_tone">語氣</string>
+    <string name="ai_tone_analyst">分析師</string>
+    <string name="ai_tone_companion">夥伴</string>
+    <string name="ai_tone_subtitle">夥伴模式以敘事口吻陪伴復盤，數據外發範圍不變</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_hint">sk-…</string>
     <string name="ai_api_key_configured_mask">已儲存 · 尾號 %1$s</string>

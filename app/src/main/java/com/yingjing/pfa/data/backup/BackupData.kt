@@ -180,4 +180,6 @@ data class BackupAiProfile(
     /** chat_completions / responses。 */
     val protocol: String = "chat_completions",
     val includeDetails: Boolean = true,
+    /** 输出语气档 id（analyst / companion）；老备份无此字段 → analyst。 */
+    val tone: String = "analyst",
 )

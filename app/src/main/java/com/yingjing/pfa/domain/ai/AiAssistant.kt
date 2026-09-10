@@ -71,9 +71,9 @@ class AiAssistant @Inject constructor(
         // 输出语言：跟随当前 App locale（per-app locale 生效后 Locale.getDefault 同步更新）
         val localeTag = Locale.getDefault().toLanguageTag()
         val messages = if (withReportTemplate) {
-            AiPromptBuilder.reportMessages(payloadJson, localeTag)
+            AiPromptBuilder.reportMessages(payloadJson, localeTag, settings.tone)
         } else {
-            AiPromptBuilder.insightMessages(payloadJson, localeTag, question)
+            AiPromptBuilder.insightMessages(payloadJson, localeTag, question, settings.tone)
         }
 
         return aiRemote.stream(

@@ -4,6 +4,7 @@ import com.yingjing.pfa.core.backup.BackupCrypto
 import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProfile
 import com.yingjing.pfa.data.ai.AiProviderPreset
+import com.yingjing.pfa.data.ai.AiReportTone
 import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.local.AiReportRecordDao
 import com.yingjing.pfa.data.local.AiReportRecordEntity
@@ -197,6 +198,7 @@ private fun AiProfile.toBackup() = BackupAiProfile(
     model = model,
     protocol = protocol.id,
     includeDetails = includeDetails,
+    tone = tone.id,
 )
 
 private fun BackupAiProfile.toDomain() = AiProfile(
@@ -207,6 +209,7 @@ private fun BackupAiProfile.toDomain() = AiProfile(
     model = model,
     protocol = AiApiProtocol.fromId(protocol),
     includeDetails = includeDetails,
+    tone = AiReportTone.fromId(tone),
 )
 
 /** 老备份 aiSettings（providerId=custom）映射的档案 id，与 DataStore 迁移保持一致。 */

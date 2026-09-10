@@ -1,5 +1,6 @@
 package com.yingjing.pfa.domain.ai
 
+import com.yingjing.pfa.data.ai.AiReportTone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -67,5 +68,37 @@ class AiPromptBuilderTest {
     fun insightMessages_blankQuestion_ignored() {
         val messages = AiPromptBuilder.insightMessages(payloadJson, "zh-CN", userQuestion = "   ")
         assertFalse(messages[1].content.contains("especially wants"))
+    }
+
+    @Test
+    fun reportMessages_companionTone_personaSwapped_rulesKept() {
+        val messages = AiPromptBuilder.reportMessages(payloadJson, "zh-CN", tone = AiReportTone.COMPANION)
+        val system = messages[0].content
+        // 伙伴档 persona：老派管家叙事口吻
+        assertTrue(system.contains("old-school butler"))
+        assertTrue(system.contains("Acknowledge effort"))
+        // 语气档只换口吻：7 条硬规则与报告段落结构原样保留
+        assertTrue(system.contains("## Executive Summary"))
+        assertTrue(system.contains("## Data Limitations"))
+        assertTrue(system.contains("Forbidden: tables"))
+        // 报告专属叙事引导（开头一段自然叙事句）
+        assertTrue(system.contains("narrative sentences"))
+    }
+
+    @Test
+    fun reportMessages_defaultTone_noCompanionPersona() {
+        val messages = AiPromptBuilder.reportMessages(payloadJson, "zh-CN")
+        assertFalse(messages[0].content.contains("butler"))
+        assertTrue(messages[0].content.contains("certified financial planning advisor"))
+    }
+
+    @Test
+    fun insightMessages_companionTone_personaSwapped_sectionsKept() {
+        val messages = AiPromptBuilder.insightMessages(payloadJson, "zh-CN", tone = AiReportTone.COMPANION)
+        val system = messages[0].content
+        assertTrue(system.contains("old-school butler"))
+        // 分析模板段落不受语气档影响
+        assertTrue(system.contains("## Overall Assessment"))
+        assertFalse(system.contains("## Executive Summary"))
     }
 }

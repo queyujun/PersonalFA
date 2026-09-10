@@ -42,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
 import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProviderPreset
+import com.yingjing.pfa.data.ai.AiReportTone
 
 /** FlowRow 属实验性 layout API，本文件内白名单启用。 */
 @OptIn(ExperimentalLayoutApi::class)
@@ -153,6 +154,10 @@ fun AiSettingsScreen(
             ProtocolSection(
                 selected = state.profile.protocol,
                 onProtocol = viewModel::setProtocol,
+            )
+            ToneSection(
+                selected = state.profile.tone,
+                onTone = viewModel::setTone,
             )
             ApiKeyField(
                 hasKey = state.hasKey,
@@ -310,6 +315,42 @@ private fun ProtocolSection(
                 label = { Text(stringResource(R.string.ai_protocol_responses)) },
             )
         }
+    }
+}
+
+/**
+ * 语气档选择：分析师（专业评判）/ 伙伴（叙事化陪伴）。只影响 AI 输出口吻，
+ * 不改变数据外发范围。
+ */
+@Composable
+private fun ToneSection(
+    selected: AiReportTone,
+    onTone: (AiReportTone) -> Unit,
+) {
+    LabeledSection(stringResource(R.string.ai_tone)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = selected == AiReportTone.ANALYST,
+                onClick = { onTone(AiReportTone.ANALYST) },
+                label = { Text(stringResource(R.string.ai_tone_analyst)) },
+            )
+            FilterChip(
+                selected = selected == AiReportTone.COMPANION,
+                onClick = { onTone(AiReportTone.COMPANION) },
+                label = { Text(stringResource(R.string.ai_tone_companion)) },
+            )
+        }
+        Text(
+            stringResource(R.string.ai_tone_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
     }
 }
 

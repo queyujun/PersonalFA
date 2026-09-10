@@ -57,6 +57,22 @@ enum class AiApiProtocol(val id: String) {
 }
 
 /**
+ * AI 输出语气档：分析师（默认，专业评判口吻）/ 伙伴（叙事化陪伴口吻，安静的老派管家）。
+ * 只改提示词模板，不影响数据外发范围。
+ */
+enum class AiReportTone(val id: String) {
+    ANALYST("analyst"),
+    COMPANION("companion"),
+    ;
+
+    companion object {
+        /** 按 id 反查（DataStore/备份存的是 id 字符串）；未知 id 回退 ANALYST。 */
+        fun fromId(id: String?): AiReportTone =
+            entries.firstOrNull { it.id == id } ?: ANALYST
+    }
+}
+
+/**
  * AI 配置。API Key 不在此存储（走 [com.yingjing.pfa.core.security.AiSecretStore]），
  * 这里只存「是否已配置」由外部单独查询。
  */
@@ -67,6 +83,8 @@ data class AiSettings(
     val protocol: AiApiProtocol = AiApiProtocol.CHAT_COMPLETIONS,
     /** payload 是否包含明细持仓（false = 仅分类汇总，进一步降低外发数据量）。 */
     val includeDetails: Boolean = true,
+    /** 报告/分析输出语气档。 */
+    val tone: AiReportTone = AiReportTone.ANALYST,
     /** 用户已确认隐私提示（资产数据将发送到所配置服务商）。 */
     val consented: Boolean = false,
 ) {
@@ -93,6 +111,8 @@ data class AiProfile(
     val protocol: AiApiProtocol = AiApiProtocol.CHAT_COMPLETIONS,
     /** payload 是否包含明细持仓（false = 仅分类汇总，进一步降低外发数据量）。 */
     val includeDetails: Boolean = true,
+    /** 报告/分析输出语气档（旧 JSON/旧备份无此字段 → 默认 ANALYST，向后兼容）。 */
+    val tone: AiReportTone = AiReportTone.ANALYST,
 ) {
     val isPreset: Boolean get() = id.startsWith(PRESET_ID_PREFIX)
     val provider: AiProviderPreset get() = AiProviderPreset.fromId(providerId)

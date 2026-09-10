@@ -93,6 +93,7 @@ class FakeAiSettingsStore : AiSettingsStore {
                 model = model,
                 protocol = protocol,
                 includeDetails = includeDetails,
+                tone = tone,
                 consented = consented,
             )
         }

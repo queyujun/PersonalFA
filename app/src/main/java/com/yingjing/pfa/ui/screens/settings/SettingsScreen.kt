@@ -180,7 +180,7 @@ fun SettingsScreen(
             )
         }
 
-        // 9. 关于（版本信息，供用户参考；不可点击）
+        // 9. 关于（版本信息 + 隐私宣言；均不可点击）
         SettingsGroupCard(icon = Icons.Outlined.Info, title = stringResource(R.string.settings_group_about)) {
             SettingRow(
                 title = stringResource(R.string.settings_about_version),
@@ -189,6 +189,10 @@ fun SettingsScreen(
             SettingRow(
                 title = stringResource(R.string.settings_about_build_time),
                 subtitle = BuildConfig.BUILD_TIME,
+            )
+            SettingRow(
+                title = stringResource(R.string.settings_privacy_title),
+                subtitle = stringResource(R.string.settings_privacy_body),
             )
         }
     }

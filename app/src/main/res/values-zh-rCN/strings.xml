@@ -328,6 +328,8 @@
     <string name="settings_group_about">关于</string>
     <string name="settings_about_version">版本</string>
     <string name="settings_about_build_time">构建时间</string>
+    <string name="settings_privacy_title">你的数据从未离开这台手机</string>
+    <string name="settings_privacy_body">所有记录均加密存储在本机数据库；备份为口令加密文件；AI 分析仅在你明确同意后外发白名单内的资产字段（不含姓名、备注等个人信息）；API Key 只加密保存在本机，永不进入备份。</string>
 
     <!-- 个人资料 -->
     <string name="profile_nickname">昵称</string>
@@ -543,6 +545,10 @@
     <string name="ai_protocol">接口协议</string>
     <string name="ai_protocol_chat_completions">Chat Completions</string>
     <string name="ai_protocol_responses">Responses</string>
+    <string name="ai_tone">语气</string>
+    <string name="ai_tone_analyst">分析师</string>
+    <string name="ai_tone_companion">伙伴</string>
+    <string name="ai_tone_subtitle">伙伴模式以叙事口吻陪伴复盘，数据外发范围不变</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_hint">sk-…</string>
     <string name="ai_api_key_configured_mask">已保存 · 尾号 %1$s</string>

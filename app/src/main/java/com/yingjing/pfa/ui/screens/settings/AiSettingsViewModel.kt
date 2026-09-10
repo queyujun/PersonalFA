@@ -9,6 +9,7 @@ import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProfile
 import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiRemote
+import com.yingjing.pfa.data.ai.AiReportTone
 import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.domain.ai.AiChatResult
 import com.yingjing.pfa.domain.ai.AiFailureKind
@@ -134,6 +135,10 @@ class AiSettingsViewModel @Inject constructor(
     /** 切换接口协议（Chat Completions / Responses），服务商支持的端点不同。 */
     fun setProtocol(value: AiApiProtocol) =
         _uiState.update { it.copy(profile = it.profile.copy(protocol = value), status = null, statusDetail = null) }
+
+    /** 切换报告/分析输出语气档（分析师 / 伙伴）。 */
+    fun setTone(value: AiReportTone) =
+        _uiState.update { it.copy(profile = it.profile.copy(tone = value)) }
 
     fun setIncludeDetails(value: Boolean) =
         _uiState.update { it.copy(profile = it.profile.copy(includeDetails = value)) }
