@@ -5,7 +5,7 @@
 ## 下次会话续接入口（2026-09-10）
 
 - 项目目录：`C:/AIProjects/Claude/PersonalFA-1`。
-- 当前分支：`main`。**本地领先 origin/main 12 个提交，均未推送**（用户自行 push）：迁移合并 `0d69d8b` + 文档 `c9adc2e` + 快讯/Key入库/AI多配置 3 个 feat + docs + 房产估算 fix + AI 语气档 feat + 本批 docs。
+- 当前分支：`main`。**本地领先 origin/main 11 个提交，均未推送**（用户自行 push）：迁移合并 `0d69d8b` + 文档 `c9adc2e` + 快讯/Key入库/AI多配置 3 个 feat + docs + 房产估算 fix + AI 语气档 feat + 本批 docs。
 - 上一轮四个批次均已提交（混合工作区按功能拆 3 个 feat 提交，真机验证的是最终合并树）：
   - `c2f2a03` feat: 国际财经快讯提醒（主备双源抓取+关键词打分，通知列表 NEWS 类别）+ 提醒删除（滑动/长按多选/全部删，带确认）
   - `d78098e` feat: AI API Key 加密入库（Keystore 文件方案 → Room `app_meta` 行 `ai_secret_<profileId>`，AES/GCM 密钥自数据库口令 SHA-256 派生；旧 `ai_key.bin` 与旧单 key 行自动迁移）
