@@ -12,4 +12,7 @@ interface AppMetaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun put(meta: AppMetaEntity)
+
+    @Query("DELETE FROM app_meta WHERE `key` = :key")
+    suspend fun delete(key: String)
 }

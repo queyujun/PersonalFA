@@ -3,7 +3,7 @@ package com.yingjing.pfa.di
 import com.yingjing.pfa.core.i18n.AppStringResolver
 import com.yingjing.pfa.core.i18n.StringResolver
 import com.yingjing.pfa.core.security.AiSecretStore
-import com.yingjing.pfa.core.security.KeystoreAiSecretStore
+import com.yingjing.pfa.core.security.DatabaseAiSecretStore
 import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.ai.AiSettingsStoreImpl
 import com.yingjing.pfa.data.notification.AndroidAlertNotifier
@@ -105,5 +105,5 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindAiSecretStore(impl: KeystoreAiSecretStore): AiSecretStore
+    abstract fun bindAiSecretStore(impl: DatabaseAiSecretStore): AiSecretStore
 }

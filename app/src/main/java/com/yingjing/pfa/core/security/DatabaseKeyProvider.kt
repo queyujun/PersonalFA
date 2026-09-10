@@ -19,15 +19,17 @@ import javax.inject.Singleton
  *
  * 首次运行生成 32 字节随机口令，用 Android Keystore 的 AES/GCM 密钥加密后落盘；
  * 之后每次运行解密取回。明文口令绝不落盘，密钥永不离开 Keystore。
+ *
+ * open 仅为单元测试可覆写（Robolectric 无 Android Keystore）；生产绑定仍是本类。
  */
 @Singleton
-class DatabaseKeyProvider @Inject constructor(
+open class DatabaseKeyProvider @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val blobFile: File get() = File(context.filesDir, BLOB_NAME)
 
     /** 返回稳定的数据库口令字节（不存在则生成并加密落盘）。 */
-    fun getOrCreatePassphrase(): ByteArray =
+    open fun getOrCreatePassphrase(): ByteArray =
         if (blobFile.exists()) decrypt(blobFile.readBytes()) else createAndStore()
 
     private fun createAndStore(): ByteArray {
