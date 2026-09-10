@@ -1,11 +1,13 @@
 package com.yingjing.pfa.ui.screens.portfolio
 
 import androidx.lifecycle.SavedStateHandle
+import com.yingjing.pfa.data.remote.HousePricePoint
 import com.yingjing.pfa.domain.model.AssetType
 import com.yingjing.pfa.domain.model.Currency
 import com.yingjing.pfa.domain.model.Holding
 import com.yingjing.pfa.domain.usecase.DeleteHoldingUseCase
 import com.yingjing.pfa.fakes.FakeHoldingRepository
+import com.yingjing.pfa.fakes.FakeHousePriceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -24,6 +26,7 @@ import org.junit.Test
 class HoldingDetailViewModelTest {
 
     private val repository = FakeHoldingRepository()
+    private val housePriceRepository = FakeHousePriceRepository()
 
     @Before
     fun setup() {
@@ -46,6 +49,7 @@ class HoldingDetailViewModelTest {
             SavedStateHandle(mapOf("id" to id.toString())),
             repository,
             DeleteHoldingUseCase(repository),
+            housePriceRepository,
         )
         advanceUntilIdle()
         assertEquals("滨江一号", vm.holding.value?.name)
@@ -58,11 +62,61 @@ class HoldingDetailViewModelTest {
             SavedStateHandle(mapOf("id" to id.toString())),
             repository,
             DeleteHoldingUseCase(repository),
+            housePriceRepository,
         )
         var deleted = false
         vm.delete { deleted = true }
         advanceUntilIdle()
         assertTrue(deleted)
         assertNull(repository.getHolding(id))
+    }
+
+    @Test
+    fun realEstate_withCity_loadsLatestIndexMonth() = runTest {
+        val id = repository.addHolding(house().copy(city = "北京"))
+        housePriceRepository.seed(
+            "北京",
+            listOf(
+                HousePricePoint("北京", "2026-05", 100.1, 99.8, 99.9, 98.7),
+                HousePricePoint("北京", "2026-07", 100.2, 99.6, 100.0, 98.1),
+                HousePricePoint("北京", "2026-06", 99.8, 99.5, 99.7, 98.4),
+            ),
+        )
+        val vm = HoldingDetailViewModel(
+            SavedStateHandle(mapOf("id" to id.toString())),
+            repository,
+            DeleteHoldingUseCase(repository),
+            housePriceRepository,
+        )
+        advanceUntilIdle()
+        assertEquals("2026-07", vm.latestIndexMonth.value)
+    }
+
+    @Test
+    fun realEstate_withoutCachedIndex_latestIndexMonthIsNull() = runTest {
+        val id = repository.addHolding(house().copy(city = "北京"))
+        val vm = HoldingDetailViewModel(
+            SavedStateHandle(mapOf("id" to id.toString())),
+            repository,
+            DeleteHoldingUseCase(repository),
+            housePriceRepository,
+        )
+        advanceUntilIdle()
+        assertNull(vm.latestIndexMonth.value)
+    }
+
+    @Test
+    fun nonRealEstate_doesNotLoadIndexMonth() = runTest {
+        val id = repository.addHolding(
+            Holding(userId = 1, type = AssetType.DEPOSIT, name = "定期", currency = Currency.CNY, manualValue = 100.0, annualRatePercent = 2.0),
+        )
+        val vm = HoldingDetailViewModel(
+            SavedStateHandle(mapOf("id" to id.toString())),
+            repository,
+            DeleteHoldingUseCase(repository),
+            housePriceRepository,
+        )
+        advanceUntilIdle()
+        assertNull(vm.latestIndexMonth.value)
     }
 }

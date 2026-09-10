@@ -114,7 +114,9 @@
     <string name="detail_label_monthly_payment">Monthly Payment</string>
     <string name="detail_price_pending">Pending market data</string>
     <string name="detail_reit_index">70-city index</string>
-    <string name="detail_estimate_syncing">Updates after sync</string>
+    <string name="detail_estimate_waiting">Waiting for index data after the base month (latest: %1$s)</string>
+    <string name="detail_estimate_no_data">Sync to fetch index data</string>
+    <string name="detail_label_index_latest">Index updated through</string>
     <string name="detail_otc_pending">Manual update pending</string>
     <string name="detail_label_otc_region">Fund Region</string>
     <string name="otc_region_mainland">Mainland China</string>
@@ -242,6 +244,7 @@
     <string name="err_holding_qty">Enter quantity</string>
     <string name="err_holding_cash">Enter cash amount</string>
     <string name="err_holding_value">Enter current value</string>
+    <string name="err_holding_city">City must be selected from the 70-city list when estimation is on</string>
     <string name="err_holding_principal">Enter principal</string>
     <string name="err_holding_rate">Enter annual rate</string>
     <string name="err_holding_liability">Enter liability amount</string>

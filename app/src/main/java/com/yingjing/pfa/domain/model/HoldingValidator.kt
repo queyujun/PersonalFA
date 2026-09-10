@@ -32,8 +32,14 @@ object HoldingValidator {
             AssetType.ACCOUNT_CASH ->
                 if ((holding.manualValue ?: -1.0) < 0.0) ValidationFailure(R.string.err_holding_cash) else null
 
-            AssetType.REAL_ESTATE ->
-                if ((holding.manualValue ?: -1.0) < 0.0) ValidationFailure(R.string.err_holding_value) else null
+            // 开启指数估算时城市必须是 70 城精确名（SyncManager 按精确匹配收集，
+            // 非列表名会被静默跳过估算），在保存口拦截而非等同步时无声失效。
+            AssetType.REAL_ESTATE -> when {
+                (holding.manualValue ?: -1.0) < 0.0 -> ValidationFailure(R.string.err_holding_value)
+                holding.autoEstimate == true && !HousePriceCities.contains(holding.city) ->
+                    ValidationFailure(R.string.err_holding_city)
+                else -> null
+            }
 
             AssetType.EQUITY ->
                 if ((holding.manualValue ?: -1.0) < 0.0) ValidationFailure(R.string.err_holding_value) else null

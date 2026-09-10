@@ -52,6 +52,7 @@ fun HoldingDetailScreen(
     viewModel: HoldingDetailViewModel = hiltViewModel(),
 ) {
     val holding by viewModel.holding.collectAsState()
+    val latestIndexMonth by viewModel.latestIndexMonth.collectAsState()
     var showConfirm by remember { mutableStateOf(false) }
     val now = remember { System.currentTimeMillis() }
     val cdBack = stringResource(R.string.cd_back)
@@ -62,7 +63,6 @@ fun HoldingDetailScreen(
     val delete = stringResource(R.string.common_delete)
     val cancel = stringResource(R.string.common_cancel)
     val pendingMarket = stringResource(R.string.detail_price_pending)
-    val estimateSyncing = stringResource(R.string.detail_estimate_syncing)
     val otcPending = stringResource(R.string.detail_otc_pending)
     val reitIndex = stringResource(R.string.detail_reit_index)
     val confirmBody = stringResource(R.string.detail_delete_confirm_body)
@@ -133,7 +133,7 @@ fun HoldingDetailScreen(
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    detailRows(h, typeLabel, currencySymbol, currencyLabel, pendingMarket, estimateSyncing, otcPending, reitIndex)
+                    detailRows(h, typeLabel, currencySymbol, currencyLabel, pendingMarket, otcPending, reitIndex, latestIndexMonth)
                         .forEachIndexed { index, (label, valueText) ->
                             if (index > 0) HorizontalDivider()
                             Row(
@@ -187,9 +187,9 @@ private fun detailRows(
     currencySymbol: String,
     currencyLabel: String,
     pendingMarket: String,
-    estimateSyncing: String,
     otcPending: String,
     reitIndex: String,
+    latestIndexMonth: String?,
 ): List<Pair<String, String>> = buildList {
     add(stringResource(R.string.detail_label_type) to typeLabel)
     add(stringResource(R.string.detail_label_currency) to "$currencySymbol $currencyLabel")
@@ -220,9 +220,16 @@ private fun detailRows(
                 val base = h.valueBaseDateEpochMs?.let { monthLabel(it) }
                 val adjust = RealEstateEstimator.cumulativeAdjustPercent(h.manualValue ?: 0.0, h.estimatedValue)
                 add(stringResource(R.string.detail_label_estimate_method) to reitIndex)
-                add(stringResource(R.string.detail_label_estimate_value) to (h.estimatedValue?.let { num(it) } ?: estimateSyncing))
+                // 占位明确化：有缓存指数时告知最新月份（估算恒 null 的常见原因是基准月
+                // 晚于最新指数月，须等下一期指数发布）；无缓存时引导先同步。
+                val estimatePlaceholder = latestIndexMonth
+                    ?.let { stringResource(R.string.detail_estimate_waiting, it) }
+                    ?: stringResource(R.string.detail_estimate_no_data)
+                add(stringResource(R.string.detail_label_estimate_value) to (h.estimatedValue?.let { num(it) } ?: estimatePlaceholder))
                 base?.let { add(stringResource(R.string.detail_label_base_date) to it) }
                 adjust?.let { add(stringResource(R.string.detail_label_adjust) to "${if (it >= 0) "+" else ""}${"%.1f".format(it)}%") }
+                // 指数最新月份单独一行展示，与估算值是否已生成解耦
+                latestIndexMonth?.let { add(stringResource(R.string.detail_label_index_latest) to it) }
             }
         }
         AssetType.EQUITY -> {

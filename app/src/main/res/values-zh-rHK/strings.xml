@@ -127,7 +127,9 @@
     <string name="detail_label_monthly_payment">月供</string>
     <string name="detail_price_pending">待接入行情</string>
     <string name="detail_reit_index">70 城二手住宅指數</string>
-    <string name="detail_estimate_syncing">同步後更新</string>
+    <string name="detail_estimate_waiting">等待基準月後的指數發布（最新指數：%1$s）</string>
+    <string name="detail_estimate_no_data">同步後獲取指數</string>
+    <string name="detail_label_index_latest">指數已更新至</string>
     <string name="detail_otc_pending">待手錄更新</string>
     <string name="detail_label_otc_region">基金分類</string>
     <string name="otc_region_mainland">中國大陸</string>
@@ -255,6 +257,7 @@
     <string name="err_holding_qty">請輸入持有數量</string>
     <string name="err_holding_cash">請輸入現金金額</string>
     <string name="err_holding_value">請輸入當前估值</string>
+    <string name="err_holding_city">開啟估算時城市須從 70 城列表中選擇</string>
     <string name="err_holding_grams">請輸入克數</string>
     <string name="err_holding_principal">請輸入本金金額</string>
     <string name="err_holding_rate">請輸入年化利率</string>
