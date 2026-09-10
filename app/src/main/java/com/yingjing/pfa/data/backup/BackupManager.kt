@@ -1,7 +1,9 @@
 package com.yingjing.pfa.data.backup
 
 import com.yingjing.pfa.core.backup.BackupCrypto
-import com.yingjing.pfa.data.ai.AiSettings
+import com.yingjing.pfa.data.ai.AiApiProtocol
+import com.yingjing.pfa.data.ai.AiProfile
+import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.local.AiReportRecordDao
 import com.yingjing.pfa.data.local.AiReportRecordEntity
@@ -42,6 +44,7 @@ class BackupManager @Inject constructor(
 
     /** 导出为加密字节。 */
     suspend fun export(passphrase: CharArray): ByteArray {
+        val profiles = aiSettingsStore.profiles.first()
         val data = BackupData(
             users = userDao.getAll().map { it.toBackup() },
             holdings = holdingDao.getAllForBackup().map { it.toBackup() },
@@ -50,7 +53,9 @@ class BackupManager @Inject constructor(
             alerts = alertDao.getAllForBackup().map { it.toBackup() },
             subscriptions = subscriptionDao.getAllForBackup().map { it.toBackup() },
             aiRecords = aiRecordDao.getAllForBackup().map { it.toBackup() },
-            aiSettings = aiSettingsStore.settings.first().toBackup(),
+            aiProfiles = profiles.map { it.toBackup() },
+            aiActiveProfileId = aiSettingsStore.activeProfileId.first(),
+            aiConsented = aiSettingsStore.consented.first(),
             fxRates = fxRepository.current().toBackup(),
         )
         return BackupCrypto.encrypt(json.encodeToString(data).toByteArray(Charsets.UTF_8), passphrase)
@@ -77,11 +82,49 @@ class BackupManager @Inject constructor(
         alertDao.insertAll(data.alerts.map { it.toEntity() })
         subscriptionDao.insertAll(data.subscriptions.map { it.toEntity() })
         aiRecordDao.insertAll(data.aiRecords.map { it.toEntity() })
-        // AI 配置写回（老备份无此字段 → null → 不动本机配置）；API Key 不在备份内，恢复后须重录。
-        data.aiSettings?.let { aiSettingsStore.save(it.toDomain()) }
+        restoreAiConfig(data)
         // 汇率写回本地缓存（老备份无此字段 → null → 不写回，靠后台刷新补救）。
         data.fxRates?.let { fxRepository.save(it.toDomain()) }
         return true
+    }
+
+    /**
+     * AI 配置写回（API Key 不在备份内，恢复后须重录）：
+     * - 新备份（aiProfiles 非空）：整体替换档案列表 + 生效 id + 全局同意；
+     * - 老备份（仅 aiSettings）：映射为对应预设档案（custom → custom_legacy）并设为生效；
+     * - 两者皆无 → 不动本机配置。
+     */
+    private suspend fun restoreAiConfig(data: BackupData) {
+        if (data.aiProfiles.isNotEmpty()) {
+            // 整体替换：先清掉本机已有自定义档案（预设 6 个 id 固定，直接覆盖）。
+            aiSettingsStore.profiles.first()
+                .filter { it.isPreset.not() }
+                .forEach { aiSettingsStore.deleteProfile(it.id) }
+            data.aiProfiles.forEach { aiSettingsStore.saveProfile(it.toDomain()) }
+            aiSettingsStore.setActiveProfile(
+                data.aiActiveProfileId?.takeIf { id -> data.aiProfiles.any { it.id == id } },
+            )
+            data.aiConsented?.let { aiSettingsStore.setConsented(it) }
+            return
+        }
+        val legacy = data.aiSettings ?: return
+        val providerId = AiProviderPreset.fromId(legacy.providerId).id
+        val profileId = if (providerId == AiProviderPreset.CUSTOM.id) {
+            LEGACY_CUSTOM_PROFILE_ID
+        } else {
+            AiProfile.presetIdOf(AiProviderPreset.fromId(providerId))
+        }
+        val profile = AiProfile(
+            id = profileId,
+            providerId = providerId,
+            baseUrl = legacy.baseUrl,
+            model = legacy.model,
+            protocol = AiApiProtocol.fromId(legacy.protocol),
+            includeDetails = legacy.includeDetails,
+        )
+        aiSettingsStore.saveProfile(profile)
+        aiSettingsStore.setActiveProfile(profileId)
+        aiSettingsStore.setConsented(legacy.consented)
     }
 }
 
@@ -146,20 +189,25 @@ private fun BackupAiRecord.toEntity() = AiReportRecordEntity(
     markdown = markdown, createdAt = createdAt,
 )
 
-private fun AiSettings.toBackup() = BackupAiSettings(
+private fun AiProfile.toBackup() = BackupAiProfile(
+    id = id,
+    name = name,
     providerId = providerId,
     baseUrl = baseUrl,
     model = model,
     protocol = protocol.id,
     includeDetails = includeDetails,
-    consented = consented,
 )
 
-private fun BackupAiSettings.toDomain() = AiSettings(
+private fun BackupAiProfile.toDomain() = AiProfile(
+    id = id,
+    name = name,
     providerId = providerId,
     baseUrl = baseUrl,
     model = model,
-    protocol = com.yingjing.pfa.data.ai.AiApiProtocol.fromId(protocol),
+    protocol = AiApiProtocol.fromId(protocol),
     includeDetails = includeDetails,
-    consented = consented,
 )
+
+/** 老备份 aiSettings（providerId=custom）映射的档案 id，与 DataStore 迁移保持一致。 */
+private const val LEGACY_CUSTOM_PROFILE_ID = "custom_legacy"

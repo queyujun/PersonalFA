@@ -3,8 +3,9 @@ package com.yingjing.pfa.data.backup
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.yingjing.pfa.data.ai.AiSettings
 import com.yingjing.pfa.data.ai.AiApiProtocol
+import com.yingjing.pfa.data.ai.AiProfile
+import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.data.local.AppDatabase
 import com.yingjing.pfa.data.local.HoldingEntity
@@ -172,7 +173,7 @@ class BackupManagerTest {
     }
 
     @Test
-    fun export_thenImport_aiRecordsAndSettingsRoundTrip() = runTest {
+    fun export_thenImport_aiRecordsAndProfilesRoundTrip() = runTest {
         db.userDao().insert(UserEntity(id = 1, username = "alex", passwordHash = "h", defaultCurrency = "CNY", createdAt = 1))
         db.aiReportRecordDao().insertAll(
             listOf(
@@ -188,28 +189,46 @@ class BackupManagerTest {
                 ),
             ),
         )
-        aiSettingsStore.save(
-            AiSettings(
-                providerId = "deepseek", baseUrl = "https://api.deepseek.com/v1",
-                model = "deepseek-chat", protocol = AiApiProtocol.RESPONSES,
-                includeDetails = false, consented = true,
+        val customId = AiProfile.newCustomId()
+        aiSettingsStore.seed(
+            AiProfile(
+                id = customId, name = "我的代理", providerId = AiProviderPreset.CUSTOM.id,
+                baseUrl = "https://my-proxy.example.com/v1", model = "my-model",
+                protocol = AiApiProtocol.RESPONSES, includeDetails = false,
             ),
         )
-        // API Key 只存在本机内存/Keystore 层，绝不进备份——导出前后不动它。
-        aiSettingsStore.setApiKey("sk-local-only")
+        aiSettingsStore.seed(
+            AiProfile(
+                id = AiProfile.presetIdOf(AiProviderPreset.DEEPSEEK),
+                providerId = AiProviderPreset.DEEPSEEK.id,
+                baseUrl = "https://api.deepseek.com/v1", model = "deepseek-chat",
+            ),
+            isActive = true,
+        )
+        aiSettingsStore.setConsented(true)
+        // API Key 只存在本机密钥层，绝不进备份——导出前后不动它。
+        aiSettingsStore.setApiKey(customId, "sk-custom-local")
+        aiSettingsStore.setApiKey(AiProfile.presetIdOf(AiProviderPreset.DEEPSEEK), "sk-deepseek-local")
 
         val blob = manager.export("pw123".toCharArray())
         db.aiReportRecordDao().deleteAll()
-        aiSettingsStore.save(AiSettings()) // 模拟换机：配置被重置
+        // 模拟换机：配置被重置。
+        val freshStore = FakeAiSettingsStore()
+        val freshManager = BackupManager(
+            db.userDao(), db.holdingDao(), db.netWorthSnapshotDao(),
+            db.categorySnapshotDao(), db.alertDao(), db.subscriptionDao(),
+            db.aiReportRecordDao(), freshStore, fx,
+        )
         assertEquals(0, db.aiReportRecordDao().getAllForBackup().size)
-        // 备份明文中不含 API Key（key 只在本机 Keystore 层，绝不进备份文件）
+        // 备份明文中不含 API Key（key 只在本机密钥层，绝不进备份文件）
         val backupPlain = String(
             requireNotNull(com.yingjing.pfa.core.backup.BackupCrypto.decrypt(blob, "pw123".toCharArray())),
             Charsets.UTF_8,
         )
-        assertFalse(backupPlain.contains("sk-local-only"))
+        assertFalse(backupPlain.contains("sk-custom-local"))
+        assertFalse(backupPlain.contains("sk-deepseek-local"))
 
-        assertTrue(manager.import(blob, "pw123".toCharArray()))
+        assertTrue(freshManager.import(blob, "pw123".toCharArray()))
         val records = db.aiReportRecordDao().getAllForBackup()
         assertEquals(2, records.size)
         val report = records.first { it.kind == AiReportRecordEntity.KIND_REPORT }
@@ -219,20 +238,55 @@ class BackupManagerTest {
         val insight = records.first { it.kind == AiReportRecordEntity.KIND_INSIGHT }
         assertNull(insight.model)
 
-        val restored = aiSettingsStore.settingsFlowForTest()
-        assertEquals("deepseek", restored.providerId)
-        assertEquals("https://api.deepseek.com/v1", restored.baseUrl)
-        assertEquals(AiApiProtocol.RESPONSES, restored.protocol)
-        assertFalse(restored.includeDetails)
-        assertTrue(restored.consented)
-        assertEquals("sk-local-only", aiSettingsStore.storedKey) // key 未被动过
+        // 档案列表 + 生效 id + 全局同意整体还原。
+        val restored = freshStore.profiles.first()
+        assertEquals(2, restored.size)
+        val restoredCustom = restored.first { it.id == customId }
+        assertEquals("我的代理", restoredCustom.name)
+        assertEquals("https://my-proxy.example.com/v1", restoredCustom.baseUrl)
+        assertEquals(AiApiProtocol.RESPONSES, restoredCustom.protocol)
+        assertFalse(restoredCustom.includeDetails)
+        assertEquals(
+            AiProfile.presetIdOf(AiProviderPreset.DEEPSEEK),
+            freshStore.activeProfileId.first(),
+        )
+        assertTrue(freshStore.consented.first())
+        assertTrue(freshStore.keys.isEmpty()) // 换机 fake 无 key → 须重录
+    }
+
+    @Test
+    fun import_legacyBackupWithSingleAiSettings_mapsToPresetProfile() = runTest {
+        // 老备份（仅 aiSettings，无 aiProfiles）：映射为对应预设档案并设为生效。
+        val legacyJson = """
+            {"version":1,"users":[],"holdings":[],"snapshots":[],"categorySnapshots":[],"alerts":[],
+             "aiSettings":{"providerId":"hunyuan","baseUrl":"https://api.hunyuan.cloud.tencent.com/v1",
+                           "model":"hunyuan-turbos-latest","protocol":"responses",
+                           "includeDetails":false,"consented":true}}
+        """.trimIndent()
+        val blob = com.yingjing.pfa.core.backup.BackupCrypto.encrypt(
+            legacyJson.toByteArray(Charsets.UTF_8), "pw123".toCharArray(),
+        )
+        assertTrue(manager.import(blob, "pw123".toCharArray()))
+
+        val profiles = aiSettingsStore.profiles.first()
+        val hunyuan = profiles.first { it.id == AiProfile.presetIdOf(AiProviderPreset.HUNYUAN) }
+        assertEquals("hunyuan-turbos-latest", hunyuan.model)
+        assertEquals(AiApiProtocol.RESPONSES, hunyuan.protocol)
+        assertFalse(hunyuan.includeDetails)
+        assertEquals(hunyuan.id, aiSettingsStore.activeProfileId.first())
+        assertTrue(aiSettingsStore.consented.first())
     }
 
     @Test
     fun import_legacyBackupWithoutAiData_keepsLocalSettingsAndEmptyRecords() = runTest {
-        // 老备份（无 aiRecords/aiSettings 字段）→ 不崩溃、不清本机 AI 配置、记录表为空。
-        aiSettingsStore.save(
-            AiSettings(providerId = "openai", baseUrl = "https://api.openai.com/v1", model = "gpt-4o-mini"),
+        // 老备份（无 aiRecords/aiSettings/aiProfiles 字段）→ 不崩溃、不清本机 AI 配置、记录表为空。
+        aiSettingsStore.seed(
+            AiProfile(
+                id = AiProfile.presetIdOf(AiProviderPreset.OPENAI),
+                providerId = AiProviderPreset.OPENAI.id,
+                baseUrl = "https://api.openai.com/v1", model = "gpt-4o-mini",
+            ),
+            isActive = true,
         )
         val legacyJson = """
             {"version":1,"users":[],"holdings":[],"snapshots":[],"categorySnapshots":[],"alerts":[]}
@@ -242,8 +296,9 @@ class BackupManagerTest {
         )
         assertTrue(manager.import(blob, "pw123".toCharArray()))
         assertEquals(0, db.aiReportRecordDao().getAllForBackup().size)
-        val local = aiSettingsStore.settingsFlowForTest()
-        assertEquals("openai", local.providerId) // 未被 null 覆盖为默认值
+        val local = aiSettingsStore.profiles.first()
+        assertEquals(1, local.size) // 未被覆盖
+        assertEquals(AiProfile.presetIdOf(AiProviderPreset.OPENAI), aiSettingsStore.activeProfileId.first())
     }
 
     /** 内存 fake FxRepository：current 返回预设值，save 记录之。 */
@@ -256,7 +311,4 @@ class BackupManagerTest {
         override suspend fun refresh(): FxRates = currentRates
         override suspend fun save(rates: FxRates) { savedRates = rates }
     }
-
-    /** 测试辅助：FakeAiSettingsStore 的 Flow 取当前值（runTest 内 first()）。 */
-    private suspend fun FakeAiSettingsStore.settingsFlowForTest(): AiSettings = settings.first()
 }

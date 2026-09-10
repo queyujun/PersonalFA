@@ -36,7 +36,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.BuildConfig
 import com.yingjing.pfa.R
 import com.yingjing.pfa.core.i18n.AppLanguage
-import com.yingjing.pfa.data.ai.AiSettings
+import com.yingjing.pfa.data.ai.AiProfile
+import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.ui.theme.AppTheme
 import com.yingjing.pfa.ui.theme.LocalBrandColors
 
@@ -170,11 +171,11 @@ fun SettingsScreen(
             )
         }
 
-        // 8. AI 助手（摘要 → 二级配置页；副标题展示「服务商 · 已配置模型 / 未配置」）
+        // 8. AI 助手（摘要 → 档案列表页；副标题展示「生效档案 · 已配置模型 / 未配置」）
         SettingsGroupCard(icon = Icons.Outlined.Psychology, title = stringResource(R.string.settings_group_ai)) {
             SettingRow(
                 title = stringResource(R.string.ai_settings_title),
-                subtitle = aiSummary(state.aiSettings),
+                subtitle = aiSummary(state.aiActiveProfile),
                 onClick = onOpenAi,
             )
         }
@@ -232,14 +233,22 @@ fun SettingsScreen(
     }
 }
 
-/** AI 摘要：「DeepSeek · deepseek-chat」或「未配置」。 */
+/** AI 摘要：「DeepSeek · deepseek-chat」或「未配置」；自定义档案优先显示档案名。 */
 @Composable
-private fun aiSummary(settings: AiSettings?): String {
-    if (settings == null || !settings.isConfigured) {
+private fun aiSummary(profile: AiProfile?): String {
+    if (profile == null || !profile.isConfigured) {
         return stringResource(R.string.settings_ai_subtitle_not_configured)
     }
-    val providerLabel = stringResource(settings.provider.labelRes())
-    return stringResource(R.string.settings_ai_subtitle_configured, "$providerLabel · ${settings.model}")
+    val label = profile.displayName()
+    return stringResource(R.string.settings_ai_subtitle_configured, "$label · ${profile.model}")
+}
+
+/** 档案显示名：自定义档案用自取名（空则回退「自定义」），预设档案用服务商资源名。 */
+@Composable
+internal fun AiProfile.displayName(): String = when {
+    !isPreset && name.isNotBlank() -> name
+    !isPreset -> stringResource(AiProviderPreset.CUSTOM.labelRes())
+    else -> stringResource(provider.labelRes())
 }
 
 /** 主题选择对话框：列出 [AppTheme] 选项，当前选中打勾。 */

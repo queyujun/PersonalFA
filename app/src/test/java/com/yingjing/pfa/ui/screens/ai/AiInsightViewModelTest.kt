@@ -2,9 +2,9 @@ package com.yingjing.pfa.ui.screens.ai
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.yingjing.pfa.data.ai.AiChatRequest
+import com.yingjing.pfa.data.ai.AiProfile
 import com.yingjing.pfa.data.ai.AiProviderPreset
 import com.yingjing.pfa.data.ai.AiRemote
-import com.yingjing.pfa.data.ai.AiSettings
 import com.yingjing.pfa.data.local.AiReportRecordEntity
 import com.yingjing.pfa.domain.ai.AiAssistant
 import com.yingjing.pfa.domain.ai.AiChatResult
@@ -73,14 +73,17 @@ class AiInsightViewModelTest {
     }
 
     private suspend fun configuredStore() {
-        store.save(
-            AiSettings(
+        val id = AiProfile.presetIdOf(AiProviderPreset.DEEPSEEK)
+        store.seed(
+            AiProfile(
+                id = id,
                 providerId = AiProviderPreset.DEEPSEEK.id,
                 baseUrl = "https://api.deepseek.com/v1",
                 model = "deepseek-chat",
             ),
+            isActive = true,
         )
-        store.setApiKey("sk-test-key-8888")
+        store.setApiKey(id, "sk-test-key-8888")
     }
 
     /** 注册用户（id=1）+ 写入会话 + 一只 A 股持仓，保证 generate 能走到远程调用。 */

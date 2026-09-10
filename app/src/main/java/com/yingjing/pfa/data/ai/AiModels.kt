@@ -76,6 +76,41 @@ data class AiSettings(
     val isConfigured: Boolean get() = baseUrl.isNotBlank() && model.isNotBlank()
 }
 
+/**
+ * AI 配置档案。预设服务商各固定一个（id = `preset_<providerId>`），自定义档案可多个
+ * （id = `custom_<uuid>`）。API Key 不在此存储——按 [id] 走
+ * [com.yingjing.pfa.core.security.AiSecretStore] 的档案行。
+ */
+@Serializable
+data class AiProfile(
+    val id: String,
+    /** 自定义档案的显示名；预设档案留空（UI 用服务商资源名）。 */
+    val name: String = "",
+    /** 服务商预设 id：预设档案 = 自身；自定义档案 = 选中作模板的预设或 "custom"。 */
+    val providerId: String,
+    val baseUrl: String = "",
+    val model: String = "",
+    val protocol: AiApiProtocol = AiApiProtocol.CHAT_COMPLETIONS,
+    /** payload 是否包含明细持仓（false = 仅分类汇总，进一步降低外发数据量）。 */
+    val includeDetails: Boolean = true,
+) {
+    val isPreset: Boolean get() = id.startsWith(PRESET_ID_PREFIX)
+    val provider: AiProviderPreset get() = AiProviderPreset.fromId(providerId)
+
+    /** baseUrl 与模型均已填写即视为已配置（key 是否存在单独查询）。 */
+    val isConfigured: Boolean get() = baseUrl.isNotBlank() && model.isNotBlank()
+
+    companion object {
+        const val PRESET_ID_PREFIX = "preset_"
+
+        /** 预设档案 id（每个服务商固定一个）。 */
+        fun presetIdOf(provider: AiProviderPreset): String = PRESET_ID_PREFIX + provider.id
+
+        /** 新自定义档案 id（UUID 保证唯一，删除后重建不会撞旧档案）。 */
+        fun newCustomId(): String = "custom_" + java.util.UUID.randomUUID().toString()
+    }
+}
+
 /** 单条对话消息（role: "system" / "user"）。 */
 @Serializable
 data class AiChatMessage(

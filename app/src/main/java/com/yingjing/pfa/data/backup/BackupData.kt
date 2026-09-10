@@ -21,10 +21,19 @@ data class BackupData(
     /** AI 生成结果记录（可选）。老备份无此字段 → 空列表（向后兼容）。 */
     val aiRecords: List<BackupAiRecord> = emptyList(),
     /**
-     * AI 配置（可选，不含 API Key——Keystore 换机恢复失效，密钥须在新机重录）。
-     * 老备份无此字段 → null → 不覆盖本机配置（向后兼容）。
+     * AI 配置（可选，不含 API Key——密钥走加密库，换机恢复失效，须重录）。
+     * 老备份无此字段 → null（由 aiProfiles 分支处理，向后兼容）。
      */
     val aiSettings: BackupAiSettings? = null,
+    /**
+     * AI 多配置档案列表（可选，不含 API Key）。老备份无此字段 → 空列表：
+     * 有 aiSettings 时映射为对应档案；两者皆无 → 不覆盖本机配置。
+     */
+    val aiProfiles: List<BackupAiProfile> = emptyList(),
+    /** 导出时刻的生效档案 id（可选）。老备份 → null。 */
+    val aiActiveProfileId: String? = null,
+    /** 导出时刻的全局隐私同意（可选）。老备份 → null → 不写回。 */
+    val aiConsented: Boolean? = null,
 )
 
 /** 备份中的汇率快照（以人民币 CNY 为基准：1 单位外币 = ? 人民币）。 */
@@ -145,7 +154,7 @@ data class BackupAiRecord(
     val createdAt: Long,
 )
 
-/** 备份中的 AI 配置（不含 API Key——密钥走 Keystore，换机恢复失效，须重录）。 */
+/** 备份中的 AI 配置（老版单配置格式；不含 API Key——密钥须重录）。 */
 @Serializable
 data class BackupAiSettings(
     val providerId: String,
@@ -156,4 +165,19 @@ data class BackupAiSettings(
     val includeDetails: Boolean,
     /** 已确认过隐私提示 → 恢复后免重复弹窗。 */
     val consented: Boolean,
+)
+
+/** 备份中的 AI 配置档案（不含 API Key——密钥加密存本机数据库，换机恢复失效，须重录）。 */
+@Serializable
+data class BackupAiProfile(
+    val id: String,
+    /** 自定义档案显示名；预设档案留空。 */
+    val name: String = "",
+    /** 服务商预设 id：预设档案 = 自身；自定义 = 模板预设 id 或 "custom"。 */
+    val providerId: String,
+    val baseUrl: String = "",
+    val model: String = "",
+    /** chat_completions / responses。 */
+    val protocol: String = "chat_completions",
+    val includeDetails: Boolean = true,
 )

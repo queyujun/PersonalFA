@@ -61,6 +61,7 @@ import com.yingjing.pfa.ui.screens.portfolio.AddTypePickerScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingDetailScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingFormScreen
 import com.yingjing.pfa.ui.screens.portfolio.PortfolioScreen
+import com.yingjing.pfa.ui.screens.settings.AiProfilesScreen
 import com.yingjing.pfa.ui.screens.settings.AiSettingsScreen
 import com.yingjing.pfa.ui.screens.settings.SettingsScreen
 import com.yingjing.pfa.ui.screens.settings.SettingsViewModel
@@ -79,6 +80,7 @@ private const val ROUTE_PROFILE_EDIT = "settings_profile"
 private const val ROUTE_SYNC_DETAIL = "settings_sync"
 private const val ROUTE_BACKUP_DETAIL = "settings_backup"
 private const val ROUTE_AI_SETTINGS = "settings_ai"
+private const val ROUTE_AI_SETTINGS_EDIT = "settings_ai_edit/{profileId}"
 private const val ROUTE_AI_REPORT = "ai_report"
 private const val ROUTE_AI_INSIGHT = "ai_insight"
 private const val ROUTE_SUB_FORM = "subscription_form?subId={subId}"
@@ -238,9 +240,23 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
                 BackupDetailScreen(viewModel = vm, onBack = { navController.popBackStack() })
             }
 
-            // AI 配置：独立 ViewModel（不共享父 SettingsViewModel），返回时一级页经 aiSettingsStore 流自动刷新摘要。
+            // AI 配置一级页（档案列表）：独立 ViewModel；返回时一级设置页经 aiSettingsStore 流自动刷新摘要。
             composable(ROUTE_AI_SETTINGS) {
-                AiSettingsScreen(onBack = { navController.popBackStack() })
+                AiProfilesScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEdit = { profileId -> navController.navigate("settings_ai_edit/$profileId") },
+                )
+            }
+
+            // AI 档案编辑页：profileId = 档案 id 或 new（新建自定义）；删除成功后返回列表页。
+            composable(
+                route = ROUTE_AI_SETTINGS_EDIT,
+                arguments = listOf(navArgument("profileId") { type = NavType.StringType }),
+            ) {
+                AiSettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onDeleted = { navController.popBackStack() },
+                )
             }
 
             // AI 报告：独立 ViewModel；未配置/无 key 时可从错误态直接跳设置页。

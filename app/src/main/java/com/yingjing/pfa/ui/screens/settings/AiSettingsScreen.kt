@@ -1,6 +1,7 @@
 package com.yingjing.pfa.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,13 +42,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
 import com.yingjing.pfa.data.ai.AiApiProtocol
 import com.yingjing.pfa.data.ai.AiProviderPreset
-import com.yingjing.pfa.data.ai.AiSettings
 
 /** FlowRow 属实验性 layout API，本文件内白名单启用。 */
 @OptIn(ExperimentalLayoutApi::class)
 
 /**
- * AI 助手配置二级页：服务商预设 chips + Base URL / 模型 / API Key + 明细开关 + 保存 / 测试连接。
+ * AI 档案编辑页（列表页点行进入）：预设服务商档案 + 自定义档案共用。
+ *
+ * - 预设档案：隐藏名称/服务商 chips（服务商由档案固定），表单只有 URL/模型/key/协议/明细；
+ * - 自定义档案：名称输入 + 服务商 chips（仅回填模板 defaults，不锁定）+ 删除入口；
+ * - 新建（profileId=new）：同自定义档案，但无删除按钮。
  *
  * API Key 明文只存在于本页输入框的临时状态，随「保存配置」提交后即丢弃；
  * 已保存的 key 只显示尾号掩码，支持整键清除。Base URL 强制 https://（target 35 禁明文流量）。
@@ -54,6 +59,7 @@ import com.yingjing.pfa.data.ai.AiSettings
 @Composable
 fun AiSettingsScreen(
     onBack: () -> Unit,
+    onDeleted: () -> Unit = onBack,
     viewModel: AiSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -61,9 +67,10 @@ fun AiSettingsScreen(
     // key 输入框的本地明文；保存成功后由 [onSave] 清空。
     var apiKeyInput by rememberSaveable { mutableStateOf("") }
     var showKeyInputError by rememberSaveable { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
     fun submitSave() {
-        if (!state.settings.baseUrl.startsWith("https://")) {
+        if (!state.profile.baseUrl.startsWith("https://")) {
             showKeyInputError = true
             return
         }
@@ -73,7 +80,7 @@ fun AiSettingsScreen(
     }
 
     fun submitTest() {
-        if (!state.settings.baseUrl.startsWith("https://")) {
+        if (!state.profile.baseUrl.startsWith("https://")) {
             showKeyInputError = true
             return
         }
@@ -81,11 +88,37 @@ fun AiSettingsScreen(
         viewModel.testConnection(apiKeyInput)
     }
 
-    SettingsDetailScaffold(title = stringResource(R.string.ai_settings_title), onBack = onBack) {
-        ProviderSection(
-            selected = state.settings.provider,
-            onProvider = viewModel::setProvider,
-        )
+    SettingsDetailScaffold(
+        title = if (state.isPreset) {
+            stringResource(state.profile.provider.labelRes())
+        } else {
+            stringResource(R.string.ai_profile_edit_title)
+        },
+        onBack = onBack,
+    ) {
+        if (!state.isPreset) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                LabeledSection(stringResource(R.string.ai_profile_name)) {
+                    OutlinedTextField(
+                        value = state.profile.name,
+                        onValueChange = viewModel::setName,
+                        placeholder = { Text(stringResource(R.string.ai_profile_name_hint)) },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 0.dp),
+                    )
+                }
+                ProviderSection(
+                    selected = state.profile.provider,
+                    onProvider = viewModel::setProvider,
+                )
+            }
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -94,7 +127,7 @@ fun AiSettingsScreen(
         ) {
             LabeledSection(stringResource(R.string.ai_base_url)) {
                 OutlinedTextField(
-                    value = state.settings.baseUrl,
+                    value = state.profile.baseUrl,
                     onValueChange = viewModel::setBaseUrl,
                     placeholder = { Text(stringResource(R.string.ai_base_url_hint)) },
                     singleLine = true,
@@ -110,7 +143,7 @@ fun AiSettingsScreen(
             }
             LabeledSection(stringResource(R.string.ai_model)) {
                 OutlinedTextField(
-                    value = state.settings.model,
+                    value = state.profile.model,
                     onValueChange = viewModel::setModel,
                     placeholder = { Text(stringResource(R.string.ai_model_hint)) },
                     singleLine = true,
@@ -118,7 +151,7 @@ fun AiSettingsScreen(
                 )
             }
             ProtocolSection(
-                selected = state.settings.protocol,
+                selected = state.profile.protocol,
                 onProtocol = viewModel::setProtocol,
             )
             ApiKeyField(
@@ -129,7 +162,7 @@ fun AiSettingsScreen(
                 onClear = viewModel::clearKey,
             )
             DetailToggleRow(
-                includeDetails = state.settings.includeDetails,
+                includeDetails = state.profile.includeDetails,
                 onToggle = viewModel::setIncludeDetails,
             )
         }
@@ -139,7 +172,7 @@ fun AiSettingsScreen(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         ) {
-            androidx.compose.foundation.layout.Column(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -156,53 +189,84 @@ fun AiSettingsScreen(
             saving = state.saving,
             testing = state.testing,
             status = state.status,
-            statusArg = state.settings.model,
+            statusArg = state.profile.model,
             statusDetail = state.statusDetail,
-            canSubmit = state.settings.isConfigured,
+            canSubmit = state.profile.isConfigured,
             onSave = ::submitSave,
             onTest = ::submitTest,
+        )
+
+        // 删除入口：仅已落盘的自定义档案显示（预设档案固定存在，新建档案无物可删）。
+        if (!state.isPreset && !state.isNew) {
+            OutlinedButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.ai_profile_delete), color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.ai_profile_delete_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.ai_profile_delete_confirm_body,
+                        state.profile.displayName(),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    viewModel.deleteProfile { removed -> if (removed) onDeleted() }
+                }) {
+                    Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
     }
 }
 
-/** 服务商预设 chips：选中即回填默认 Base URL / 模型（仍可手改）。 */
+/** 服务商预设 chips：自定义档案选模板回填默认 Base URL / 模型（仍可手改）。 */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProviderSection(
     selected: AiProviderPreset,
     onProvider: (AiProviderPreset) -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        LabeledSection(stringResource(R.string.ai_provider)) {
-            // FlowRow 自动换行：7 个 chip 一行放不下，Row 会把后面的挤出屏幕。
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                val presets = listOf(
-                    AiProviderPreset.DEEPSEEK,
-                    AiProviderPreset.OPENAI,
-                    AiProviderPreset.KIMI,
-                    AiProviderPreset.QWEN,
-                    AiProviderPreset.HUNYUAN,
-                    AiProviderPreset.DOUBAO,
-                    AiProviderPreset.CUSTOM,
+    LabeledSection(stringResource(R.string.ai_provider)) {
+        // FlowRow 自动换行：7 个 chip 一行放不下，Row 会把后面的挤出屏幕。
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            val presets = listOf(
+                AiProviderPreset.DEEPSEEK,
+                AiProviderPreset.OPENAI,
+                AiProviderPreset.KIMI,
+                AiProviderPreset.QWEN,
+                AiProviderPreset.HUNYUAN,
+                AiProviderPreset.DOUBAO,
+                AiProviderPreset.CUSTOM,
+            )
+            presets.forEach { preset ->
+                FilterChip(
+                    selected = selected == preset,
+                    onClick = { onProvider(preset) },
+                    label = { Text(stringResource(preset.labelRes())) },
                 )
-                presets.forEach { preset ->
-                    FilterChip(
-                        selected = selected == preset,
-                        onClick = { onProvider(preset) },
-                        label = { Text(stringResource(preset.labelRes())) },
-                    )
-                }
             }
         }
     }
@@ -232,7 +296,6 @@ private fun ProtocolSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
                 .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -315,7 +378,7 @@ private fun DetailToggleRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.ai_include_details), style = MaterialTheme.typography.bodyLarge)
             Text(
                 stringResource(R.string.ai_include_details_subtitle),
@@ -339,7 +402,7 @@ private fun ActionSection(
     onSave: () -> Unit,
     onTest: () -> Unit,
 ) {
-    androidx.compose.foundation.layout.Column(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 24.dp),

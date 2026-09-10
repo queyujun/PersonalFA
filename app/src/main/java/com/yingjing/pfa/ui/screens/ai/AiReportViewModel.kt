@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -113,8 +112,7 @@ class AiReportViewModel @Inject constructor(
     val cancelHint: StateFlow<AiCancelHint> = _cancelHint.asStateFlow()
 
     /** 是否已同意隐私提示（DataStore 持久化）；未同意时首次生成前弹对话框。 */
-    val consented: StateFlow<Boolean> = settingsStore.settings
-        .map { it.consented }
+    val consented: StateFlow<Boolean> = settingsStore.consented
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _exportResult = MutableStateFlow<AiExportResult>(AiExportResult.Idle)
@@ -122,11 +120,10 @@ class AiReportViewModel @Inject constructor(
 
     private var generateJob: Job? = null
 
-    /** 用户在隐私对话框点「同意并继续」。 */
+    /** 用户在隐私对话框点「同意并继续」（全局同意，不随档案切换重置）。 */
     fun consent() {
         viewModelScope.launch {
-            val current = settingsStore.settings.first()
-            settingsStore.save(current.copy(consented = true))
+            settingsStore.setConsented(true)
         }
     }
 

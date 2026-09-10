@@ -15,7 +15,7 @@ import com.yingjing.pfa.core.security.BiometricAuthenticator
 import com.yingjing.pfa.data.sync.SyncStateStore
 import com.yingjing.pfa.core.i18n.AppLanguage
 import com.yingjing.pfa.PersonalFaApp
-import com.yingjing.pfa.data.ai.AiSettings
+import com.yingjing.pfa.data.ai.AiProfile
 import com.yingjing.pfa.data.ai.AiSettingsStore
 import com.yingjing.pfa.data.sync.ThemeStore
 import com.yingjing.pfa.domain.model.Currency
@@ -29,6 +29,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -51,7 +52,8 @@ data class SettingsUiState(
     val autoBackupFileExists: Boolean = false,
     val currentLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
     val currentTheme: AppTheme = AppTheme.VIOLET,
-    val aiSettings: AiSettings? = null,
+    /** AI 摘要：生效档案（null = 无生效或未配置）；名字/已配置由 UI 解析。 */
+    val aiActiveProfile: AiProfile? = null,
     val statusMessage: String? = null,
     val purgeMessage: String? = null,
 )
@@ -116,10 +118,12 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(currentTheme = AppTheme.fromId(id)) }
             }
         }
-        // AI 配置摘要（设置页第 9 组副标题）；onOpenAi 后由独立 AiSettingsViewModel 编辑。
+        // AI 配置摘要（设置页第 9 组副标题）：生效档案 + 其配置态。
         viewModelScope.launch {
-            aiSettingsStore.settings.collect { ai ->
-                _uiState.update { it.copy(aiSettings = ai) }
+            aiSettingsStore.profiles.combine(aiSettingsStore.activeProfileId) { list, activeId ->
+                activeId?.let { id -> list.firstOrNull { it.id == id } }
+            }.collect { profile ->
+                _uiState.update { it.copy(aiActiveProfile = profile) }
             }
         }
     }
