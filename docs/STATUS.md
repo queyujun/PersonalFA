@@ -2,19 +2,17 @@
 
 > 给「下一次会话」看的交接文档。优先阅读下面的续接入口；后文排查过程中的旧状态不代表当前状态。
 
-## 下次会话续接入口（2026-09-10）
+## 下次会话续接入口（2026-09-11）
 
 - 项目目录：`C:/AIProjects/Claude/PersonalFA-1`。
 - 当前分支：`main`。**本地领先 origin/main 11 个提交，均未推送**（用户自行 push）：迁移合并 `0d69d8b` + 文档 `c9adc2e` + 快讯/Key入库/AI多配置 3 个 feat + docs + 房产估算 fix + AI 语气档 feat + 本批 docs。
-- 上一轮四个批次均已提交（混合工作区按功能拆 3 个 feat 提交，真机验证的是最终合并树）：
-  - `c2f2a03` feat: 国际财经快讯提醒（主备双源抓取+关键词打分，通知列表 NEWS 类别）+ 提醒删除（滑动/长按多选/全部删，带确认）
-  - `d78098e` feat: AI API Key 加密入库（Keystore 文件方案 → Room `app_meta` 行 `ai_secret_<profileId>`，AES/GCM 密钥自数据库口令 SHA-256 派生；旧 `ai_key.bin` 与旧单 key 行自动迁移）
-  - `9635053` feat: AI 助手多配置档案（每预设服务商一档 + 多自定义档案，Key 按档案独立；列表页+编辑页两级 UI；旧单配置 DataStore 6 扁平 key 幂等迁移；备份含档案列表，老备份自动映射）
-- **本轮两项改动已提交（2026-09-10，均未推送）**：
-  - `fc79cbc` fix: 房产估算提示改进 — 详情页估算占位文案区分「等待基准月后的指数发布（最新指数：X）/同步后获取指数」、表单开启估算时城市强制 70 城列表、详情页「指数已更新至 X 月」独立行
-  - `a208cb6` feat: AI 报告语气档（分析师/伙伴）与设置页隐私宣言 — `AiReportTone` 枚举随档案持久化（DataStore JSON+备份 tone 字段，默认 analyst 向后兼容）；prompt 仅切 persona（伙伴=安静老派管家/叙事句/承认坚持/指出变化），7 条硬规则与脱敏范围两档一致；设置页「关于」组新增「你的数据从未离开这台手机」静态宣言
-- 验证：完整构建成功，**552 tests / 0 failures**（基线 541 → 净增 11）。验收 APK：`apk/RICHWIN-AI语气与隐私宣言-20260910.apk`（89,565,375 字节）。APK 被 gitignore 排除，仅本地保存。
-- **数据库仍为 v13，本批零 schema 改动**（tone 存 DataStore 档案 JSON）。destructive fallback 保持移除；不要未经重新验证恢复数据库预打开逻辑（曾在用户手机闪退）。
+- **工作区两批未提交改动（等真机验证认可后提交）**：
+  - **城市列表修复**（`HoldingFormScreen.kt` + `HousePriceCitiesTest.kt`）：城市下拉只显示 20 个的 bug——`HousePriceCities.ALL` 取 `take(20)` 位置不当导致搜索/下拉源被截断；验收 APK `apk/RICHWIN-城市列表修复-20260910.apk` 已交付。
+  - **AI 截断检测 + max_tokens 档案设置（2026-09-11）**：修复 AI 报告静默截断。
+    - 截断检测：SSE 解析保留 Chat 协议 `finish_reason == "length"`（收尾块常只有 finish_reason 无 delta/model，原解析整块丢弃导致静默截断）与 Responses 协议 `status == "incomplete"`；`AiStreamEvent.Completed` 改 `data class Completed(truncated)`；报告/分析页 Done 尾部显示「⚠ 输出因长度限制被截断，可在 AI 设置中调大输出上限后重新生成」；截断报告仍保存（明示截断，不静默丢弃）。
+    - max_tokens 档案化：`AiProfile.maxTokens` 默认 **16384**（`AiChatRequest.DEFAULT_MAX_TOKENS`），随档案持久化进备份（`BackupAiProfile.maxTokens` 默认 16384，老备份向后兼容）；设置页新增输出上限输入（非法回默认、上限 65536 裁剪）；请求体 Chat `max_tokens` / Responses `max_output_tokens = maxTokens * 2`（混合推理模型思考 token 计入预算）。「测试连接」仍固定 `PING_MAX_TOKENS = 1024` 不变。
+    - 验证：完整构建成功，**568 tests / 0 failures**（552 → 净增 16）。验收 APK：`apk/RICHWIN-AI截断检测与上限-20260911.apk`（90,688,295 字节）。
+- 数据库仍为 v13，两批零 schema 改动（maxTokens 存 DataStore 档案 JSON）。destructive fallback 保持移除；不要未经重新验证恢复数据库预打开逻辑（曾在用户手机闪退）。
 - Key 存储层说明：`AiSecretStore` 接口在 `d78098e`/`9635053` 两提交间按 profileId 形态演进（工作区连续开发），`d78098e` 单独 checkout 不能编译属已知取舍，最终树=验证过的树。
 - 隐私硬约束不变：API Key 永不进 prompt/备份/日志；外发字段仅白名单。
 - 用户电脑无法 USB 调试；本地无 emulator。不把提供 USB 日志作为继续工作的前提。
@@ -63,7 +61,7 @@
 
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / **报告语气档**） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + **房产估算提示改进**（数据库 12→13 无损迁移完成）全部完成，**552 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI语气与隐私宣言-20260910.apk`）。**本轮两项改动已本地提交、未推送**（用户自行 push）。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / 报告语气档 / **截断检测+max_tokens 档案设置**） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + 房产估算提示改进（数据库 12→13 无损迁移完成）全部完成，**568 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI截断检测与上限-20260911.apk`）。**工作区两批改动未提交**（城市列表修复 + AI 截断检测），等真机验证认可后提交。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库外 portable 工具链）
 ```bash
