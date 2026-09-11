@@ -5,10 +5,10 @@
 ## 下次会话续接入口（2026-09-11）
 
 - 项目目录：`C:/AIProjects/Claude/PersonalFA-1`。
-- 当前分支：`main`。**本地领先 origin/main 11 个提交，均未推送**（用户自行 push）：迁移合并 `0d69d8b` + 文档 `c9adc2e` + 快讯/Key入库/AI多配置 3 个 feat + docs + 房产估算 fix + AI 语气档 feat + 本批 docs。
-- **工作区两批未提交改动（等真机验证认可后提交）**：
-  - **城市列表修复**（`HoldingFormScreen.kt` + `HousePriceCitiesTest.kt`）：城市下拉只显示 20 个的 bug——`HousePriceCities.ALL` 取 `take(20)` 位置不当导致搜索/下拉源被截断；验收 APK `apk/RICHWIN-城市列表修复-20260910.apk` 已交付。
-  - **AI 截断检测 + max_tokens 档案设置（2026-09-11）**：修复 AI 报告静默截断。
+- 当前分支：`main`。**本地领先 origin/main 4 个提交，均未推送**（用户自行 push）：本日 4 个（城市 fix + AI 截断 feat + docs ×2）。此前批次（快讯/Key入库/AI多配置/房产估算/AI 语气档等 11 个）已随 `1c27640` 合并推送，不再领先。
+- **本轮两项改动已提交（2026-09-11，均未推送，用户已认可）**：
+  - `d2c76b9` fix: 房产表单城市下拉展示 70 城全量 — 去掉 take(20) 无声截断，新增 70 城名单守护测试；验收 APK `apk/RICHWIN-城市列表修复-20260910.apk`。
+  - `a8e57a7` feat: AI 截断检测与输出上限档案设置 — 修复 AI 报告静默截断：
     - 截断检测：SSE 解析保留 Chat 协议 `finish_reason == "length"`（收尾块常只有 finish_reason 无 delta/model，原解析整块丢弃导致静默截断）与 Responses 协议 `status == "incomplete"`；`AiStreamEvent.Completed` 改 `data class Completed(truncated)`；报告/分析页 Done 尾部显示「⚠ 输出因长度限制被截断，可在 AI 设置中调大输出上限后重新生成」；截断报告仍保存（明示截断，不静默丢弃）。
     - max_tokens 档案化：`AiProfile.maxTokens` 默认 **16384**（`AiChatRequest.DEFAULT_MAX_TOKENS`），随档案持久化进备份（`BackupAiProfile.maxTokens` 默认 16384，老备份向后兼容）；设置页新增输出上限输入（非法回默认、上限 65536 裁剪）；请求体 Chat `max_tokens` / Responses `max_output_tokens = maxTokens * 2`（混合推理模型思考 token 计入预算）。「测试连接」仍固定 `PING_MAX_TOKENS = 1024` 不变。
     - 验证：完整构建成功，**568 tests / 0 failures**（552 → 净增 16）。验收 APK：`apk/RICHWIN-AI截断检测与上限-20260911.apk`（90,688,295 字节）。
@@ -61,7 +61,7 @@
 
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / 报告语气档 / **截断检测+max_tokens 档案设置**） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + 房产估算提示改进（数据库 12→13 无损迁移完成）全部完成，**568 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI截断检测与上限-20260911.apk`）。**工作区两批改动未提交**（城市列表修复 + AI 截断检测），等真机验证认可后提交。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / 报告语气档 / **截断检测+max_tokens 档案设置**） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + 房产估算提示改进（数据库 12→13 无损迁移完成）全部完成，**568 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI截断检测与上限-20260911.apk`）。城市列表修复与 AI 截断检测两批**已本地提交**（2026-09-11），本地领先 origin/main 4 个提交未推送。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库外 portable 工具链）
 ```bash
