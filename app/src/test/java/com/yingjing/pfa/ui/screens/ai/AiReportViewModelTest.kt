@@ -296,6 +296,24 @@ class AiReportViewModelTest {
     }
 
     @Test
+    fun generate_completedTruncated_doneCarriesTruncatedFlag_andStillSaves() = runTest {
+        configuredStore()
+        seedUserAndHolding()
+        remote.streams += listOf(
+            AiStreamEvent.Model("deepseek-chat"),
+            AiStreamEvent.Delta("半截报告"),
+            AiStreamEvent.Completed(truncated = true),
+        )
+        val vm = viewModel()
+        vm.generate()
+        val done = vm.uiState.value as AiUiState.Done
+        assertEquals("半截报告", done.markdown)
+        assertTrue(done.truncated)
+        // 截断的报告仍保存（明示截断，而不是静默丢弃），重生成由用户决定
+        assertEquals("半截报告", recordsRepo.records.single().markdown)
+    }
+
+    @Test
     fun cancel_duringGeneration_returnsToIdle_andIgnoresLateEvents() = runTest {
         configuredStore()
         seedUserAndHolding()
@@ -406,7 +424,7 @@ class AiReportViewModelTest {
             emit(AiStreamEvent.Delta("部分"))
             gate.await()
             emit(AiStreamEvent.Delta("后文"))
-            emit(AiStreamEvent.Completed)
+            emit(AiStreamEvent.Completed())
         }
     }
 }

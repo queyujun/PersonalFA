@@ -324,10 +324,20 @@ private fun DoneSection(
             )
         }
         Card(modifier = Modifier.fillMaxWidth()) {
-            AiMarkdownText(
-                markdown = done.markdown,
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            )
+            Column(Modifier.padding(16.dp)) {
+                AiMarkdownText(
+                    markdown = done.markdown,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (done.truncated) {
+                    Text(
+                        stringResource(R.string.ai_output_truncated),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = onRegenerate, modifier = Modifier.weight(1f)) {

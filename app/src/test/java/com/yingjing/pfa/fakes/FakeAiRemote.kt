@@ -34,7 +34,7 @@ class FakeAiRemote : AiRemote {
             ?: listOf(
                 AiStreamEvent.Model(request.model),
                 AiStreamEvent.Delta("ok"),
-                AiStreamEvent.Completed,
+                AiStreamEvent.Completed(),
             )
         events.forEach { emit(it) }
     }

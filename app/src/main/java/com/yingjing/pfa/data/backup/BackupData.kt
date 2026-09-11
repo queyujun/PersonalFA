@@ -182,4 +182,6 @@ data class BackupAiProfile(
     val includeDetails: Boolean = true,
     /** 输出语气档 id（analyst / companion）；老备份无此字段 → analyst。 */
     val tone: String = "analyst",
+    /** 单次生成输出 token 上限；老备份无此字段 → 默认 16k。 */
+    val maxTokens: Int = 16384,
 )

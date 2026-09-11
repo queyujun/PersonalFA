@@ -83,6 +83,7 @@ class AiAssistant @Inject constructor(
                 model = settings.model,
                 messages = messages,
                 protocol = settings.protocol,
+                maxTokens = settings.maxTokens,
             ),
         )
     }

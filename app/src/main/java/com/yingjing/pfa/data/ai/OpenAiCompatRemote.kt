@@ -102,6 +102,7 @@ class OpenAiCompatRemote @Inject constructor(
                     return@flow
                 }
                 var lastModel: String? = null
+                var truncated = false
                 while (true) {
                     val line = body.source().readUtf8Line() ?: break
                     if (!line.startsWith(SSE_DATA_PREFIX)) continue
@@ -117,9 +118,10 @@ class OpenAiCompatRemote @Inject constructor(
                         lastModel = chunk.model
                         emit(AiStreamEvent.Model(chunk.model))
                     }
+                    if (chunk.truncated) truncated = true
                     if (!chunk.delta.isNullOrEmpty()) emit(AiStreamEvent.Delta(chunk.delta))
                 }
-                emit(AiStreamEvent.Completed)
+                emit(AiStreamEvent.Completed(truncated))
             }
         } catch (e: CancellationException) {
             throw e
@@ -157,7 +159,7 @@ class OpenAiCompatRemote @Inject constructor(
                     )
                     put("input", request.messages.filter { it.role != "system" }.joinToString("\n\n") { it.content })
                     // 混合推理模型（如腾讯 hy3）的思考 token 也计入 max_output_tokens：
-                    // 实测思考常占 90%+ 预算，3072 会导致正文被截断甚至无正文（status=incomplete）。
+                    // 实测思考常占 90%+ 预算，默认值过小会导致正文被截断甚至无正文（status=incomplete）。
                     put("max_output_tokens", request.maxTokens * 2)
                 }
             }

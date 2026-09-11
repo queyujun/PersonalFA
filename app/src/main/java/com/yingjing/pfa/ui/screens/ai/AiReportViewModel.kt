@@ -46,11 +46,13 @@ sealed interface AiUiState {
         val model: String?,
     ) : AiUiState
 
-    /** 生成成功；[markdown] 仅内存持有，不落盘。[model] 用于「生成时间 · 模型」脚注。 */
+    /** 生成成功；[markdown] 仅内存持有，不落盘。[model] 用于「生成时间 · 模型」脚注；
+     *  [truncated] = 输出因长度限制被截断，UI 须明示而非静默当完整报告。 */
     data class Done(
         val markdown: String,
         val generatedAtMs: Long,
         val model: String?,
+        val truncated: Boolean = false,
     ) : AiUiState
 
     /** 生成失败；[canRetry] = 非「未配置/无 key」类错误（那两类引导去设置页）。 */
@@ -149,7 +151,7 @@ class AiReportViewModel @Inject constructor(
                                 _uiState.value = current.copy(model = model)
                             }
                         }
-                        AiStreamEvent.Completed -> completeGeneration(accumulated.toString(), model)
+                        is AiStreamEvent.Completed -> completeGeneration(accumulated.toString(), model, event.truncated)
                         is AiStreamEvent.Failed -> _uiState.value = AiUiState.Error(
                             kind = event.kind,
                             detail = event.detail,
@@ -166,8 +168,8 @@ class AiReportViewModel @Inject constructor(
         }
     }
 
-    /** 流正常结束：正文为空按空响应报错；否则自动保存并进入 Done。 */
-    private suspend fun completeGeneration(accumulated: String, model: String?) {
+    /** 流正常结束：正文为空按空响应报错；否则自动保存并进入 Done（[truncated] 时 UI 明示截断）。 */
+    private suspend fun completeGeneration(accumulated: String, model: String?, truncated: Boolean) {
         if (accumulated.isBlank()) {
             _uiState.value = AiUiState.Error(AiFailureKind.EMPTY_RESPONSE, null, canRetry = true)
             return
@@ -178,6 +180,7 @@ class AiReportViewModel @Inject constructor(
             markdown = accumulated,
             generatedAtMs = generatedAtMs,
             model = model,
+            truncated = truncated,
         )
     }
 

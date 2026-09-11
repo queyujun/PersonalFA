@@ -62,8 +62,9 @@ sealed interface AiStreamEvent {
     /** 从响应获知的模型名（重复已去重）。 */
     data class Model(val name: String) : AiStreamEvent
 
-    /** 流正常结束；正文为空时调用方应按 EMPTY_RESPONSE 处理。 */
-    data object Completed : AiStreamEvent
+    /** 流正常结束；正文为空时调用方应按 EMPTY_RESPONSE 处理。
+     *  [truncated] = 输出因长度限制被截断（调用方应向用户明示，而非静默存为完整报告）。 */
+    data class Completed(val truncated: Boolean = false) : AiStreamEvent
 
     /** 失败终止：HTTP 状态码映射 / 流中 error 事件 / 网络异常。 */
     data class Failed(val kind: AiFailureKind, val detail: String? = null) : AiStreamEvent

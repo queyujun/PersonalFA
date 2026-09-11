@@ -140,6 +140,21 @@ class AiSettingsViewModel @Inject constructor(
     fun setTone(value: AiReportTone) =
         _uiState.update { it.copy(profile = it.profile.copy(tone = value)) }
 
+    /**
+     * 设置单次生成输出 token 上限（文本输入）：空白/非数字回默认；上限裁到
+     * [MAX_TOKENS_LIMIT]（防误填过大值触发服务商 4xx，如 0/负数也按非法回默认）。
+     */
+    fun setMaxTokens(input: String) {
+        val value = input.trim().toIntOrNull()?.takeIf { it > 0 } ?: AiChatRequest.DEFAULT_MAX_TOKENS
+        _uiState.update {
+            it.copy(
+                profile = it.profile.copy(maxTokens = value.coerceAtMost(MAX_TOKENS_LIMIT)),
+                status = null,
+                statusDetail = null,
+            )
+        }
+    }
+
     fun setIncludeDetails(value: Boolean) =
         _uiState.update { it.copy(profile = it.profile.copy(includeDetails = value)) }
 
@@ -260,6 +275,9 @@ class AiSettingsViewModel @Inject constructor(
         // 预算太小（ Responses 协议翻倍后仍只有 16）会只产出 reasoning、正文为空，
         // 被误判为「服务商拒绝请求」。实测 512 预算即可完成一次 ping，取 1024 留余量。
         private const val PING_MAX_TOKENS = 1024
+
+        /** 档案 max_tokens 输入上限：主流服务商上限 32k~128k，64k 已远超单份报告所需。 */
+        const val MAX_TOKENS_LIMIT = 65536
     }
 }
 

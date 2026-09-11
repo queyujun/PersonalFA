@@ -104,7 +104,7 @@ class AiInsightViewModel @Inject constructor(
                                 _uiState.value = current.copy(model = model)
                             }
                         }
-                        AiStreamEvent.Completed -> completeGeneration(accumulated.toString(), model)
+                        is AiStreamEvent.Completed -> completeGeneration(accumulated.toString(), model, event.truncated)
                         is AiStreamEvent.Failed -> _uiState.value = AiUiState.Error(
                             kind = event.kind,
                             detail = event.detail,
@@ -121,8 +121,8 @@ class AiInsightViewModel @Inject constructor(
         }
     }
 
-    /** 流正常结束：正文为空按空响应报错；否则自动保存并进入 Done。 */
-    private suspend fun completeGeneration(accumulated: String, model: String?) {
+    /** 流正常结束：正文为空按空响应报错；否则自动保存并进入 Done（[truncated] 时 UI 明示截断）。 */
+    private suspend fun completeGeneration(accumulated: String, model: String?, truncated: Boolean) {
         if (accumulated.isBlank()) {
             _uiState.value = AiUiState.Error(AiFailureKind.EMPTY_RESPONSE, null, canRetry = true)
             return
@@ -133,6 +133,7 @@ class AiInsightViewModel @Inject constructor(
             markdown = accumulated,
             generatedAtMs = generatedAtMs,
             model = model,
+            truncated = truncated,
         )
     }
 

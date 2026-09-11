@@ -159,6 +159,10 @@ fun AiSettingsScreen(
                 selected = state.profile.tone,
                 onTone = viewModel::setTone,
             )
+            MaxTokensField(
+                value = state.profile.maxTokens,
+                onValueChange = viewModel::setMaxTokens,
+            )
             ApiKeyField(
                 hasKey = state.hasKey,
                 keyTail = state.keyTail,
@@ -347,6 +351,32 @@ private fun ToneSection(
         }
         Text(
             stringResource(R.string.ai_tone_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+    }
+}
+
+/**
+ * 输出 token 上限（高级设置）：纯数字输入，空白/非法输入回默认值；
+ * 上限裁到 65536（防误填过大值触发服务商 4xx）。
+ */
+@Composable
+private fun MaxTokensField(
+    value: Int,
+    onValueChange: (String) -> Unit,
+) {
+    LabeledSection(stringResource(R.string.ai_max_tokens)) {
+        OutlinedTextField(
+            value = value.toString(),
+            onValueChange = onValueChange,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            stringResource(R.string.ai_max_tokens_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp),

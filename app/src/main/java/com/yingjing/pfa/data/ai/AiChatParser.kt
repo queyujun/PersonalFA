@@ -110,19 +110,31 @@ object AiChatParser {
 
     private fun parseChatChunk(root: JsonObject): AiSseChunk? {
         val model = root.stringAt("model")
-        val delta = root["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-            ?.get("delta")?.jsonObject?.stringAt("content")
-        return if (delta == null && model == null) null else AiSseChunk(delta, model, null)
+        val choice = root["choices"]?.jsonArray?.firstOrNull()?.jsonObject
+        val delta = choice?.get("delta")?.jsonObject?.stringAt("content")
+        // 流式收尾块常只有 finish_reason 没有 delta/model；finish_reason=length 表示被
+        // max_tokens 截断，必须保留信号而不是整块丢弃。
+        val truncated = choice?.get("finish_reason")?.jsonPrimitive?.takeIf { it.isString }?.content == "length"
+        return if (delta == null && model == null && !truncated) null
+        else AiSseChunk(delta, model, null, truncated)
     }
 
-    private fun parseResponsesChunk(root: JsonObject): AiSseChunk? = when (root.stringAt("type")) {
-        "response.output_text.delta" -> root.stringAt("delta")
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { AiSseChunk(delta = it, model = null, error = null) }
-        "response.created", "response.in_progress" ->
-            (root["response"] as? JsonObject)?.stringAt("model")
-                ?.let { AiSseChunk(delta = null, model = it, error = null) }
-        else -> null
+    private fun parseResponsesChunk(root: JsonObject): AiSseChunk? {
+        val response = root["response"] as? JsonObject
+        // response.completed / response.incomplete 等收尾事件携带完整 response 对象；
+        // status=incomplete 表示输出（常因思考占满 max_output_tokens 预算）未完整生成。
+        val truncated = response?.stringAt("status") == "incomplete"
+        return when (root.stringAt("type")) {
+            "response.output_text.delta" -> root.stringAt("delta")
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { AiSseChunk(delta = it, model = null, error = null, truncated = truncated) }
+            "response.created", "response.in_progress" ->
+                response?.stringAt("model")
+                    ?.let { AiSseChunk(delta = null, model = it, error = null, truncated = truncated) }
+            // 仅 incomplete 视为截断；completed 等其余收尾事件返回 null。
+            // truncated 为 true 已蕴含 response != null（status 取自 response 内）。
+            else -> if (truncated) AiSseChunk(delta = null, model = null, error = null, truncated = true) else null
+        }
     }
 
     /** 仅取字符串类型的字段值（显式 JSON null 不得当作 "null" 文本）。 */
@@ -136,9 +148,11 @@ object AiChatParser {
     private const val DONE_SENTINEL = "[DONE]"
 }
 
-/** SSE 单事件解析结果：[delta] 正文增量、[model] 模型名、[error] 流中错误说明。 */
+/** SSE 单事件解析结果：[delta] 正文增量、[model] 模型名、[error] 流中错误说明、
+ *  [truncated] 输出因长度限制被截断（Chat finish_reason=length / Responses status=incomplete）。 */
 data class AiSseChunk(
     val delta: String?,
     val model: String?,
     val error: String?,
+    val truncated: Boolean = false,
 )

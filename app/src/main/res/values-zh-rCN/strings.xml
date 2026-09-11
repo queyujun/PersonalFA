@@ -549,6 +549,8 @@
     <string name="ai_tone_analyst">分析师</string>
     <string name="ai_tone_companion">伙伴</string>
     <string name="ai_tone_subtitle">伙伴模式以叙事口吻陪伴复盘，数据外发范围不变</string>
+    <string name="ai_max_tokens">输出长度上限（token）</string>
+    <string name="ai_max_tokens_subtitle">单次生成的最大输出量，默认 16384；报告被截断时可在 64k 内调大，保存后生效</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_hint">sk-…</string>
     <string name="ai_api_key_configured_mask">已保存 · 尾号 %1$s</string>
@@ -576,6 +578,7 @@
     <string name="ai_err_bad_request">请求被拒绝：%1$s</string>
     <string name="ai_err_bad_request_generic">请求被服务商拒绝，请检查模型名称与接口地址</string>
     <string name="ai_err_empty_response">服务商返回了空响应</string>
+    <string name="ai_output_truncated">⚠ 输出因长度限制被截断，可在 AI 设置中调大输出上限后重新生成</string>
     <string name="ai_report_title">AI 资产报告</string>
     <string name="ai_report_entry_subtitle">专业模板·导出</string>
     <string name="ai_insight_title">AI 持仓分析</string>

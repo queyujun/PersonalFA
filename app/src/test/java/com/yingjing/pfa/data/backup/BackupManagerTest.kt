@@ -195,6 +195,7 @@ class BackupManagerTest {
                 id = customId, name = "我的代理", providerId = AiProviderPreset.CUSTOM.id,
                 baseUrl = "https://my-proxy.example.com/v1", model = "my-model",
                 protocol = AiApiProtocol.RESPONSES, includeDetails = false,
+                maxTokens = 32768,
             ),
         )
         aiSettingsStore.seed(
@@ -238,7 +239,7 @@ class BackupManagerTest {
         val insight = records.first { it.kind == AiReportRecordEntity.KIND_INSIGHT }
         assertNull(insight.model)
 
-        // 档案列表 + 生效 id + 全局同意整体还原。
+        // 档案列表 + 生效 id + 全局同意整体还原；输出上限随档案持久化。
         val restored = freshStore.profiles.first()
         assertEquals(2, restored.size)
         val restoredCustom = restored.first { it.id == customId }
@@ -246,12 +247,32 @@ class BackupManagerTest {
         assertEquals("https://my-proxy.example.com/v1", restoredCustom.baseUrl)
         assertEquals(AiApiProtocol.RESPONSES, restoredCustom.protocol)
         assertFalse(restoredCustom.includeDetails)
+        assertEquals(32768, restoredCustom.maxTokens)
+        assertEquals(16384, restored.first { it.id != customId }.maxTokens) // 预设档案默认 16k
         assertEquals(
             AiProfile.presetIdOf(AiProviderPreset.DEEPSEEK),
             freshStore.activeProfileId.first(),
         )
         assertTrue(freshStore.consented.first())
         assertTrue(freshStore.keys.isEmpty()) // 换机 fake 无 key → 须重录
+    }
+
+    @Test
+    fun import_legacyProfileBackupWithoutMaxTokens_defaultsTo16k() = runTest {
+        // 老备份的 aiProfiles 无 maxTokens 字段 → 恢复后取默认 16k（向后兼容）。
+        val legacyJson = """
+            {"version":1,"users":[],"holdings":[],"snapshots":[],"categorySnapshots":[],"alerts":[],
+             "aiProfiles":[{"id":"preset_deepseek","providerId":"deepseek",
+                            "baseUrl":"https://api.deepseek.com/v1","model":"deepseek-chat"}],
+             "aiActiveProfileId":"preset_deepseek"}
+        """.trimIndent()
+        val blob = com.yingjing.pfa.core.backup.BackupCrypto.encrypt(
+            legacyJson.toByteArray(Charsets.UTF_8), "pw123".toCharArray(),
+        )
+        assertTrue(manager.import(blob, "pw123".toCharArray()))
+        val profile = aiSettingsStore.profiles.first().single()
+        assertEquals("deepseek-chat", profile.model)
+        assertEquals(16384, profile.maxTokens)
     }
 
     @Test

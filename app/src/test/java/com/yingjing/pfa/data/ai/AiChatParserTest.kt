@@ -221,4 +221,68 @@ class AiChatParserTest {
         )
         assertNull(chunk)
     }
+
+    // -------------------------------------------- 截断信号（max_tokens 用尽）
+
+    @Test
+    fun parseSseData_chat_finishReasonLength_onlyInTailChunk_carriesTruncated() {
+        // 流式收尾块常只有 finish_reason 没有 delta/model：截断信号不能被整块丢弃
+        val chunk = AiChatParser.parseSseData(
+            """{"choices":[{"finish_reason":"length"}]}""",
+            AiApiProtocol.CHAT_COMPLETIONS,
+        )
+        assertEquals(AiSseChunk(null, null, null, truncated = true), chunk)
+    }
+
+    @Test
+    fun parseSseData_chat_finishReasonStop_ignored() {
+        // 正常结束 finish_reason=stop：不是截断，无须产生事件
+        assertNull(
+            AiChatParser.parseSseData(
+                """{"choices":[{"finish_reason":"stop"}]}""",
+                AiApiProtocol.CHAT_COMPLETIONS,
+            ),
+        )
+    }
+
+    @Test
+    fun parseSseData_chat_deltaWithFinishReasonLength_keepsBoth() {
+        // 个别网关把 finish_reason 附在最后一个增量块上：增量与截断信号并存
+        val chunk = AiChatParser.parseSseData(
+            """{"model":"deepseek-chat","choices":[{"delta":{"content":"尾段"},"finish_reason":"length"}]}""",
+            AiApiProtocol.CHAT_COMPLETIONS,
+        )
+        assertEquals(AiSseChunk("尾段", "deepseek-chat", null, truncated = true), chunk)
+    }
+
+    @Test
+    fun parseSseData_responses_statusIncomplete_carriesTruncated() {
+        // response.completed / response.incomplete 收尾事件携带 response.status=incomplete
+        val chunk = AiChatParser.parseSseData(
+            """{"type":"response.completed","response":{"id":"resp_1","status":"incomplete"}}""",
+            AiApiProtocol.RESPONSES,
+        )
+        assertEquals(AiSseChunk(null, null, null, truncated = true), chunk)
+    }
+
+    @Test
+    fun parseSseData_responses_statusCompleted_ignored() {
+        // 正常完成 status=completed：无增量无截断，不产生事件
+        assertNull(
+            AiChatParser.parseSseData(
+                """{"type":"response.completed","response":{"id":"resp_1","status":"completed"}}""",
+                AiApiProtocol.RESPONSES,
+            ),
+        )
+    }
+
+    @Test
+    fun parseSseData_responses_deltaWithIncompleteStatus_flagsTruncated() {
+        // 思考占满预算时截断状态可先于正文增量到达：增量照常、truncated 置位
+        val chunk = AiChatParser.parseSseData(
+            """{"type":"response.output_text.delta","delta":"部分","response":{"status":"incomplete"}}""",
+            AiApiProtocol.RESPONSES,
+        )
+        assertEquals(AiSseChunk("部分", null, null, truncated = true), chunk)
+    }
 }

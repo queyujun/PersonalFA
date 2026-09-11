@@ -85,6 +85,8 @@ data class AiSettings(
     val includeDetails: Boolean = true,
     /** 报告/分析输出语气档。 */
     val tone: AiReportTone = AiReportTone.ANALYST,
+    /** 单次生成输出 token 上限（档案可调）。 */
+    val maxTokens: Int = AiChatRequest.DEFAULT_MAX_TOKENS,
     /** 用户已确认隐私提示（资产数据将发送到所配置服务商）。 */
     val consented: Boolean = false,
 ) {
@@ -113,6 +115,8 @@ data class AiProfile(
     val includeDetails: Boolean = true,
     /** 报告/分析输出语气档（旧 JSON/旧备份无此字段 → 默认 ANALYST，向后兼容）。 */
     val tone: AiReportTone = AiReportTone.ANALYST,
+    /** 单次生成输出 token 上限（旧 JSON/旧备份无此字段 → 默认 16k，向后兼容）。 */
+    val maxTokens: Int = AiChatRequest.DEFAULT_MAX_TOKENS,
 ) {
     val isPreset: Boolean get() = id.startsWith(PRESET_ID_PREFIX)
     val provider: AiProviderPreset get() = AiProviderPreset.fromId(providerId)
@@ -149,7 +153,8 @@ data class AiChatRequest(
     val temperature: Double = DEFAULT_TEMPERATURE,
 ) {
     companion object {
-        const val DEFAULT_MAX_TOKENS = 3072
+        /** 输出 token 上限默认 16k：7 节完整报告实测约 4–8k token，16k 留足余量避免正文被截断。 */
+        const val DEFAULT_MAX_TOKENS = 16384
         const val DEFAULT_TEMPERATURE = 0.3
     }
 }

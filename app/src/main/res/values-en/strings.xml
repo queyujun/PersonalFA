@@ -531,6 +531,8 @@
     <string name="ai_tone_analyst">Analyst</string>
     <string name="ai_tone_companion">Companion</string>
     <string name="ai_tone_subtitle">Analyst: professional, verdict-driven. Companion: a narrative voice that acknowledges consistency and points out changes — same data, same depth.</string>
+    <string name="ai_max_tokens">Output token limit</string>
+    <string name="ai_max_tokens_subtitle">Max output per generation, default 16384. If the report gets cut off, raise it (up to 64k) and save</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_hint">sk-…</string>
     <string name="ai_api_key_configured_mask">Saved · ends with %1$s</string>
@@ -558,6 +560,7 @@
     <string name="ai_err_bad_request">Request rejected: %1$s</string>
     <string name="ai_err_bad_request_generic">Request rejected by provider. Check model name and Base URL</string>
     <string name="ai_err_empty_response">Provider returned an empty response</string>
+    <string name="ai_output_truncated">⚠ Output was cut off by the length limit. Raise the output limit in AI settings and regenerate</string>
     <string name="ai_report_title">AI Asset Report</string>
     <string name="ai_report_entry_subtitle">Professional template · exportable</string>
     <string name="ai_insight_title">AI Portfolio Insight</string>

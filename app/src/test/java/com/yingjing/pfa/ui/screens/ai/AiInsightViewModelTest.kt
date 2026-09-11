@@ -384,7 +384,7 @@ class AiInsightViewModelTest {
             emit(AiStreamEvent.Delta("部分"))
             gate.await()
             emit(AiStreamEvent.Delta("后文"))
-            emit(AiStreamEvent.Completed)
+            emit(AiStreamEvent.Completed())
         }
     }
 }

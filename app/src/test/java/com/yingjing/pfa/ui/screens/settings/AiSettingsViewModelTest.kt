@@ -288,6 +288,25 @@ class AiSettingsViewModelTest {
     }
 
     @Test
+    fun setMaxTokens_updatesState_andPersistsThroughSave() = runTest {
+        val id = seededPreset(AiProviderPreset.HUNYUAN)
+        val vm = viewModel(id)
+        assertEquals(16384, vm.uiState.value.profile.maxTokens) // 默认 16k
+
+        vm.setMaxTokens("32768")
+        assertEquals(32768, vm.uiState.value.profile.maxTokens)
+
+        vm.save(apiKeyInput = "sk-tokens-0001")
+        assertEquals(32768, store.profiles.first().first { it.id == id }.maxTokens)
+
+        // 非法输入回默认；过大值裁到 65536 上限
+        vm.setMaxTokens("abc")
+        assertEquals(16384, vm.uiState.value.profile.maxTokens)
+        vm.setMaxTokens("999999999")
+        assertEquals(65536, vm.uiState.value.profile.maxTokens)
+    }
+
+    @Test
     fun testConnection_usesSelectedProtocol() = runTest {
         val id = seededPreset(AiProviderPreset.HUNYUAN)
         val vm = viewModel(id)

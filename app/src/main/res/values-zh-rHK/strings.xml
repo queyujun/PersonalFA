@@ -549,6 +549,8 @@
     <string name="ai_tone_analyst">分析師</string>
     <string name="ai_tone_companion">夥伴</string>
     <string name="ai_tone_subtitle">夥伴模式以敘事口吻陪伴復盤，數據外發範圍不變</string>
+    <string name="ai_max_tokens">輸出長度上限（token）</string>
+    <string name="ai_max_tokens_subtitle">單次生成的最大輸出量，預設 16384；報告被截斷時可在 64k 內調大，儲存後生效</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_hint">sk-…</string>
     <string name="ai_api_key_configured_mask">已儲存 · 尾號 %1$s</string>
@@ -576,6 +578,7 @@
     <string name="ai_err_bad_request">請求被拒絕：%1$s</string>
     <string name="ai_err_bad_request_generic">請求被服務商拒絕，請檢查模型名稱與接口地址</string>
     <string name="ai_err_empty_response">服務商返回了空回應</string>
+    <string name="ai_output_truncated">⚠ 輸出因長度限制被截斷，可在 AI 設定中調大輸出上限後重新生成</string>
     <string name="ai_report_title">AI 資產報告</string>
     <string name="ai_report_entry_subtitle">專業範本·匯出</string>
     <string name="ai_insight_title">AI 持倉分析</string>

@@ -74,7 +74,7 @@ class OpenAiCompatRemoteTest {
         assertEquals("/v1/chat/completions", recorded.path)
         val body = recorded.body.readUtf8()
         assertTrue(body.contains("\"model\":\"deepseek-chat\""))
-        assertTrue(body.contains("\"max_tokens\":3072"))
+        assertTrue(body.contains("\"max_tokens\":16384"))
         assertTrue(body.contains("You are a financial advisor."))
         assertTrue(body.contains("\"role\":\"system\""))
     }
@@ -178,7 +178,7 @@ class OpenAiCompatRemoteTest {
         assertTrue(body.contains("\"model\":\"deepseek-chat\""))
         assertTrue(body.contains("\"instructions\":\"You are a financial advisor.\""))
         assertTrue(body.contains("\"input\":\"Generate report\""))
-        assertTrue(body.contains("\"max_output_tokens\":6144"))
+        assertTrue(body.contains("\"max_output_tokens\":32768"))
         assertTrue(body.contains("\"stream\":false"))
         // Chat Completions 专属字段不应出现
         assertTrue(!body.contains("max_tokens"))
@@ -294,7 +294,7 @@ class OpenAiCompatRemoteTest {
                 AiStreamEvent.Model("deepseek-chat"),
                 AiStreamEvent.Delta("## 概览"),
                 AiStreamEvent.Delta("\n- 要点"),
-                AiStreamEvent.Completed,
+                AiStreamEvent.Completed(),
             ),
             events,
         )
@@ -337,13 +337,70 @@ class OpenAiCompatRemoteTest {
             listOf(
                 AiStreamEvent.Model("hy3"),
                 AiStreamEvent.Delta("## 结论"),
-                AiStreamEvent.Completed,
+                AiStreamEvent.Completed(),
             ),
             events,
         )
         val recorded = server.takeRequest()
         assertEquals("/v1/responses", recorded.path)
         assertTrue(recorded.body.readUtf8().contains("\"stream\":true"))
+    }
+
+    @Test
+    fun stream_chat_finishReasonLength_emitsCompletedTruncated() = runBlocking {
+        // 复现截断场景：正文增量后收尾块只有 finish_reason=length（无 delta/model）
+        val body = """
+            data: {"model":"deepseek-chat","choices":[{"delta":{"content":"半截报告"}}]}
+
+            data: {"choices":[{"finish_reason":"length"}]}
+
+            data: [DONE]
+
+        """.trimIndent()
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(body),
+        )
+        val events = remote.stream(request.copy(baseUrl = server.url("/v1").toString())).toList()
+
+        assertEquals(
+            listOf(
+                AiStreamEvent.Model("deepseek-chat"),
+                AiStreamEvent.Delta("半截报告"),
+                AiStreamEvent.Completed(truncated = true),
+            ),
+            events,
+        )
+    }
+
+    @Test
+    fun stream_responses_statusIncomplete_emitsCompletedTruncated() = runBlocking {
+        // 复现混合推理模型思考占满 max_output_tokens 预算：收尾事件 status=incomplete
+        val body = """
+            event: response.created
+            data: {"type":"response.created","response":{"id":"resp_1","model":"hy3"}}
+
+            event: response.completed
+            data: {"type":"response.completed","response":{"id":"resp_1","status":"incomplete"}}
+
+        """.trimIndent()
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(body),
+        )
+        val events = remote.stream(
+            request.copy(baseUrl = server.url("/v1").toString(), protocol = AiApiProtocol.RESPONSES),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                AiStreamEvent.Model("hy3"),
+                AiStreamEvent.Completed(truncated = true),
+            ),
+            events,
+        )
     }
 
     @Test

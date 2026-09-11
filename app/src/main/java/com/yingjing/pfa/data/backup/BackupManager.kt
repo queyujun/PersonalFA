@@ -199,6 +199,7 @@ private fun AiProfile.toBackup() = BackupAiProfile(
     protocol = protocol.id,
     includeDetails = includeDetails,
     tone = tone.id,
+    maxTokens = maxTokens,
 )
 
 private fun BackupAiProfile.toDomain() = AiProfile(
@@ -210,6 +211,7 @@ private fun BackupAiProfile.toDomain() = AiProfile(
     protocol = AiApiProtocol.fromId(protocol),
     includeDetails = includeDetails,
     tone = AiReportTone.fromId(tone),
+    maxTokens = maxTokens,
 )
 
 /** 老备份 aiSettings（providerId=custom）映射的档案 id，与 DataStore 迁移保持一致。 */
