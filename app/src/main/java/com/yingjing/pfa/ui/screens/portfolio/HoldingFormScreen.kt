@@ -255,7 +255,8 @@ private fun CityDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            filtered.take(20).forEach { city ->
+            // 70 城全量展示（菜单内部可滚动）；此前 take(20) 会无声截断后 50 城。
+            filtered.forEach { city ->
                 androidx.compose.material3.DropdownMenuItem(
                     text = { Text(city) },
                     onClick = {
