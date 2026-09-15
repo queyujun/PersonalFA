@@ -50,9 +50,8 @@ import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.Alert
 import com.yingjing.pfa.domain.model.AlertCategory
 import com.yingjing.pfa.domain.model.AlertSeverity
-import com.yingjing.pfa.ui.theme.Cat2
-import com.yingjing.pfa.ui.theme.Cat4
 import com.yingjing.pfa.ui.theme.LocalBrandColors
+import com.yingjing.pfa.ui.theme.LocalSemanticColors
 
 @Composable
 fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
@@ -289,10 +288,13 @@ private fun AlertItem(
 }
 
 @Composable
-private fun severityColor(severity: AlertSeverity): Color = when (severity) {
-    AlertSeverity.INFO -> MaterialTheme.colorScheme.primary
-    AlertSeverity.WARNING -> Cat4
-    AlertSeverity.SERIOUS -> Cat2
+private fun severityColor(severity: AlertSeverity): Color {
+    val semantic = LocalSemanticColors.current
+    return when (severity) {
+        AlertSeverity.INFO -> MaterialTheme.colorScheme.primary
+        AlertSeverity.WARNING -> semantic.cat4
+        AlertSeverity.SERIOUS -> semantic.cat2
+    }
 }
 
 private fun formatTime(epochMs: Long): String =

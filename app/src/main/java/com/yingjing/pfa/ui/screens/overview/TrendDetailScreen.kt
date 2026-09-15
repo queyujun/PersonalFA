@@ -61,19 +61,9 @@ import com.yingjing.pfa.domain.usecase.TrendSeries
 import com.yingjing.pfa.ui.components.MultiSeriesTrendChart
 import com.yingjing.pfa.ui.components.MoneyText
 import com.yingjing.pfa.ui.format.MoneyFormat
-import com.yingjing.pfa.ui.theme.Cat1
-import com.yingjing.pfa.ui.theme.Cat2
-import com.yingjing.pfa.ui.theme.Cat3
-import com.yingjing.pfa.ui.theme.Cat4
-import com.yingjing.pfa.ui.theme.Cat5
-import com.yingjing.pfa.ui.theme.Cat6
-import com.yingjing.pfa.ui.theme.Cat7
-import com.yingjing.pfa.ui.theme.Cat8
-import com.yingjing.pfa.ui.theme.Cat9
-import com.yingjing.pfa.ui.theme.CustomCombo
-import com.yingjing.pfa.ui.theme.GainRed
 import com.yingjing.pfa.ui.theme.LocalBrandColors
-import com.yingjing.pfa.ui.theme.LossGreen
+import com.yingjing.pfa.ui.theme.LocalSemanticColors
+import com.yingjing.pfa.ui.theme.SemanticColors
 
 /** 可参与自定义组合的资产类别（排除负债：负债为负值，混入合计会误导）。 */
 private val COMBO_CATEGORIES: List<AssetCategory> = listOf(
@@ -150,7 +140,8 @@ fun TrendDetailScreen(
         )
     }
     val brandTotalColor = LocalBrandColors.current.primary
-    val colors = selectedIds.map { seriesColor(it, brandTotalColor) }
+    val semantic = LocalSemanticColors.current
+    val colors = selectedIds.map { seriesColor(it, brandTotalColor, semantic) }
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     // 横屏纵向空间紧张：收紧控制行/图例的纵向内边距、压低顶栏、隐藏底部提示，把高度让给走势图。
     val controlVerticalPad = if (isLandscape) 0.dp else 2.dp
@@ -313,7 +304,8 @@ private fun TrendStatsCard(
     modifier: Modifier = Modifier,
 ) {
     if (!stats.hasData) return
-    val gainColor = if (stats.delta >= 0) GainRed else LossGreen
+    val semantic = LocalSemanticColors.current
+    val gainColor = if (stats.delta >= 0) semantic.gain else semantic.loss
     val sign = if (stats.delta > 0) "+" else if (stats.delta < 0) "" else ""
     Card(
         modifier = modifier,
@@ -432,7 +424,7 @@ private fun CustomComboSelector(
                     onClick = { onToggle(name) },
                     label = { Text(seriesLabel(name, categoryLabels), style = MaterialTheme.typography.labelMedium) },
                     leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                    colors = AssistChipDefaults.assistChipColors(containerColor = CustomCombo.copy(alpha = 0.12f)),
+                    colors = AssistChipDefaults.assistChipColors(containerColor = LocalSemanticColors.current.customCombo.copy(alpha = 0.12f)),
                 )
             }
 
@@ -483,20 +475,20 @@ private fun seriesLabelWithTotal(
     else -> seriesLabel(id, categoryLabels)
 }
 
-private fun seriesColor(id: String, totalColor: Color): Color {
+private fun seriesColor(id: String, totalColor: Color, semantic: SemanticColors): Color {
     if (id == TREND_TOTAL_ID) return totalColor
-    if (id == TREND_CUSTOM_ID) return CustomCombo
+    if (id == TREND_CUSTOM_ID) return semantic.customCombo
     return when (runCatching { AssetCategory.valueOf(id) }.getOrNull()) {
-        AssetCategory.REAL_ESTATE -> Cat1
-        AssetCategory.DEPOSIT -> Cat2
-        AssetCategory.STOCK -> Cat3
-        AssetCategory.GOLD -> Cat4
-        AssetCategory.BOND -> Cat5
-        AssetCategory.CRYPTO -> Cat6
-        AssetCategory.EQUITY -> Cat7
-        AssetCategory.OTC_FUND -> Cat8
-        AssetCategory.MISC -> Cat9
-        AssetCategory.LIABILITY -> GainRed
+        AssetCategory.REAL_ESTATE -> semantic.cat1
+        AssetCategory.DEPOSIT -> semantic.cat2
+        AssetCategory.STOCK -> semantic.cat3
+        AssetCategory.GOLD -> semantic.cat4
+        AssetCategory.BOND -> semantic.cat5
+        AssetCategory.CRYPTO -> semantic.cat6
+        AssetCategory.EQUITY -> semantic.cat7
+        AssetCategory.OTC_FUND -> semantic.cat8
+        AssetCategory.MISC -> semantic.cat9
+        AssetCategory.LIABILITY -> semantic.gain
         null -> Color.Gray
     }
 }

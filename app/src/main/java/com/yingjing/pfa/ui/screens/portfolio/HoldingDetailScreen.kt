@@ -41,8 +41,7 @@ import com.yingjing.pfa.domain.model.HoldingValue
 import com.yingjing.pfa.domain.usecase.RealEstateEstimator
 import com.yingjing.pfa.ui.format.MoneyFormat
 import com.yingjing.pfa.ui.components.MoneyText
-import com.yingjing.pfa.ui.theme.GainRed
-import com.yingjing.pfa.ui.theme.LossGreen
+import com.yingjing.pfa.ui.theme.LocalSemanticColors
 
 @Composable
 fun HoldingDetailScreen(
@@ -108,6 +107,7 @@ fun HoldingDetailScreen(
         val value = HoldingValue.currentValue(h, now)
         val profit = HoldingValue.profit(h, now)
         val marketValueLabel = stringResource(R.string.detail_market_value, currencyLabel)
+        val semantic = LocalSemanticColors.current
 
         Column(
             modifier = Modifier.padding(20.dp),
@@ -125,7 +125,7 @@ fun HoldingDetailScreen(
                         MoneyText(
                             stringResource(R.string.detail_holding_profit, MoneyFormat.formatSigned(it, currencySymbol)),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (it >= 0) GainRed else LossGreen,
+                            color = if (it >= 0) semantic.gain else semantic.loss,
                         )
                     }
                 }

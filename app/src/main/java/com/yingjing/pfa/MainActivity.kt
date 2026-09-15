@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -45,9 +46,15 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContent {
             val themeId by themeStore.themeId.collectAsState(initial = null)
-            // 深浅模式默认跟随系统（PersonalFaTheme 内部 isSystemInDarkTheme）；
+            val darkMode by themeStore.darkMode.collectAsState(initial = null)
+            // 深浅模式三档：null = 跟随系统，"light"/"dark" = 强制浅色/深色；
             // 主题 id 由设置页持久化选择，null 时回退默认莫兰迪。
-            PersonalFaTheme(themeId = themeId) {
+            val darkTheme = when (darkMode) {
+                DARK_MODE_LIGHT -> false
+                DARK_MODE_DARK -> true
+                else -> isSystemInDarkTheme()
+            }
+            PersonalFaTheme(themeId = themeId, darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppRoot()
                 }
@@ -62,5 +69,11 @@ class MainActivity : AppCompatActivity() {
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    private companion object {
+        /** 与设置页 DARK_MODE_LIGHT/DARK_MODE_DARK 持久化字符串一致；未知值回退跟随系统。 */
+        const val DARK_MODE_LIGHT = "light"
+        const val DARK_MODE_DARK = "dark"
     }
 }

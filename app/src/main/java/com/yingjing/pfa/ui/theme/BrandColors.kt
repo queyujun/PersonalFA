@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * 主题品牌色：随 [AppTheme] 变化的强调色与渐变（深浅已按系统模式解析，调用方无需再判 isDark）。
- * 数据语义色（涨跌 / 分类 / 自定义组合）见 [Color.kt]，不随主题变化。
+ * 数据语义色（涨跌 / 分类 / 自定义组合）见 [SemanticColors.kt]，同样按深浅模式取值。
  *
  * @property primary 品牌主色（与 MaterialTheme.colorScheme.primary 同源；自绘场景取用）。
  * @property gradientStart 页头渐变起始色。

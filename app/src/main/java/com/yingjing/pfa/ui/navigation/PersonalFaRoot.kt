@@ -70,6 +70,7 @@ import com.yingjing.pfa.ui.screens.settings.SyncDetailScreen
 import com.yingjing.pfa.ui.screens.settings.BackupDetailScreen
 import com.yingjing.pfa.ui.screens.subscription.SubscriptionFormScreen
 import com.yingjing.pfa.ui.screens.subscription.SubscriptionScreen
+import com.yingjing.pfa.ui.theme.LocalDarkTheme
 import kotlinx.coroutines.launch
 
 private const val ROUTE_ADD_TYPE = "add_type"
@@ -129,10 +130,15 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
         topBar = {
             if (isTabRoute) {
                 CenterAlignedTopAppBar(
-                    // 顶栏标题用图片 logo 代替文字：按系统语言自动选取英文/中文版（资源限定符）。
+                    // 顶栏标题用图片 logo 代替文字：按系统语言自动选取英文/中文版（资源限定符），
+                    // 并按深浅模式切换白字变体（LocalDarkTheme 含 App 内强制档，-night 限定符
+                    // 只跟系统深浅、不感知强制档，故代码选图）。
                     title = {
+                        val isDark = LocalDarkTheme.current
                         Image(
-                            painter = painterResource(R.drawable.logo_title),
+                            painter = painterResource(
+                                if (isDark) R.drawable.logo_title_night else R.drawable.logo_title
+                            ),
                             contentDescription = stringResource(R.string.app_name),
                             modifier = Modifier.height(28.dp),
                             contentScale = ContentScale.Fit,

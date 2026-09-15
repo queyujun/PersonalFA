@@ -61,6 +61,7 @@ fun SettingsScreen(
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showDarkModeDialog by remember { mutableStateOf(false) }
 
     // 设置页背景：取当前主题品牌色提供的页面底色（已按系统深浅解析），
     // 默认 background 与卡片 surface 接近时卡片不凸显，故用更深的暖灰，且随主题变化。
@@ -158,7 +159,7 @@ fun SettingsScreen(
             )
         }
 
-        // 7. 外观（主题选择 + 深浅跟随系统）
+        // 7. 外观（主题选择 + 深浅模式三档）
         SettingsGroupCard(icon = Icons.Outlined.Palette, title = stringResource(R.string.settings_group_appearance)) {
             SettingRow(
                 title = stringResource(R.string.settings_theme),
@@ -167,7 +168,8 @@ fun SettingsScreen(
             )
             SettingRow(
                 title = stringResource(R.string.settings_dark_mode),
-                subtitle = stringResource(R.string.settings_dark_mode_subtitle),
+                subtitle = darkModeLabel(state.currentDarkMode),
+                onClick = { showDarkModeDialog = true },
             )
         }
 
@@ -235,6 +237,17 @@ fun SettingsScreen(
             onDismiss = { showThemeDialog = false },
         )
     }
+
+    if (showDarkModeDialog) {
+        DarkModePickerDialog(
+            current = state.currentDarkMode,
+            onPick = { mode ->
+                showDarkModeDialog = false
+                viewModel.setDarkMode(mode)
+            },
+            onDismiss = { showDarkModeDialog = false },
+        )
+    }
 }
 
 /** AI 摘要：「DeepSeek · deepseek-chat」或「未配置」；自定义档案优先显示档案名。 */
@@ -253,6 +266,54 @@ internal fun AiProfile.displayName(): String = when {
     !isPreset && name.isNotBlank() -> name
     !isPreset -> stringResource(AiProviderPreset.CUSTOM.labelRes())
     else -> stringResource(provider.labelRes())
+}
+
+/** 深浅模式三档标签（设置页副标题）：null/未知值 → 跟随系统。 */
+@Composable
+internal fun darkModeLabel(mode: String?): String = when (mode) {
+    DARK_MODE_LIGHT -> stringResource(R.string.dark_mode_light)
+    DARK_MODE_DARK -> stringResource(R.string.dark_mode_dark)
+    else -> stringResource(R.string.dark_mode_follow_system)
+}
+
+/** 深浅模式档位常量：与 ThemeStore 持久化字符串一致（null = 跟随系统，不落盘）。 */
+internal const val DARK_MODE_LIGHT = "light"
+internal const val DARK_MODE_DARK = "dark"
+
+/** 深浅模式选择对话框：跟随系统 / 浅色 / 深色，当前选中显示徽章。 */
+@Composable
+private fun DarkModePickerDialog(
+    current: String?,
+    onPick: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val entries = listOf(null, DARK_MODE_LIGHT, DARK_MODE_DARK)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_dark_mode_dialog_title)) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+        text = {
+            Column {
+                entries.forEach { mode ->
+                    SettingRow(
+                        title = darkModeLabel(mode),
+                        onClick = { onPick(mode) },
+                        trailing = {
+                            if (mode == current) {
+                                Text(
+                                    stringResource(R.string.settings_current_badge),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        },
+                    )
+                }
+            }
+        },
+    )
 }
 
 /** 主题选择对话框：列出 [AppTheme] 选项，当前选中打勾。 */

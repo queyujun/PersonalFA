@@ -317,7 +317,12 @@
     <string name="settings_theme">Theme color</string>
     <string name="settings_theme_dialog_title">Select theme</string>
     <string name="settings_dark_mode">Dark mode</string>
-    <string name="settings_dark_mode_subtitle">Follows system day/night</string>
+    <string name="settings_dark_mode_subtitle">Follow system / Light / Dark</string>
+    <string name="settings_dark_mode_dialog_title">Select display mode</string>
+    <string name="dark_mode_follow_system">Follow system</string>
+    <string name="dark_mode_light">Light</string>
+    <string name="dark_mode_dark">Dark</string>
+    <string name="status_dark_mode_updated">✓ Display mode switched</string>
     <string name="theme_violet">Violet</string>
     <string name="theme_blue">Blue</string>
     <string name="theme_green">Green</string>

@@ -3,11 +3,15 @@ package com.yingjing.pfa.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * 数据语义色（跨主题保持一致，确保涨跌/分类的辨识度不随主题变化）。
+ * 数据语义色浅色常量：涨跌 / 分类 / 自定义组合（跨主题保持一致，确保辨识度不随主题变化）。
  *
  * 中国市场惯例：红涨 / 绿跌，颜色固定以保证语义辨识。
  * 资产分类色为固定顺序（房产/存款/股票/黄金/国债/区块链/公司股权/场外基金/其他），
- * 走势/饼图依赖该稳定色序区分类别，不随主题切换。
+ * 走势/饼图依赖该稳定色序区分类别。
+ *
+ * 深色模式取 [SemanticColors]（深色套为同色相提亮变体）：浅色值不变（零回归），
+ * UI 取色应经 [LocalSemanticColors]，不直接引用这些常量（[BrandColors.kt] 与
+ * [AvatarCircle] 为既有浅色/确定性用法，保持引用）。
  */
 val GainRed = Color(0xFFD03B3B)
 val LossGreen = Color(0xFF0CA30C)

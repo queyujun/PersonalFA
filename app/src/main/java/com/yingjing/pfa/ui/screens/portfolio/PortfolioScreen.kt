@@ -38,18 +38,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.yingjing.pfa.R
 import com.yingjing.pfa.domain.model.AssetCategory
 import com.yingjing.pfa.ui.components.MoneyText
-import com.yingjing.pfa.ui.theme.Cat1
-import com.yingjing.pfa.ui.theme.Cat2
-import com.yingjing.pfa.ui.theme.Cat3
-import com.yingjing.pfa.ui.theme.Cat4
-import com.yingjing.pfa.ui.theme.Cat5
-import com.yingjing.pfa.ui.theme.Cat6
-import com.yingjing.pfa.ui.theme.Cat7
-import com.yingjing.pfa.ui.theme.Cat8
-import com.yingjing.pfa.ui.theme.Cat9
-import com.yingjing.pfa.ui.theme.GainRed
-import com.yingjing.pfa.ui.theme.LossGreen
 import com.yingjing.pfa.ui.theme.LocalBrandColors
+import com.yingjing.pfa.ui.theme.LocalSemanticColors
+import com.yingjing.pfa.ui.theme.SemanticColors
 
 @Composable
 fun PortfolioScreen(
@@ -110,7 +101,8 @@ private fun CategoryBlock(
     onToggleSub: (String) -> Unit,
     onOpenHolding: (Long) -> Unit,
 ) {
-    val color = categoryColor(section.category)
+    val semantic = LocalSemanticColors.current
+    val color = categoryColor(section.category, semantic)
     val collapseCd = stringResource(R.string.cd_collapse)
     val expandCd = stringResource(R.string.cd_expand)
     Column(
@@ -192,6 +184,7 @@ private fun CategoryBlock(
 
 @Composable
 private fun HoldingRowItem(row: HoldingRow, onClick: () -> Unit) {
+    val semantic = LocalSemanticColors.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -216,7 +209,7 @@ private fun HoldingRowItem(row: HoldingRow, onClick: () -> Unit) {
                     MoneyText(
                         it,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (row.profitPositive) GainRed else LossGreen,
+                        color = if (row.profitPositive) semantic.gain else semantic.loss,
                     )
                 }
             }
@@ -225,15 +218,15 @@ private fun HoldingRowItem(row: HoldingRow, onClick: () -> Unit) {
 }
 
 /** 类目背景/强调色，与走势图 seriesColor 同一套，保持全 App 一致。 */
-private fun categoryColor(category: AssetCategory): Color = when (category) {
-    AssetCategory.REAL_ESTATE -> Cat1
-    AssetCategory.DEPOSIT -> Cat2
-    AssetCategory.STOCK -> Cat3
-    AssetCategory.GOLD -> Cat4
-    AssetCategory.BOND -> Cat5
-    AssetCategory.CRYPTO -> Cat6
-    AssetCategory.EQUITY -> Cat7
-    AssetCategory.OTC_FUND -> Cat8
-    AssetCategory.MISC -> Cat9
-    AssetCategory.LIABILITY -> GainRed
+private fun categoryColor(category: AssetCategory, semantic: SemanticColors): Color = when (category) {
+    AssetCategory.REAL_ESTATE -> semantic.cat1
+    AssetCategory.DEPOSIT -> semantic.cat2
+    AssetCategory.STOCK -> semantic.cat3
+    AssetCategory.GOLD -> semantic.cat4
+    AssetCategory.BOND -> semantic.cat5
+    AssetCategory.CRYPTO -> semantic.cat6
+    AssetCategory.EQUITY -> semantic.cat7
+    AssetCategory.OTC_FUND -> semantic.cat8
+    AssetCategory.MISC -> semantic.cat9
+    AssetCategory.LIABILITY -> semantic.gain
 }

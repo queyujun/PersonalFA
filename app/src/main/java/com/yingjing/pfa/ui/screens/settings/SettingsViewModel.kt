@@ -52,6 +52,8 @@ data class SettingsUiState(
     val autoBackupFileExists: Boolean = false,
     val currentLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
     val currentTheme: AppTheme = AppTheme.VIOLET,
+    /** 深浅模式档位：null = 跟随系统，"light"/"dark" = 强制。 */
+    val currentDarkMode: String? = null,
     /** AI 摘要：生效档案（null = 无生效或未配置）；名字/已配置由 UI 解析。 */
     val aiActiveProfile: AiProfile? = null,
     val statusMessage: String? = null,
@@ -116,6 +118,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             themeStore.themeId.collect { id ->
                 _uiState.update { it.copy(currentTheme = AppTheme.fromId(id)) }
+            }
+        }
+        viewModelScope.launch {
+            themeStore.darkMode.collect { mode ->
+                _uiState.update { it.copy(currentDarkMode = mode) }
             }
         }
         // AI 配置摘要（设置页第 9 组副标题）：生效档案 + 其配置态。
@@ -298,6 +305,14 @@ class SettingsViewModel @Inject constructor(
         themeStore.setTheme(theme.id)
         _uiState.update {
             it.copy(currentTheme = theme, statusMessage = context.getString(R.string.status_theme_updated))
+        }
+    }
+
+    /** 切换深浅模式三档：null = 跟随系统（清键），"light"/"dark" = 强制；流下发即时生效。 */
+    fun setDarkMode(mode: String?) = viewModelScope.launch {
+        themeStore.setDarkMode(mode)
+        _uiState.update {
+            it.copy(currentDarkMode = mode, statusMessage = context.getString(R.string.status_dark_mode_updated))
         }
     }
 

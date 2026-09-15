@@ -316,8 +316,13 @@
     <string name="settings_group_appearance">外观</string>
     <string name="settings_theme">主题配色</string>
     <string name="settings_theme_dialog_title">选择主题</string>
-    <string name="settings_dark_mode">深色模式</string>
-    <string name="settings_dark_mode_subtitle">跟随系统昼夜切换</string>
+    <string name="settings_dark_mode">深浅模式</string>
+    <string name="settings_dark_mode_subtitle">跟随系统 / 浅色 / 深色</string>
+    <string name="settings_dark_mode_dialog_title">选择深浅模式</string>
+    <string name="dark_mode_follow_system">跟随系统</string>
+    <string name="dark_mode_light">浅色</string>
+    <string name="dark_mode_dark">深色</string>
+    <string name="status_dark_mode_updated">✓ 深浅模式已切换</string>
     <string name="theme_violet">紫晶</string>
     <string name="theme_blue">霁蓝</string>
     <string name="theme_green">松石</string>

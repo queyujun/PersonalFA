@@ -154,13 +154,19 @@ fun MultiSeriesTrendChart(
     val chart = lineChart(lines = lineSpecs)
 
     val labelStep = (bucketLabels.size / 6).coerceAtLeast(1)
+    // 轴刻度标签显式取 M3 主题色：显式传入的 axis 不会自动继承 ProvideChartStyle(m3ChartStyle())
+    // 的轴样式，不传 label 时用 Vico 库默认深色字，深色模式下不可见。
+    val axisLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val axisLabel = textComponent(color = axisLabelColor, textSize = 12.sp)
     val startAxis = rememberStartAxis(
+        label = axisLabel,
         valueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
             MoneyFormat.wan(value.toDouble())
         },
         itemPlacer = remember { AxisItemPlacer.Vertical.default(maxItemCount = 5) },
     )
     val bottomAxis = rememberBottomAxis(
+        label = axisLabel,
         valueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
             bucketLabels.getOrElse(value.toInt()) { "" }
         },
@@ -180,8 +186,8 @@ fun MultiSeriesTrendChart(
     val guideline = lineComponent(color = guidelineColor, thickness = 1.dp)
     // 水平准线（略淡于垂直准线，避免抢眼）。
     val horizontalGuideline = lineComponent(color = guidelineColor.copy(alpha = 0.5f), thickness = 1.dp)
-    // X/Y 轴坐标标签：圆角黑底白字。
-    val axisLabel = textComponent(
+    // X/Y 轴坐标标签（十字准线用）：圆角黑底白字。
+    val crosshairAxisLabel = textComponent(
         color = Color.White,
         textSize = 10.sp,
         background = shapeComponent(
@@ -189,13 +195,13 @@ fun MultiSeriesTrendChart(
             color = Color.Black.copy(alpha = 0.72f),
         ),
     )
-    val marker = remember(label, indicator, guideline, horizontalGuideline, axisLabel, bucketLabels) {
+    val marker = remember(label, indicator, guideline, horizontalGuideline, crosshairAxisLabel, bucketLabels) {
         CrosshairMarker(
             label = label,
             indicator = indicator,
             guideline = guideline,
             horizontalGuideline = horizontalGuideline,
-            axisLabel = axisLabel,
+            axisLabel = crosshairAxisLabel,
             bucketLabels = bucketLabels,
         ).apply {
             labelFormatter = MarkerLabelFormatter { markedEntries, _ ->

@@ -42,16 +42,9 @@ import com.yingjing.pfa.ui.components.PieSlice
 import com.yingjing.pfa.ui.components.StackedAreaSeries
 import com.yingjing.pfa.ui.components.StackedAreaTrendChart
 import com.yingjing.pfa.ui.format.MoneyFormat
-import com.yingjing.pfa.ui.theme.Cat1
-import com.yingjing.pfa.ui.theme.Cat2
-import com.yingjing.pfa.ui.theme.Cat3
-import com.yingjing.pfa.ui.theme.Cat4
-import com.yingjing.pfa.ui.theme.Cat5
-import com.yingjing.pfa.ui.theme.Cat6
-import com.yingjing.pfa.ui.theme.Cat7
-import com.yingjing.pfa.ui.theme.Cat8
-import com.yingjing.pfa.ui.theme.Cat9
 import com.yingjing.pfa.ui.theme.LocalBrandColors
+import com.yingjing.pfa.ui.theme.LocalSemanticColors
+import com.yingjing.pfa.ui.theme.SemanticColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Psychology
@@ -68,6 +61,7 @@ fun OverviewScreen(
     val categoryNames = AssetCategory.entries.associateWith { stringResource(it.displayRes) }
     // 页面底色取品牌色 pageBackground（随主题显著变化），白色卡片在其上更凸显。
     val pageBg = LocalBrandColors.current.pageBackground
+    val semantic = LocalSemanticColors.current
 
     Column(
         modifier = Modifier
@@ -113,7 +107,7 @@ fun OverviewScreen(
             val slices = summary.byCategory
                 .filter { it.category != AssetCategory.LIABILITY && it.amount > 0 }
                 .sortedByDescending { it.amount }
-                .map { PieSlice(categoryNames[it.category] ?: it.category.name, it.amount, colorFor(it.category)) }
+                .map { PieSlice(categoryNames[it.category] ?: it.category.name, it.amount, colorFor(it.category, semantic)) }
             if (slices.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -208,6 +202,7 @@ private fun TrendCard(state: OverviewUiState, onOpenTrend: () -> Unit) {
     val trend = state.trend
     val stacked = state.stackedTrend
     val categoryNames = AssetCategory.entries.associateWith { stringResource(it.displayRes) }
+    val semantic = LocalSemanticColors.current
 
     Card(modifier = Modifier.fillMaxWidth().clickable { onOpenTrend() }) {
         Column(Modifier.padding(16.dp)) {
@@ -227,7 +222,7 @@ private fun TrendCard(state: OverviewUiState, onOpenTrend: () -> Unit) {
                     .map { s ->
                         StackedAreaSeries(
                             name = categoryNames[s.category] ?: s.category.name,
-                            color = colorFor(s.category),
+                            color = colorFor(s.category, semantic),
                             values = s.values,
                         )
                     }
@@ -305,15 +300,15 @@ private fun AiEntryCard(
     }
 }
 
-private fun colorFor(category: AssetCategory): Color = when (category) {
-    AssetCategory.REAL_ESTATE -> Cat1
-    AssetCategory.DEPOSIT -> Cat2
-    AssetCategory.STOCK -> Cat3
-    AssetCategory.GOLD -> Cat4
-    AssetCategory.BOND -> Cat5
-    AssetCategory.CRYPTO -> Cat6
-    AssetCategory.EQUITY -> Cat7
-    AssetCategory.OTC_FUND -> Cat8
-    AssetCategory.MISC -> Cat9
-    AssetCategory.LIABILITY -> Cat2
+private fun colorFor(category: AssetCategory, semantic: SemanticColors): Color = when (category) {
+    AssetCategory.REAL_ESTATE -> semantic.cat1
+    AssetCategory.DEPOSIT -> semantic.cat2
+    AssetCategory.STOCK -> semantic.cat3
+    AssetCategory.GOLD -> semantic.cat4
+    AssetCategory.BOND -> semantic.cat5
+    AssetCategory.CRYPTO -> semantic.cat6
+    AssetCategory.EQUITY -> semantic.cat7
+    AssetCategory.OTC_FUND -> semantic.cat8
+    AssetCategory.MISC -> semantic.cat9
+    AssetCategory.LIABILITY -> semantic.cat2
 }

@@ -2,21 +2,21 @@
 
 > 给「下一次会话」看的交接文档。优先阅读下面的续接入口；后文排查过程中的旧状态不代表当前状态。
 
-## 下次会话续接入口（2026-09-11）
+## 下次会话续接入口（2026-09-14）
 
 - 项目目录：`C:/AIProjects/Claude/PersonalFA-1`。
-- 当前分支：`main`。**本地领先 origin/main 4 个提交，均未推送**（用户自行 push）：本日 4 个（城市 fix + AI 截断 feat + docs ×2）。此前批次（快讯/Key入库/AI多配置/房产估算/AI 语气档等 11 个）已随 `1c27640` 合并推送，不再领先。
-- **本轮两项改动已提交（2026-09-11，均未推送，用户已认可）**：
-  - `d2c76b9` fix: 房产表单城市下拉展示 70 城全量 — 去掉 take(20) 无声截断，新增 70 城名单守护测试；验收 APK `apk/RICHWIN-城市列表修复-20260910.apk`。
-  - `a8e57a7` feat: AI 截断检测与输出上限档案设置 — 修复 AI 报告静默截断：
-    - 截断检测：SSE 解析保留 Chat 协议 `finish_reason == "length"`（收尾块常只有 finish_reason 无 delta/model，原解析整块丢弃导致静默截断）与 Responses 协议 `status == "incomplete"`；`AiStreamEvent.Completed` 改 `data class Completed(truncated)`；报告/分析页 Done 尾部显示「⚠ 输出因长度限制被截断，可在 AI 设置中调大输出上限后重新生成」；截断报告仍保存（明示截断，不静默丢弃）。
-    - max_tokens 档案化：`AiProfile.maxTokens` 默认 **16384**（`AiChatRequest.DEFAULT_MAX_TOKENS`），随档案持久化进备份（`BackupAiProfile.maxTokens` 默认 16384，老备份向后兼容）；设置页新增输出上限输入（非法回默认、上限 65536 裁剪）；请求体 Chat `max_tokens` / Responses `max_output_tokens = maxTokens * 2`（混合推理模型思考 token 计入预算）。「测试连接」仍固定 `PING_MAX_TOKENS = 1024` 不变。
-    - 验证：完整构建成功，**568 tests / 0 failures**（552 → 净增 16）。验收 APK：`apk/RICHWIN-AI截断检测与上限-20260911.apk`（90,688,295 字节）。
-- 数据库仍为 v13，两批零 schema 改动（maxTokens 存 DataStore 档案 JSON）。destructive fallback 保持移除；不要未经重新验证恢复数据库预打开逻辑（曾在用户手机闪退）。
+- 当前分支：`main`。**与 origin/main 同步（本地领先 0 个提交）**——用户已自行推送全部提交（`git rev-list --count origin/main..main` = 0，远端另出现 Release4/v1.1.0/v1.2.0/v1.3.0 等 tags）。
+- **「P7 深色模式细化」批次含两 bug 返工，全部完成实现，待用户真机验收后提交**（工作区未提交，等用户认可）：
+  - 语义色深色变体：新增 `ui/theme/SemanticColors.kt`（`data class SemanticColors(gain/loss/cat1-9/customCombo)` + `LocalSemanticColors` staticCompositionLocal + `semanticColorsFor(darkTheme)` 双态解析）。**浅色套复用 Color.kt 既有常量（零视觉回归）**，深色套为提亮变体。接入点：概览饼图/堆叠面积图（`colorFor(category, semantic)`）、走势详情、资产明细、提醒（涨跌色改 `semantic.gain/loss`）。
+  - 深浅模式三档开关：`ThemeStore` 增 `darkMode: Flow<String?>`（null=跟随系统 remove-key 模式，"light"/"dark" 强制）；MainActivity `when(darkMode)` 计算 darkTheme 传 `PersonalFaTheme`；设置页「外观」组新增「深浅模式」行 + 三选一对话框（跟随系统/浅色/深色，当前项徽章）。常量在 MainActivity（private companion）与 SettingsScreen（internal const）各一份。i18n 四目录齐备（dark_mode_light/dark_mode_follow_system 等）。
+  - **真机验收返工（2026-09-14 修复两个深色 bug，其中 logo 方案二次返工）**：① 走势详情页 X/Y 轴刻度数字深色不可见——`MultiSeriesTrendChart.kt` 的 `rememberStartAxis`/`rememberBottomAxis` 显式传 `label = textComponent(color = MaterialTheme.colorScheme.onSurfaceVariant, textSize = 12.sp)`（显式传入的 axis 不继承 `ProvideChartStyle(m3ChartStyle())` 的 M3 轴样式，之前用 Vico 默认深色字；十字准线气泡标签白字黑底本就双模式可见，其局部变量改名 `crosshairAxisLabel` 避免与新轴标签重名）。② 顶栏「盈睿伴」logo 深色不可见——PNG 图片不随主题变色。**第一版 `-night` 资源限定符方案被真机反馈否定**（`-night` 按 Activity Configuration 的 uiMode 解析、只跟系统深浅，App 内「深色」强制档不改变 uiMode 故不选中）。改为代码选图：night 变体挪至非限定目录命名 `logo_title_night.png`（`drawable/`、`drawable-zh-rCN/`、`drawable-zh-rHK/` 各一张，PIL 生成：暗色文字→白字（不透明度=原暗度，保抗锯齿）、亮背景→全透明），`AppTheme.kt` 新增 `LocalDarkTheme`（staticCompositionLocal，PersonalFaTheme 内 provides darkTheme，含强制档），`PersonalFaRoot.kt` 顶栏按 `LocalDarkTheme.current` 选 `logo_title_night`/`logo_title`。对系统深色与 App 强制深色档均生效，无 Activity 重建。
+  - 测试：新增 `SemanticColorsTest`（4 项：深浅两套不同、浅色=旧常量、深色更亮、九分类色两两不同）+ `SettingsViewModelDarkModeTest`（3 项：档位读取/强制写入/切回 null 清键，Fakes-over-Mocks + Robolectric 内存 Room + FixedKeyProvider 替身）+ `FakeThemeStore`。**完整构建成功，575 tests / 0 failures / 0 errors / 0 skipped**（568 → 净增 7；bug 返工不新增测试）。
+  - 验收 APK：`apk/RICHWIN-深色模式修复2-20260914.apk`（89,594,218 字节，logo 修复二次返工版；`apk/RICHWIN-深色模式修复-20260914.apk` 为被否定的 `-night` 限定符版本，仅留档）。拟提交信息：`feat: 深色模式细化——语义色深色变体与深浅模式三档开关`（含两 bug 修复及 logo 修复二次返工）。
+- 数据库仍为 v13，本批零 schema 改动（darkMode 存 DataStore）。destructive fallback 保持移除；不要未经重新验证恢复数据库预打开逻辑（曾在用户手机闪退）。
 - Key 存储层说明：`AiSecretStore` 接口在 `d78098e`/`9635053` 两提交间按 profileId 形态演进（工作区连续开发），`d78098e` 单独 checkout 不能编译属已知取舍，最终树=验证过的树。
 - 隐私硬约束不变：API Key 永不进 prompt/备份/日志；外发字段仅白名单。
 - 用户电脑无法 USB 调试；本地无 emulator。不把提供 USB 日志作为继续工作的前提。
-- 下次先读本文件并检查 `git status` / 当前分支。下一项功能尚未指定。继续遵守分批交付、真机认可后提交、只 commit 不 push。
+- 下次先读本文件并检查 `git status` / 当前分支。P7 后续批次（无障碍/性能/E2E/发布签名）尚未排期。继续遵守分批交付、真机认可后提交、只 commit 不 push。
 - 本机构建仍使用下文 portable 工具链；不读取真实密钥、财务数据库或忽略的探针配置文件。
 
 ## 最新验收（2026-09-08）
@@ -61,7 +61,7 @@
 
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / 报告语气档 / **截断检测+max_tokens 档案设置**） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + 房产估算提示改进（数据库 12→13 无损迁移完成）全部完成，**568 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-AI截断检测与上限-20260911.apk`）。城市列表修复与 AI 截断检测两批**已本地提交**（2026-09-11），本地领先 origin/main 4 个提交未推送。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / 报告语气档 / 截断检测+max_tokens 档案设置） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + 房产估算提示改进（数据库 12→13 无损迁移完成）+ **P7 深色模式细化（语义色深色变体 + 深浅三档开关 + 轴标签/logo 深色修复，logo 修复经二次返工改代码选图，待真机验收）**，**575 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-深色模式修复2-20260914.apk`）。此前各批提交已由用户全部推送，本地与 origin/main 同步；当前深色模式批次在工作区待验收提交。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库外 portable 工具链）
 ```bash
@@ -73,7 +73,7 @@ cd /c/AIProjects/Claude/PersonalFA-1
 - `.toolchain/`、`build/`、`local.properties`、`*.apk`、`.claude/settings.local.json` 均已在 `.gitignore`。
 - APK 产物：`app/build/outputs/apk/debug/app-debug.apk`；手动复制到 `apk/RICHWIN-<功能>-<yyyymmdd>.apk` 交用户真机验证。
 - **长构建（assembleDebug+test 正常约 2–5 分钟，冷启动 Daemon 约 10 分钟）建议走后台**（Bash `run_in_background: true`，轮询读输出文件）——前台撞上 10 分钟超时被 kill 会残留 gradle test 进程、锁住 `build/test-results/.../output.bin`，导致下次构建卡十几分钟并因文件锁 `IOException` 失败。遇此：`./gradlew --stop` + `rm -rf app/build/test-results` 后重构即恢复。
-- 测试结果统计：解析 `app/build/test-results/testDebugUnitTest/TEST-*.xml` 的 tests/failures/errors 属性（当前 488 个全绿）。
+- 测试结果统计：解析 `app/build/test-results/testDebugUnitTest/TEST-*.xml` 的 tests/skipped/failures/errors 属性（当前 575 个全绿）。
 
 ## 技术栈 / 结构
 Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkManager · OkHttp+kotlinx.serialization · 图表 Canvas 自绘。
@@ -174,4 +174,8 @@ Kotlin2.0 · Compose(Material3) · Hilt · Room+SQLCipher(整库加密) · WorkM
   - `fc79cbc` fix: 房产估算提示改进 — 详情页占位文案明确化、表单城市收紧 70 城、指数最新月独立展示
   - `a208cb6` feat: AI 报告语气档（分析师/伙伴）与设置页隐私宣言
   - 552 个单元测试全绿；APK：`apk/RICHWIN-AI语气与隐私宣言-20260910.apk`（用户已认可提交）
-- **用户未推送**：提交链均未 `git push`，用户自行 push，不替用户推送。
+- **2026-09-11 两项改动已本地提交并由用户推送**：
+  - `d2c76b9` fix: 房产表单城市下拉展示 70 城全量 — 去掉 take(20) 无声截断
+  - `a8e57a7` feat: AI 截断检测与输出上限档案设置 — SSE 保留 finish_reason=length 信号，max_tokens 随档案持久化（568 测试全绿；APK：`apk/RICHWIN-AI截断检测与上限-20260911.apk`，用户已认可）
+- **2026-09-11 P7 深色模式细化（语义色深色变体 + 深浅三档开关）+ 2026-09-14 两 bug 返工（轴刻度色/logo night 资源）已完成实现，工作区待真机验收后提交**：575 tests 全绿；APK：`apk/RICHWIN-深色模式修复-20260914.apk`。
+- **用户自行 push**：提交链不代推，用户自己推送（当前已全部推送，本地与 origin/main 同步）。
