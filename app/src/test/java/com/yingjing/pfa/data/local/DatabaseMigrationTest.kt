@@ -24,7 +24,7 @@ class DatabaseMigrationTest {
     @After fun cleanup() { context.deleteDatabase(name) }
 
     private fun current() = Room.databaseBuilder(context, AppDatabase::class.java, name)
-        .addMigrations(DatabaseMigrations.MIGRATION_12_13).allowMainThreadQueries().build()
+        .addMigrations(*DatabaseMigrations.ALL).allowMainThreadQueries().build()
 
     private fun rows(db: SupportSQLiteDatabase, table: String): List<List<String?>> =
         db.query("SELECT * FROM `$table` ORDER BY 1").use { cursor ->
@@ -61,7 +61,7 @@ class DatabaseMigrationTest {
         historical.close()
         val migrated = current()
         val sql = migrated.openHelper.writableDatabase
-        assertEquals(13, sql.version)
+        assertEquals(14, sql.version)
         actualTables.forEach { assertEquals(it, expected[it], rows(sql, it)) }
         assertTrue(rows(sql, "sqlite_master").filter { it[0] == "index" }.containsAll(indexes))
         sql.query("PRAGMA index_info(index_ai_report_records_userId_kind_createdAt)").use { c ->
@@ -81,7 +81,7 @@ class DatabaseMigrationTest {
     }
 
     @Test fun unsupported_upgrade_keeps_file_version_and_data() = rejectVersion(11)
-    @Test fun unsupported_downgrade_keeps_file_version_and_data() = rejectVersion(14)
+    @Test fun unsupported_downgrade_keeps_file_version_and_data() = rejectVersion(15)
 
     private fun rejectVersion(version: Int) {
         // Synthetic unsupported-version sentinel, not evidence of any historical schema.

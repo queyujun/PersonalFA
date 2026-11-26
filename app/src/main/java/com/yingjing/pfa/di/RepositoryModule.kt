@@ -12,6 +12,7 @@ import com.yingjing.pfa.data.repository.AlertRepositoryImpl
 import com.yingjing.pfa.data.repository.FxRepositoryImpl
 import com.yingjing.pfa.data.repository.HoldingRepositoryImpl
 import com.yingjing.pfa.data.repository.HousePriceRepositoryImpl
+import com.yingjing.pfa.data.repository.MarketSentimentRepositoryImpl
 import com.yingjing.pfa.data.repository.QuoteRepositoryImpl
 import com.yingjing.pfa.data.repository.SnapshotRepositoryImpl
 import com.yingjing.pfa.data.repository.SubscriptionRepositoryImpl
@@ -28,6 +29,7 @@ import com.yingjing.pfa.domain.repository.AlertRepository
 import com.yingjing.pfa.domain.repository.FxRepository
 import com.yingjing.pfa.domain.repository.HoldingRepository
 import com.yingjing.pfa.domain.repository.HousePriceRepository
+import com.yingjing.pfa.domain.repository.MarketSentimentRepository
 import com.yingjing.pfa.domain.repository.QuoteRepository
 import com.yingjing.pfa.domain.repository.SnapshotRepository
 import com.yingjing.pfa.domain.repository.SubscriptionRepository
@@ -106,4 +108,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAiSecretStore(impl: DatabaseAiSecretStore): AiSecretStore
+
+    @Binds
+    @Singleton
+    abstract fun bindMarketSentimentRepository(impl: MarketSentimentRepositoryImpl): MarketSentimentRepository
 }

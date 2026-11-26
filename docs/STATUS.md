@@ -2,7 +2,30 @@
 
 > 给「下一次会话」看的交接文档。优先阅读下面的续接入口；后文排查过程中的旧状态不代表当前状态。
 
-## 下次会话续接入口（2026-09-14）
+## 下次会话续接入口（2026-11-25）
+
+- 项目目录：`C:/AIProjects/Claude/PersonalFA-1`，分支 `main`。
+- **「恐慌指数 / 市场情绪」批次已全部实现，641 个单元测试全绿，APK 已产出，工作区未提交，等用户真机验收后提交。**
+  - 验收 APK：`apk/RICHWIN-恐慌指数-20261125.apk`（90,040,862 字节；SHA-256 `f7daf014d9df834866636bbb459715ccf507349d24e45c968fb745b545ea674f`）。
+  - 拟提交信息：`feat: 恐慌指数 — 六个市场情绪指数与价格相关性走势（DB v14）`。
+- 功能范围：总览页新增「恐慌指数」入口卡（综合温度 + VIX/VXN/加密 F&G 迷你走势）→ 恐慌指数总览页（6 个指数，按股市/加密/商品分组）→ 单指数详情页（近 1/5 年/全历史分位、双轴走势、区间统计、解读）。
+  - 指数：VIX、VXN、VVIX、GVZ、OVX（CBOE）+ 加密恐惧贪婪（alternative.me）。
+  - **详情页区间：默认 1 年，可选 1M/3M/6M/1Y/2Y/3Y/全部**（用户明确要求补 2 年、3 年）。
+  - **价格叠加（用户明确要求）**：详情页右轴叠加相关价格（VIX→标普500、VXN→纳指100、VVIX→VIX、GVZ→GLD、OVX→USO、加密 F&G→比特币），默认开启、可关；并给出区间内**日对数收益**的相关系数与强弱/正负描述。
+- 数据层：
+  - 新表 `market_series_points`（主键 `seriesCode + epochDay`），**DB v13→14**，`MIGRATION_13_14` 只建新表；`DatabaseMigrations.ALL` 统一注册，`DatabaseModule` 与测试共用，避免漏注册。`app/schemas/.../14.json` 已导出并加入 `.gitignore` 白名单。既有 `DatabaseMigrationTest` 改为 12→13→14 链，新增 `DatabaseMigration13To14Test`（用提交的 13.json 建真实 v13 文件库、每表 2 行中文数据，迁移后逐列比对 + 新表可写 + 重开不丢）；`SqlCipherMigrationTest`（instrumentation）同步到 v14，仅编译未执行（无设备）。
+  - 远端 `DefaultMarketSeriesRemote`：CBOE CSV（**304 条件请求**）、alternative.me（limit 增量）、腾讯日 K（起始日 + 条数，**单次上限 2000**，GLD/USO 须用 `usGLD.AM`/`usUSO.AM`）、FRED CSV（cosd 增量）；备源：CBOE→FRED（VVIX 无 FRED）、BTC FRED→OKX（最近 300 天）。响应体上限 4MB。全部为公开 GET，无任何用户数据；缓存不进备份。
+  - 仓库 `MarketSentimentRepositoryImpl`：4 小时新鲜度窗口 + 失败 1 小时重试间隔；完全无缓存时必重试；并发调用合并为同一 Deferred（应用级作用域，离开页面不中断）；单事务批量写库；**本地已有数据时只回写最近 30 天**（CBOE 每次返回全量，避免每日重写近万行）；失败源持久化到 `app_meta`。
+  - 统计纯函数 `FearIndexStats`：midrank 分位（整数并列不偏高）、分位/均值/中位数、波动率五档评级、F&G 固定五档（0–25/26–46/47–54/55–75/76–100，按实测数据边界）、综合温度、日对数收益 Pearson、等距抽样。
+- UI：`ui/screens/sentiment/`（入口卡、总览页、详情页、ViewModel×2、Canvas 双轴图、分位轨道、五档刻度、迷你走势）。走势图**只拦截水平拖动**，竖向滑动交给页面滚动；触摸显示十字准线 + 指数/叠加值气泡；日期统一 `yyyy-MM-dd`。万得恐惧色为独立语义（红=恐慌、绿=平静，与红涨绿跌无关），已并入 `SemanticColors` 深浅两套。
+- i18n：112 个新 key × 4 套（`values` / `values-en` / `values-zh-rCN` / `values-zh-rHK`），已删除 3 个未使用 key。英文默认回退不变。
+- 测试：**575 → 641（+66）全绿**，覆盖解析器（两种 CBOE 列格式、坏行/非正值/NaN、同日去重、F&G 边界、腾讯 day/qfqday、OKX）、远端（304、If-Modified-Since、主备切换、增量参数、超大体拒绝、断网）、仓库（新鲜度跳过、强制刷新、增量写入、部分失败、并发合并、修订窗口）、统计（分位/分位窗口/评级/综合/相关/抽样）、构建器与 ViewModel（默认 1 年、2/3 年、叠加开关、未知 id）、v13→14 迁移。
+- 说明：本批原计划的独立审查子代理超时未产出结论，已由我逐项自审（并发/写库/迁移/解析/手势/文案），修正 3 处（手势抢占、日期格式、未使用资源）。
+- **工具链路径已变更**：`PersonalFA/.toolchain` 已不存在，现在用**本仓库** `C:/AIProjects/Claude/PersonalFA-1/.toolchain/env.sh`（已在 `.gitignore`）。
+- 数据源细节（含实测的体积/上限/字段位置）见 `design/data-sources.md` 末尾新增章节；UI 设计稿 `design/fear-index-mockup.html`（浅/深双模预览）。
+- 待办：真机验收本批；若认可再提交（只 commit 不 push、无署名尾注）。后续可选：把恐慌指数接入提醒规则、AI 报告引用情绪数据（需先评估隐私口径）。
+
+## 上一批续接入口（2026-09-14，历史）
 
 - 项目目录：`C:/AIProjects/Claude/PersonalFA-1`。
 - 当前分支：`main`。**与 origin/main 同步（本地领先 0 个提交）**——用户已自行推送全部提交（`git rev-list --count origin/main..main` = 0，远端另出现 Release4/v1.1.0/v1.2.0/v1.3.0 等 tags）。
@@ -61,11 +84,11 @@
 
 
 ## 一句话现状
-个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / 报告语气档 / 截断检测+max_tokens 档案设置） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + 房产估算提示改进（数据库 12→13 无损迁移完成）+ **P7 深色模式细化（语义色深色变体 + 深浅三档开关 + 轴标签/logo 深色修复，logo 修复经二次返工改代码选图，待真机验收）**，**575 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-深色模式修复2-20260914.apk`）。此前各批提交已由用户全部推送，本地与 origin/main 同步；当前深色模式批次在工作区待验收提交。
+个人金融资产管理 Android App，P0–P6 + 新股(IPO) + 净值走势详情(含自定义组合) + 资产页分组增强(含折叠状态保留) + 负债自动还款 + 设置中心 + 房产指数自动估算 + 多语言国际化(中/英/繁) + 实物金/其他/场外基金三类资产 + 场外基金净值在线抓取 + 加密主备容灾(CoinGecko→OKX 备路) + 应用锁(切回重新认证) + AI 助手（资产报告 + 持仓分析：Responses 双协议 / 历史记录 / Markdown 渲染增强 / 备份纳入 / SSE 流式实时输出 / 多配置档案·Key 加密入库 / 报告语气档 / 截断检测+max_tokens 档案设置） + 设置页隐私宣言 + 订阅管理（底部第 5 Tab）+ 国际财经快讯提醒 + 提醒删除 + 房产估算提示改进（数据库 12→13 无损迁移完成）+ **P7 深色模式细化（已提交）** + **恐慌指数/市场情绪页（六指数 + 价格叠加相关性走势，DB v14，待真机验收）**，**641 个单元测试全绿**，最新 debug APK 已产出（`apk/RICHWIN-恐慌指数-20261125.apk`）。此前各批提交已由用户全部推送，本地与 origin/main 同步；当前恐慌指数批次在工作区待验收提交。
 
 ## 本机构建（关键：无系统级 JDK/SDK，用仓库外 portable 工具链）
 ```bash
-source /c/AIProjects/Claude/PersonalFA/.toolchain/env.sh   # 载入 JDK17/AndroidSDK/Gradle
+source /c/AIProjects/Claude/PersonalFA-1/.toolchain/env.sh   # 载入 JDK17/AndroidSDK/Gradle
 cd /c/AIProjects/Claude/PersonalFA-1
 ./gradlew :app:assembleDebug testDebugUnitTest --console=plain
 ```

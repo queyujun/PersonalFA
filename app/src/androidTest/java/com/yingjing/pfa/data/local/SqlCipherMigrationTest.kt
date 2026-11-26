@@ -51,14 +51,15 @@ class SqlCipherMigrationTest {
             repeat(2) {
                 val room = Room.databaseBuilder(context, AppDatabase::class.java, name)
                     .openHelperFactory(SupportOpenHelperFactory(key.toByteArray()))
-                    .addMigrations(DatabaseMigrations.MIGRATION_12_13).allowMainThreadQueries().build()
+                    .addMigrations(*DatabaseMigrations.ALL).allowMainThreadQueries().build()
                 try {
                     val db = room.openHelper.writableDatabase
-                    assertEquals(13, db.version)
+                    assertEquals(14, db.version)
                     db.query("SELECT value FROM app_meta WHERE `key`='migration-test'").use { c ->
                         assertTrue(c.moveToFirst()); assertEquals("preserved", c.getString(0))
                     }
                     db.execSQL("INSERT INTO ai_report_records (userId, kind, title, model, markdown, createdAt) VALUES (1, 'report', 'test', NULL, 'test', 1)")
+                    db.execSQL("INSERT OR REPLACE INTO market_series_points (seriesCode, epochDay, value) VALUES ('fx_vix', 1, 1.0)")
                 } finally { room.close() }
             }
         } finally {

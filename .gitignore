@@ -41,6 +41,7 @@ schemas/
 /app/schemas/com.yingjing.pfa.data.local.AppDatabase/*
 /app/schemas/com.yingjing.pfa.data.local.historical.HistoricalV12Database/*
 !/app/schemas/com.yingjing.pfa.data.local.AppDatabase/13.json
+!/app/schemas/com.yingjing.pfa.data.local.AppDatabase/14.json
 !/app/schemas/com.yingjing.pfa.data.local.historical.HistoricalV12Database/12.json
 
 # OS

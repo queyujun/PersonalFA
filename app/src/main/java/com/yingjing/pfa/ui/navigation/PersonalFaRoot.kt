@@ -61,6 +61,8 @@ import com.yingjing.pfa.ui.screens.portfolio.AddTypePickerScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingDetailScreen
 import com.yingjing.pfa.ui.screens.portfolio.HoldingFormScreen
 import com.yingjing.pfa.ui.screens.portfolio.PortfolioScreen
+import com.yingjing.pfa.ui.screens.sentiment.FearIndexDetailScreen
+import com.yingjing.pfa.ui.screens.sentiment.FearIndexScreen
 import com.yingjing.pfa.ui.screens.settings.AiProfilesScreen
 import com.yingjing.pfa.ui.screens.settings.AiSettingsScreen
 import com.yingjing.pfa.ui.screens.settings.SettingsScreen
@@ -85,6 +87,8 @@ private const val ROUTE_AI_SETTINGS_EDIT = "settings_ai_edit/{profileId}"
 private const val ROUTE_AI_REPORT = "ai_report"
 private const val ROUTE_AI_INSIGHT = "ai_insight"
 private const val ROUTE_SUB_FORM = "subscription_form?subId={subId}"
+private const val ROUTE_FEAR = "fear_index"
+private const val ROUTE_FEAR_DETAIL = "fear_index_detail/{id}"
 
 /** 应用根：顶栏(左上设置 · 居中标题 · 右上立即刷新) + 底部导航 + 各主区域 NavHost。 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -206,6 +210,7 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
                     onOpenTrend = { navController.navigate(ROUTE_TREND) },
                     onOpenAiReport = { navController.navigate(ROUTE_AI_REPORT) },
                     onOpenAiInsight = { navController.navigate(ROUTE_AI_INSIGHT) },
+                    onOpenFearIndex = { navController.navigate(ROUTE_FEAR) },
                 )
             }
             composable(TopDestination.Portfolio.route) {
@@ -299,6 +304,20 @@ fun PersonalFaRoot(rootViewModel: RootViewModel = hiltViewModel()) {
             }
             composable(ROUTE_TREND) {
                 TrendDetailScreen(onBack = { navController.popBackStack() })
+            }
+
+            // 恐慌指数：总览页入口卡 → 总览 → 单指数详情（导航参数 id = FearIndexId.code）。
+            composable(ROUTE_FEAR) {
+                FearIndexScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenDetail = { id -> navController.navigate("fear_index_detail/${id.code}") },
+                )
+            }
+            composable(
+                route = ROUTE_FEAR_DETAIL,
+                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            ) {
+                FearIndexDetailScreen(onBack = { navController.popBackStack() })
             }
 
             composable(ROUTE_ADD_TYPE) {

@@ -4,6 +4,7 @@ import com.yingjing.pfa.data.remote.CommodityRemote
 import com.yingjing.pfa.data.remote.CryptoQuoteRemote
 import com.yingjing.pfa.data.ai.AiRemote
 import com.yingjing.pfa.data.ai.OpenAiCompatRemote
+import com.yingjing.pfa.data.remote.DefaultMarketSeriesRemote
 import com.yingjing.pfa.data.remote.EastmoneyFundNavRemote
 import com.yingjing.pfa.data.remote.EastmoneyHousePriceRemote
 import com.yingjing.pfa.data.remote.EastmoneyIpoRemote
@@ -14,6 +15,7 @@ import com.yingjing.pfa.data.remote.FundQuoteRemote
 import com.yingjing.pfa.data.remote.HousePriceRemote
 import com.yingjing.pfa.data.remote.IpoRemote
 import com.yingjing.pfa.data.remote.MarketIndexRemote
+import com.yingjing.pfa.data.remote.MarketSeriesRemote
 import com.yingjing.pfa.data.remote.NewsRemote
 import com.yingjing.pfa.data.remote.SinaFxRemote
 import com.yingjing.pfa.data.remote.SinaCommodityRemote
@@ -68,4 +70,8 @@ abstract class RemoteModule {
     @Binds
     @Singleton
     abstract fun bindAiRemote(impl: OpenAiCompatRemote): AiRemote
+
+    @Binds
+    @Singleton
+    abstract fun bindMarketSeriesRemote(impl: DefaultMarketSeriesRemote): MarketSeriesRemote
 }

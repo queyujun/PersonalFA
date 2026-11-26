@@ -14,8 +14,9 @@ import androidx.room.RoomDatabase
         HousePriceIndexEntity::class,
         SubscriptionEntity::class,
         AiReportRecordEntity::class,
+        MarketSeriesPointEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun housePriceDao(): HousePriceDao
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun aiReportRecordDao(): AiReportRecordDao
+    abstract fun marketSeriesDao(): MarketSeriesDao
 
     companion object {
         const val NAME = "pfa.db"

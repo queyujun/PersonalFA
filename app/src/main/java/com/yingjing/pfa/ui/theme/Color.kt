@@ -30,3 +30,13 @@ val Cat9 = Color(0xFF9DA4AE)  // 其他 — 浅灰蓝
 
 // 自定义组合走势线（用户多选资产类别合计），浅紫红，区别于上述固定分类色
 val CustomCombo = Color(0xFFBD60B5)
+
+// 恐慌程度五档（浅色）：平静绿 → 偏低黄绿 → 中性灰 → 偏高橙 → 极高红
+val FearVeryLow = Color(0xFF2F9E6F)
+val FearLow = Color(0xFF7FB35A)
+val FearNeutral = Color(0xFF8E959F)
+val FearHigh = Color(0xFFE0782F)
+val FearVeryHigh = Color(0xFFCF3B30)
+
+// 恐慌指数走势叠加价格线（琥珀）
+val OverlayLine = Color(0xFFD08A1E)

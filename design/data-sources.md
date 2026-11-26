@@ -73,3 +73,42 @@
 - **房产 → 手动估值 + 指数**，不抓取、无后端。
 - **v1 没有任何服务器组件**，完全符合「本地数据库」定位。
 - （后续可选）如加房产自动抓价，再单独引入一个 Cloudflare Workers 轻量代理，仅此一处用到后端。
+
+## 市场情绪 / 恐慌指数（2026-11 新增）
+
+页面上线于「总览 → 恐慌指数」入口卡；数据为**公开行情缓存**，不含任何用户数据，不进备份。
+
+| 指数 | 含义 | 主源 | 备源 | 增量方式 |
+|---|---|---|---|---|
+| VIX | 标普 500 波动率 | CBOE `VIX_History.csv` | FRED `VIXCLS` | 全量 + `If-Modified-Since`（304） |
+| VXN | 纳斯达克 100 波动率 | CBOE `VXN_History.csv` | FRED `VXNCLS` | 同上 |
+| VVIX | VIX 的波动率 | CBOE `VVIX_History.csv` | —（FRED 无该序列） | 同上 |
+| GVZ | 黄金 ETF（GLD）波动率 | CBOE `GVZ_History.csv` | FRED `GVZCLS` | 同上 |
+| OVX | 原油 ETF（USO）波动率 | CBOE `OVX_History.csv` | FRED `OVXCLS` | 同上 |
+| 加密恐惧贪婪 | 0–100 情绪指标 | `api.alternative.me/fng/` | — | `limit` 按缺口天数 |
+
+**价格叠加（详情页右轴，用于观察情绪与价格的相关性）**
+
+| 叠加序列 | 主源 | 备源 |
+|---|---|---|
+| 标普 500 | 腾讯日 K `us.INX` | — |
+| 纳斯达克 100 | 腾讯日 K `us.NDX` | — |
+| 黄金 ETF（GLD） | 腾讯日 K `usGLD.AM` | — |
+| 原油 ETF（USO） | 腾讯日 K `usUSO.AM` | — |
+| 比特币（USD） | FRED `CBBTCUSD` | OKX `BTC-USDT` 日 K（最近 300 天） |
+
+**接口事实（2026-11-25 实测）**
+
+- CBOE：`cdn.cboe.com/...` 返回 307 跳到 `cdn-api.cboe.com`（OkHttp 跟随重定向）；**不支持 Range**，只能整份下载（gzip 后 VIX 约 112 KB，其余 20–55 KB）；`Last-Modified` 可用作条件请求，未更新返回 **304**（几百字节）。VIX 自 1990 年起约 9,300 个交易日。
+- alternative.me：`limit=0` 取全量（2018-02 起约 3,200 条，gzip 约 20 KB）；`timestamp` 为 UTC 零点秒数。
+- 腾讯日 K：`param={code},day,{起始日},,{条数},qfq`；**单次上限约 2000 条**（2500 返回空）；GLD/USO 必须带交易所后缀（`usGLD.AM`），`us.GLD` 只返回 1 条；收盘价在下标 2；未知代码 `day` 为空数组。
+- FRED：`fredgraph.csv?id=X&cosd=yyyy-MM-dd`，缺值行为空；`VVIXCLS` 不存在（404）。
+- OKX：`/api/v5/market/candles?instId=BTC-USDT&bar=1Dutc`，收盘价在下标 4，单次最多 300 条。
+- 全历史 VIX 每天只回写最近 30 天（源端近期修订窗口），避免每日重写近万行。
+
+**判读口径**
+
+- 波动率指数无绝对阈值 → 用近 1 年历史分位（midrank）评级：≤10 极低、≤30 偏低、<70 中性、<90 偏高、≥90 极高。
+- 加密恐惧贪婪固定五档：0–25 极度恐慌、26–46 恐慌、47–54 中性、55–75 贪婪、76–100 极度贪婪。
+- 综合恐慌温度 = 五个波动率指数近 1 年分位与 (100 − 恐惧贪婪读数) 的等权平均；缺数据的指数剔除并显示样本数。
+- 详情页给近 1 年 / 近 5 年 / 全历史三档分位；相关系数为区间内**日对数收益**的 Pearson 系数，按两序列共同交易日计算。

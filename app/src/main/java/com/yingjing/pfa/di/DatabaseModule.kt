@@ -11,6 +11,7 @@ import com.yingjing.pfa.data.local.CategorySnapshotDao
 import com.yingjing.pfa.data.local.DatabaseMigrations
 import com.yingjing.pfa.data.local.HoldingDao
 import com.yingjing.pfa.data.local.HousePriceDao
+import com.yingjing.pfa.data.local.MarketSeriesDao
 import com.yingjing.pfa.data.local.NetWorthSnapshotDao
 import com.yingjing.pfa.data.local.SubscriptionDao
 import com.yingjing.pfa.data.local.UserDao
@@ -36,7 +37,7 @@ object DatabaseModule {
         val factory = SupportOpenHelperFactory(keyProvider.getOrCreatePassphrase())
         return Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
             .openHelperFactory(factory)
-            .addMigrations(DatabaseMigrations.MIGRATION_12_13)
+            .addMigrations(*DatabaseMigrations.ALL)
             .build()
     }
 
@@ -69,4 +70,7 @@ object DatabaseModule {
     @Provides
     fun provideAiReportRecordDao(database: AppDatabase): AiReportRecordDao =
         database.aiReportRecordDao()
+
+    @Provides
+    fun provideMarketSeriesDao(database: AppDatabase): MarketSeriesDao = database.marketSeriesDao()
 }

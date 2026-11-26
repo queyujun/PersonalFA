@@ -25,6 +25,14 @@ data class SemanticColors(
     val cat8: Color, // 场外基金
     val cat9: Color, // 其他
     val customCombo: Color,
+    // 恐慌程度五档（市场情绪页）：平静绿 → 中性灰 → 恐慌红。与红涨绿跌语义独立。
+    val fearVeryLow: Color = FearVeryLow,
+    val fearLow: Color = FearLow,
+    val fearNeutral: Color = FearNeutral,
+    val fearHigh: Color = FearHigh,
+    val fearVeryHigh: Color = FearVeryHigh,
+    /** 走势图叠加序列（价格）线色：与品牌主色区分的琥珀色。 */
+    val overlayLine: Color = OverlayLine,
 )
 
 /** 当前语义色；由 [PersonalFaTheme] 按深浅模式解析后提供。默认浅色套 = 既有常量。 */
@@ -65,6 +73,12 @@ val SemanticColorsDark = SemanticColors(
     cat8 = Color(0xFF8CDCCB), // 场外基金 — 浅松青提亮
     cat9 = Color(0xFFB9C0CB), // 其他 — 浅灰蓝提亮
     customCombo = Color(0xFFD98FD3),
+    fearVeryLow = Color(0xFF5FD49A),
+    fearLow = Color(0xFFA6DE8C),
+    fearNeutral = Color(0xFFB4BCC8),
+    fearHigh = Color(0xFFFF9A6B),
+    fearVeryHigh = Color(0xFFFF6E61),
+    overlayLine = Color(0xFFFFC266),
 )
 
 /** 按深浅模式解析语义色。 */

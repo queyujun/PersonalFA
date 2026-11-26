@@ -42,6 +42,7 @@ import com.yingjing.pfa.ui.components.PieSlice
 import com.yingjing.pfa.ui.components.StackedAreaSeries
 import com.yingjing.pfa.ui.components.StackedAreaTrendChart
 import com.yingjing.pfa.ui.format.MoneyFormat
+import com.yingjing.pfa.ui.screens.sentiment.FearEntryCard
 import com.yingjing.pfa.ui.theme.LocalBrandColors
 import com.yingjing.pfa.ui.theme.LocalSemanticColors
 import com.yingjing.pfa.ui.theme.SemanticColors
@@ -54,6 +55,7 @@ fun OverviewScreen(
     onOpenTrend: () -> Unit = {},
     onOpenAiReport: () -> Unit = {},
     onOpenAiInsight: () -> Unit = {},
+    onOpenFearIndex: () -> Unit = {},
     viewModel: OverviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -77,6 +79,10 @@ fun OverviewScreen(
 
         Spacer(Modifier.height(12.dp))
         TrendCard(state, onOpenTrend)
+
+        // 市场情绪入口：综合恐慌温度 + 关键指数，点击进入恐慌指数页（与持仓无关，空持仓也显示）。
+        Spacer(Modifier.height(12.dp))
+        FearEntryCard(onOpen = onOpenFearIndex)
 
         // AI 助手双入口：报告（可导出长文）+ 持仓分析（聚焦问题与建议）。空持仓时禁用。
         // IntrinsicSize.Min + fillMaxHeight：两卡高度取较高者，文案换行也不会高低不齐。
